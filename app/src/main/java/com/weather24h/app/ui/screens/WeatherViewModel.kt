@@ -104,7 +104,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
                 val currentState = _uiState.value
                 // Chỉ áp dụng outfit nếu người dùng vẫn đang xem đúng thành phố này
-                if (currentState is WeatherUiState.Success && currentState.weather.cityName == weather.cityName) {
+                if (currentState is WeatherUiState.Success && currentState.weather.location.name == weather.location.name) {
                     _uiState.value = currentState.copy(outfit = outfit, isOutfitLoading = false)
                 }
             } catch (_: Exception) {
