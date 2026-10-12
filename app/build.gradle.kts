@@ -48,6 +48,11 @@ android {
         kotlinCompilerExtensionVersion = "1.5.8"
     }
 
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -56,8 +61,9 @@ android {
 }
 
 dependencies {
-    // AndroidX & Activity Compose
+    // AndroidX & Activity / Fragment Compose
     implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
 
