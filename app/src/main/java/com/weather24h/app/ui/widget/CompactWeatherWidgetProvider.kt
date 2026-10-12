@@ -60,13 +60,11 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 }
                 val bgOpacity = prefs.getFloat("widget_bg_opacity", 0.85f).coerceIn(0.0f, 1.0f)
 
-                // Áp dụng hình nền & độ trong suốt
-                views.setInt(
-                    R.id.compact_widget_bg_layer,
-                    "setBackgroundResource",
-                    if (isDark) R.drawable.widget_bg_dark else R.drawable.widget_bg_light
-                )
-                views.setFloat(R.id.compact_widget_bg_layer, "setAlpha", bgOpacity)
+                // Áp dụng hình nền & độ trong suốt (chuẩn RemoteViews ImageView API)
+                val bgDrawableRes = if (isDark) R.drawable.widget_bg_dark else R.drawable.widget_bg_light
+                views.setImageViewResource(R.id.compact_widget_bg_layer, bgDrawableRes)
+                val alphaInt = (bgOpacity * 255).toInt().coerceIn(0, 255)
+                views.setInt(R.id.compact_widget_bg_layer, "setImageAlpha", alphaInt)
 
                 // Bảng màu chữ tương ứng với theme sáng / tối
                 val colorPrimary = if (isDark) 0xFFFFFFFF.toInt() else 0xFF0F172A.toInt()

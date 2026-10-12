@@ -177,7 +177,7 @@ fun WeatherScreen(
                         ) {
                             Text(
                                 text = state.message,
-                                color = Color.White,
+                                color = if (isDarkTheme) Color.White else Color(0xFF0F172A),
                                 fontSize = 16.sp
                             )
                             Spacer(modifier = Modifier.height(16.dp))

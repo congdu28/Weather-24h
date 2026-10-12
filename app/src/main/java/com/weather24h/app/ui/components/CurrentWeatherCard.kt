@@ -120,16 +120,19 @@ fun CurrentWeatherCard(
             // Nhãn hiển thị nếu đang xem ngoại tuyến
             if (weather.isOffline) {
                 Spacer(modifier = Modifier.height(6.dp))
+                val offlineBg = if (isDark) Color(0xFFEF4444).copy(alpha = 0.25f) else Color(0xFFFEE2E2)
+                val offlineBorder = if (isDark) Color(0xFFEF4444).copy(alpha = 0.5f) else Color(0xFFFCA5A5)
+                val offlineTextColor = if (isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFEF4444).copy(alpha = 0.25f))
-                        .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .background(offlineBg)
+                        .border(1.dp, offlineBorder, RoundedCornerShape(8.dp))
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = "📡 Ngoại tuyến (Đã lưu lúc ${weather.lastUpdated})",
-                        color = Color(0xFFFCA5A5),
+                        color = offlineTextColor,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -180,20 +183,40 @@ fun CurrentWeatherCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
+                val tagBg = if (isDark) {
+                    if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.22f)
+                    else Color(0xFF6366F1).copy(alpha = 0.28f)
+                } else {
+                    if (weather.current.isDay) Color(0xFFFEF3C7)
+                    else Color(0xFFEEF2FF)
+                }
+                val tagBorder = if (isDark) {
+                    if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.45f)
+                    else Color(0xFF6366F1).copy(alpha = 0.45f)
+                } else {
+                    if (weather.current.isDay) Color(0xFFFDE68A)
+                    else Color(0xFFC7D2FE)
+                }
+                val tagTextColor = if (isDark) {
+                    if (weather.current.isDay) Color(0xFFFFD166)
+                    else Color(0xFFBAE6FD)
+                } else {
+                    if (weather.current.isDay) Color(0xFFB45309)
+                    else Color(0xFF4338CA)
+                }
+
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.2f)
-                            else Color(0xFF6366F1).copy(alpha = 0.25f)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                        .background(tagBg)
+                        .border(1.dp, tagBorder, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(
                         text = if (weather.current.isDay) "Ban ngày" else "Ban đêm",
-                        color = if (weather.current.isDay) Color(0xFFFFD166) else Color(0xFFBAE6FD),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
+                        color = tagTextColor,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }

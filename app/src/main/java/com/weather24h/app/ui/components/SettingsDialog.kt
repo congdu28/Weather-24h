@@ -274,20 +274,38 @@ fun SettingsDialog(
                                     )
                                 }
 
-                                // NHÓM 2.5: MÔ HÌNH DỰ BÁO THỜI TIẾT
+                                // NHÓM 2.5: MÔ HÌNH DỰ BÁO THỜI TIẾT (Độc lập)
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
                                     SettingsRowItem(
                                         icon = Icons.Default.Public,
                                         iconTint = Color(0xFF0EA5E9),
                                         title = "Mô hình dự báo thời tiết",
-                                        subtitle = "${forecastModel.title} (${forecastModel.provider})",
+                                        subtitle = "${forecastModel.title} • ${forecastModel.provider}",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.FORECAST_MODEL }
                                     )
                                 }
 
-                                // NHÓM 3: AI STYLIST & CHẾ ĐỘ DỊCH VỤ
+                                // NHÓM 3: TIỆN ÍCH WIDGET (Độc lập)
+                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    val widgetThemeLabel = when (widgetThemeMode) {
+                                        com.weather24h.app.ui.theme.AppThemeMode.LIGHT -> "Sáng"
+                                        com.weather24h.app.ui.theme.AppThemeMode.DARK -> "Tối"
+                                        com.weather24h.app.ui.theme.AppThemeMode.SYSTEM -> "Theo hệ điều hành"
+                                    }
+                                    SettingsRowItem(
+                                        icon = Icons.Default.Widgets,
+                                        iconTint = Color(0xFFF472B6),
+                                        title = "Tiện ích Widget",
+                                        subtitle = "Theme: $widgetThemeLabel • Độ mờ nền: ${(widgetOpacity * 100).toInt()}% • 6 khung giờ",
+                                        titleColor = contentColor,
+                                        subtitleColor = subtextColor,
+                                        onClick = { currentSubScreen = SettingsSubScreen.OFFLINE_WIDGET }
+                                    )
+                                }
+
+                                // NHÓM 4: AI STYLIST & CHẾ ĐỘ DỊCH VỤ
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
                                     SettingsRowItem(
                                         icon = Icons.Default.AutoAwesome,
@@ -303,35 +321,20 @@ fun SettingsDialog(
                                         icon = Icons.Default.Schedule,
                                         iconTint = Color(0xFFFBBF24),
                                         title = "Chu kỳ làm mới",
-                                        subtitle = "${currentAutoRefreshMinutes.takeIf { it > 0 }?.let { "$it phút" } ?: "Thủ công"}",
+                                        subtitle = "${currentAutoRefreshMinutes.takeIf { it > 0 }?.let { "$it phút/lần" } ?: "Thủ công"}",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.SYNC_REFRESH }
                                     )
                                 }
 
-                                // NHÓM 4: NGOẠI TUYẾN & TIỆN ÍCH WIDGET
+                                // NHÓM 5: VỀ ỨNG DỤNG (Độc lập)
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
-                                    val widgetThemeLabel = when (widgetThemeMode) {
-                                        com.weather24h.app.ui.theme.AppThemeMode.LIGHT -> "Sáng"
-                                        com.weather24h.app.ui.theme.AppThemeMode.DARK -> "Tối"
-                                        com.weather24h.app.ui.theme.AppThemeMode.SYSTEM -> "Theo hệ điều hành"
-                                    }
-                                    SettingsRowItem(
-                                        icon = Icons.Default.Widgets,
-                                        iconTint = Color(0xFFF472B6),
-                                        title = "Tiện ích Widget & Ngoại tuyến",
-                                        subtitle = "Theme: $widgetThemeLabel • Trong suốt: ${(widgetOpacity * 100).toInt()}%",
-                                        titleColor = contentColor,
-                                        subtitleColor = subtextColor,
-                                        onClick = { currentSubScreen = SettingsSubScreen.OFFLINE_WIDGET }
-                                    )
-                                    ItemDivider(dividerColor = dividerColor)
                                     SettingsRowItem(
                                         icon = Icons.Default.Info,
                                         iconTint = Color(0xFF94A3B8),
                                         title = "Về ứng dụng",
-                                        subtitle = "Phiên bản v${BuildConfig.VERSION_NAME}",
+                                        subtitle = "Phiên bản v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.ABOUT }
@@ -1509,7 +1512,7 @@ private fun InsetGroupCard(
     }
 }
 
-// Hàng tùy chọn có icon, title, subtitle và chevron phải '>'
+// Hàng tùy chọn chuẩn 2 dòng: dòng trên là Tiêu đề, dòng dưới là Tính năng/Cài đặt hiện tại
 @Composable
 private fun SettingsRowItem(
     icon: ImageVector,
@@ -1532,46 +1535,54 @@ private fun SettingsRowItem(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.weight(1f)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(20.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = title,
-                color = titleColor,
-                fontSize = 14.5.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(iconTint.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.wrapContentWidth()
-        ) {
-            if (!subtitle.isNullOrEmpty()) {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = subtitle,
-                    color = subtitleColor,
-                    fontSize = 12.5.sp,
+                    text = title,
+                    color = titleColor,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.width(6.dp))
+                if (!subtitle.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = subtitle,
+                        color = subtitleColor,
+                        fontSize = 12.5.sp,
+                        maxLines = 2,
+                        lineHeight = 16.sp,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = subtitleColor.copy(alpha = 0.6f),
-                modifier = Modifier.size(18.dp)
-            )
         }
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = subtitleColor.copy(alpha = 0.6f),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 

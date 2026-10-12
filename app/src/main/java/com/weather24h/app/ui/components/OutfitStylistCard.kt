@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.OutfitRecommendation
+import com.weather24h.app.ui.theme.LocalIsDarkTheme
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -37,23 +38,41 @@ fun OutfitStylistCard(
         return
     }
 
+    val isDark = LocalIsDarkTheme.current
+    val cardGradient = if (isDark) {
+        Brush.linearGradient(
+            listOf(
+                Color(0xFF581C87).copy(alpha = 0.50f),
+                Color(0xFF1E1B4B).copy(alpha = 0.70f)
+            )
+        )
+    } else {
+        Brush.linearGradient(
+            listOf(
+                Color(0xFFFAF5FF),
+                Color(0xFFF3E8FF)
+            )
+        )
+    }
+    val cardBorderColor = if (isDark) {
+        if (isLoading) Color(0xFFF472B6).copy(alpha = 0.6f) else Color(0xFFA855F7).copy(alpha = 0.4f)
+    } else {
+        if (isLoading) Color(0xFFF472B6).copy(alpha = 0.8f) else Color(0xFFD8B4FE)
+    }
+
+    val actionButtonTint = if (isDark) Color.White.copy(alpha = 0.75f) else Color(0xFF6B21A8)
+    val styleVibeColor = if (isDark) Color(0xFFF0ABFC) else Color(0xFF7E22CE)
+    val summaryColor = if (isDark) Color.White.copy(alpha = 0.92f) else Color(0xFF334155)
+    val clothesBoxBg = if (isDark) Color.Black.copy(alpha = 0.28f) else Color.White.copy(alpha = 0.70f)
+    val clothesDividerColor = if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+    val accessoriesTitleColor = if (isDark) Color.White.copy(alpha = 0.7f) else Color(0xFF6B21A8)
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        Color(0xFF581C87).copy(alpha = 0.50f),
-                        Color(0xFF1E1B4B).copy(alpha = 0.70f)
-                    )
-                )
-            )
-            .border(
-                1.4.dp,
-                if (isLoading) Color(0xFFF472B6).copy(alpha = 0.6f) else Color(0xFFA855F7).copy(alpha = 0.4f),
-                RoundedCornerShape(26.dp)
-            )
+            .background(cardGradient)
+            .border(1.4.dp, cardBorderColor, RoundedCornerShape(26.dp))
             .padding(18.dp)
     ) {
         Column {
@@ -100,7 +119,7 @@ fun OutfitStylistCard(
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Cài đặt Gemini API",
-                            tint = Color.White.copy(alpha = 0.75f),
+                            tint = actionButtonTint,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -112,7 +131,7 @@ fun OutfitStylistCard(
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
-                                color = Color(0xFFF0ABFC),
+                                color = if (isDark) Color(0xFFF0ABFC) else Color(0xFF9333EA),
                                 strokeWidth = 2.dp,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -120,7 +139,7 @@ fun OutfitStylistCard(
                             Icon(
                                 imageVector = Icons.Default.Refresh,
                                 contentDescription = "Làm mới gợi ý",
-                                tint = Color.White,
+                                tint = actionButtonTint,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -132,8 +151,8 @@ fun OutfitStylistCard(
             if (isLoading) {
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    color = Color(0xFFD8B4FE),
-                    trackColor = Color.White.copy(alpha = 0.1f),
+                    color = if (isDark) Color(0xFFD8B4FE) else Color(0xFF9333EA),
+                    trackColor = if (isDark) Color.White.copy(alpha = 0.1f) else Color(0xFFE9D5FF),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(2.dp)
@@ -146,7 +165,7 @@ fun OutfitStylistCard(
             // Style Vibe
             Text(
                 text = outfit.styleVibe,
-                color = Color(0xFFF0ABFC),
+                color = styleVibeColor,
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -156,7 +175,7 @@ fun OutfitStylistCard(
             // Summary Text
             Text(
                 text = outfit.summary,
-                color = Color.White.copy(alpha = 0.92f),
+                color = summaryColor,
                 fontSize = 13.5.sp,
                 lineHeight = 20.sp
             )
@@ -168,7 +187,7 @@ fun OutfitStylistCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.28f))
+                    .background(clothesBoxBg)
                     .padding(14.dp)
             ) {
                 OutfitItemRow(
@@ -177,7 +196,7 @@ fun OutfitStylistCard(
                     value = outfit.top
                 )
                 Divider(
-                    color = Color.White.copy(alpha = 0.08f),
+                    color = clothesDividerColor,
                     modifier = Modifier.padding(vertical = 10.dp)
                 )
                 OutfitItemRow(
@@ -186,7 +205,7 @@ fun OutfitStylistCard(
                     value = outfit.bottom
                 )
                 Divider(
-                    color = Color.White.copy(alpha = 0.08f),
+                    color = clothesDividerColor,
                     modifier = Modifier.padding(vertical = 10.dp)
                 )
                 OutfitItemRow(
@@ -201,7 +220,7 @@ fun OutfitStylistCard(
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
                     text = "PHỤ KIỆN GỢI Ý MANG THEO",
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = accessoriesTitleColor,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.8.sp
@@ -220,24 +239,36 @@ fun OutfitStylistCard(
                                 acc.contains("nắng", ignoreCase = true) ||
                                 acc.contains("ô", ignoreCase = true)
 
+                        val accBg = if (isDark) {
+                            if (isProtection) Color(0xFF8B5CF6).copy(alpha = 0.35f)
+                            else Color.White.copy(alpha = 0.12f)
+                        } else {
+                            if (isProtection) Color(0xFFF3E8FF)
+                            else Color(0xFFF1F5F9)
+                        }
+                        val accBorder = if (isDark) {
+                            if (isProtection) Color(0xFFA855F7).copy(alpha = 0.6f)
+                            else Color.White.copy(alpha = 0.2f)
+                        } else {
+                            if (isProtection) Color(0xFFD8B4FE)
+                            else Color(0xFFCBD5E1)
+                        }
+                        val accTextColor = if (isDark) {
+                            Color.White
+                        } else {
+                            if (isProtection) Color(0xFF6B21A8) else Color(0xFF1E293B)
+                        }
+
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(
-                                    if (isProtection) Color(0xFF8B5CF6).copy(alpha = 0.35f)
-                                    else Color.White.copy(alpha = 0.12f)
-                                )
-                                .border(
-                                    1.dp,
-                                    if (isProtection) Color(0xFFA855F7).copy(alpha = 0.6f)
-                                    else Color.White.copy(alpha = 0.2f),
-                                    RoundedCornerShape(12.dp)
-                                )
+                                .background(accBg)
+                                .border(1.dp, accBorder, RoundedCornerShape(12.dp))
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
                                 text = acc,
-                                color = Color.White,
+                                color = accTextColor,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -249,25 +280,29 @@ fun OutfitStylistCard(
             // Weather Warning Alert Box
             if (!outfit.warningAlert.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(14.dp))
+                val alertBg = if (isDark) Color(0xFFF59E0B).copy(alpha = 0.20f) else Color(0xFFFEF3C7)
+                val alertBorder = if (isDark) Color(0xFFF59E0B).copy(alpha = 0.45f) else Color(0xFFFDE68A)
+                val alertTextColor = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
+
                 Row(
                     verticalAlignment = Alignment.Top,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFFF59E0B).copy(alpha = 0.20f))
-                        .border(1.dp, Color(0xFFF59E0B).copy(alpha = 0.45f), RoundedCornerShape(14.dp))
+                        .background(alertBg)
+                        .border(1.dp, alertBorder, RoundedCornerShape(14.dp))
                         .padding(12.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
-                        tint = Color(0xFFFBBF24),
+                        tint = if (isDark) Color(0xFFFBBF24) else Color(0xFFD97706),
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = outfit.warningAlert,
-                        color = Color(0xFFFDE68A),
+                        color = alertTextColor,
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         modifier = Modifier.weight(1f)
@@ -287,6 +322,11 @@ fun OutfitItemRow(
     label: String,
     value: String
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val iconTint = if (isDark) Color(0xFFC084FC) else Color(0xFF9333EA)
+    val labelColor = if (isDark) Color.White.copy(alpha = 0.7f) else Color(0xFF64748B)
+    val valueColor = if (isDark) Color.White else Color(0xFF0F172A)
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth()
@@ -294,19 +334,19 @@ fun OutfitItemRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFFC084FC),
+            tint = iconTint,
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = label,
-            color = Color.White.copy(alpha = 0.7f),
+            color = labelColor,
             fontSize = 12.sp,
             modifier = Modifier.width(76.dp)
         )
         Text(
             text = value,
-            color = Color.White,
+            color = valueColor,
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f)
@@ -333,33 +373,53 @@ fun OutfitStylistSkeletonCard(
         label = "Shimmer"
     )
 
-    val shimmerBrush = Brush.linearGradient(
-        colors = listOf(
-            Color.White.copy(alpha = 0.05f),
-            Color.White.copy(alpha = 0.16f),
-            Color.White.copy(alpha = 0.05f)
-        ),
-        start = Offset(shimmerTranslate, 0f),
-        end = Offset(shimmerTranslate + 250f, 250f)
-    )
+    val isDark = LocalIsDarkTheme.current
+    val shimmerBrush = if (isDark) {
+        Brush.linearGradient(
+            colors = listOf(
+                Color.White.copy(alpha = 0.05f),
+                Color.White.copy(alpha = 0.16f),
+                Color.White.copy(alpha = 0.05f)
+            ),
+            start = Offset(shimmerTranslate, 0f),
+            end = Offset(shimmerTranslate + 250f, 250f)
+        )
+    } else {
+        Brush.linearGradient(
+            colors = listOf(
+                Color(0xFFE9D5FF).copy(alpha = 0.35f),
+                Color(0xFFDDD6FE).copy(alpha = 0.70f),
+                Color(0xFFE9D5FF).copy(alpha = 0.35f)
+            ),
+            start = Offset(shimmerTranslate, 0f),
+            end = Offset(shimmerTranslate + 250f, 250f)
+        )
+    }
+
+    val skeletonBg = if (isDark) {
+        Brush.linearGradient(
+            listOf(
+                Color(0xFF3B0764).copy(alpha = 0.40f),
+                Color(0xFF1E1B4B).copy(alpha = 0.60f)
+            )
+        )
+    } else {
+        Brush.linearGradient(
+            listOf(
+                Color(0xFFFAF5FF),
+                Color(0xFFF3E8FF)
+            )
+        )
+    }
+    val skeletonBorder = if (isDark) Color(0xFFA855F7).copy(alpha = 0.25f) else Color(0xFFD8B4FE)
+    val clothesBoxPlaceholderBg = if (isDark) Color.Black.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.65f)
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        Color(0xFF3B0764).copy(alpha = 0.40f),
-                        Color(0xFF1E1B4B).copy(alpha = 0.60f)
-                    )
-                )
-            )
-            .border(
-                1.2.dp,
-                Color(0xFFA855F7).copy(alpha = 0.25f),
-                RoundedCornerShape(26.dp)
-            )
+            .background(skeletonBg)
+            .border(1.2.dp, skeletonBorder, RoundedCornerShape(26.dp))
             .padding(18.dp)
     ) {
         Column {
@@ -402,7 +462,7 @@ fun OutfitStylistSkeletonCard(
                     Icon(
                         imageVector = Icons.Default.Settings,
                         contentDescription = "Cài đặt Gemini API",
-                        tint = Color.White.copy(alpha = 0.6f),
+                        tint = if (isDark) Color.White.copy(alpha = 0.6f) else Color(0xFF6B21A8),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -442,7 +502,7 @@ fun OutfitStylistSkeletonCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.2f))
+                    .background(clothesBoxPlaceholderBg)
                     .padding(14.dp)
             ) {
                 Box(

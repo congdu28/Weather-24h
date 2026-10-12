@@ -4,12 +4,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Background Layer (hỗ trợ điều chỉnh độ trong suốt setAlpha và theme Sáng/Tối) -->
-    <View
+    <!-- Background Layer (dùng ImageView tương thích 100% với RemoteViews, hỗ trợ setImageAlpha và theme Sáng/Tối) -->
+    <ImageView
         android:id="@+id/compact_widget_bg_layer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@drawable/widget_bg_dark" />
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_bg_dark" />
 
     <!-- Foreground Content Layer -->
     <LinearLayout
