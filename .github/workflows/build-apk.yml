@@ -1,0 +1,57 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew || true
+
+      - name: Build APK with Gradle
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Rename APK file
+        run: |
+          mkdir -p release-apk
+          cp app/build/outputs/apk/release/*.apk release-apk/Weather24h-v1.0.0.apk || cp app/build/outputs/apk/debug/*.apk release-apk/Weather24h-v1.0.0.apk
+
+      - name: Upload APK as Workflow Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Weather24h-Release-APK
+          path: release-apk/Weather24h-v1.0.0.apk
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Weather 24h Release ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_name }}
+          files: release-apk/Weather24h-v1.0.0.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
