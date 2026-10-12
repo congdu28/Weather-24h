@@ -94,11 +94,11 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(R.id.compact_widget_city, weather.location.name)
                     views.setTextViewText(
                         R.id.compact_widget_desc,
-                        "${condition.description} • Cảm giác ${weather.current.feelsLike.roundToInt()}°"
+                        "${condition.description} • Cảm giác ${weather.current.feelsLike.roundToInt()}°C"
                     )
                     views.setTextViewText(
                         R.id.compact_widget_sub,
-                        "C:${weather.maxTemp24h.roundToInt()}° T:${weather.minTemp24h.roundToInt()}° • Ẩm: ${weather.current.humidity}%"
+                        "Cao: ${weather.maxTemp24h.roundToInt()}° • Thấp: ${weather.minTemp24h.roundToInt()}° • Ẩm: ${weather.current.humidity}%"
                     )
                 } else {
                     views.setTextViewText(R.id.compact_widget_icon, "☀️")

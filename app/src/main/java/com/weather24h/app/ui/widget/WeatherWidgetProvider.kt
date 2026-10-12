@@ -25,6 +25,17 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         }
     }
 
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        val weather = getSavedWeather(context)
+        updateWidget(context, appWidgetManager, appWidgetId, weather)
+    }
+
     companion object {
         fun updateAllWidgets(context: Context, weather: WeatherData? = null, aiTip: String? = null) {
             val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
@@ -126,9 +137,32 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextColor(hourRainIds[i], colorAccent)
                 }
 
+                // Xử lý Responsive theo kích thước ô Widget thực tế từ Launcher
+                val options = appWidgetManager.getAppWidgetOptions(widgetId)
+                val minWidth = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 300
+                val minHeight = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) ?: 120
+
+                // Ẩn dòng AI Tip & Cập nhật nếu chiều cao bị kéo nhỏ (< 95dp)
+                views.setViewVisibility(
+                    R.id.widget_bottom_row,
+                    if (minHeight < 95) android.view.View.GONE else android.view.View.VISIBLE
+                )
+
+                // Nếu chiều rộng hẹp (< 255dp), chỉ hiện 4 khung giờ để tránh dồn chữ
+                val show6Chips = minWidth >= 255
+                views.setViewVisibility(
+                    R.id.widget_h5_container,
+                    if (show6Chips) android.view.View.VISIBLE else android.view.View.GONE
+                )
+                views.setViewVisibility(
+                    R.id.widget_h6_container,
+                    if (show6Chips) android.view.View.VISIBLE else android.view.View.GONE
+                )
+
                 if (weather != null) {
-                    val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode)
-                    val emoji = getWeatherEmoji(weather.current.weatherCode, weather.current.isDay)
+                    val currentRainProb = weather.hourly24h.firstOrNull()?.precipitationProbability ?: 0
+                    val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode, currentRainProb, weather.current.isDay)
+                    val emoji = getWeatherEmoji(weather.current.weatherCode, weather.current.isDay, currentRainProb)
 
                     views.setTextViewText(R.id.widget_city_name, weather.location.name)
                     views.setTextViewText(R.id.widget_temp, "${weather.current.temperature.roundToInt()}°")
@@ -139,7 +173,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     )
                     views.setTextViewText(
                         R.id.widget_range,
-                        "T:${weather.minTemp24h.roundToInt()}° • C:${weather.maxTemp24h.roundToInt()}°"
+                        "Cao: ${weather.maxTemp24h.roundToInt()}° • Thấp: ${weather.minTemp24h.roundToInt()}°"
                     )
                     views.setTextViewText(R.id.widget_updated, "Cập nhật ${weather.lastUpdated}")
 
@@ -148,14 +182,15 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     for (i in 0 until 6) {
                         if (i < hourlyList.size) {
                             val h = hourlyList[i]
-                            views.setTextViewText(hourTimeIds[i], h.hourLabel)
-                            views.setTextViewText(hourIconIds[i], getWeatherEmoji(h.weatherCode, h.isDay))
+                            val timeLabel = if (i == 0 || h.hourLabel == "Hiện tại") "Bây giờ" else h.hourLabel
+                            views.setTextViewText(hourTimeIds[i], timeLabel)
+                            views.setTextViewText(hourIconIds[i], getWeatherEmoji(h.weatherCode, h.isDay, h.precipitationProbability))
                             views.setTextViewText(hourTempIds[i], "${h.temperature.roundToInt()}°")
                             views.setTextViewText(hourRainIds[i], "${h.precipitationProbability}%")
                         }
                     }
 
-                    val tip = aiTip ?: "👔 Phong cách: Thời tiết ${condition.description.lowercase()}"
+                    val tip = aiTip ?: "👔 AI Stylist: ${condition.description}"
                     views.setTextViewText(R.id.widget_ai_tip, tip)
                 } else {
                     views.setTextViewText(R.id.widget_city_name, "Weather 24h")
@@ -163,7 +198,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(R.id.widget_weather_icon, "☀️")
                     views.setTextViewText(R.id.widget_weather_desc, "Chạm để cập nhật thời tiết")
                     views.setTextViewText(R.id.widget_range, "Dự báo thời tiết 24h & 7 ngày")
-                    views.setTextViewText(R.id.widget_ai_tip, "👔 Trợ lý AI Stylist sẵn sàng")
+                    views.setTextViewText(R.id.widget_ai_tip, "👔 AI Stylist sẵn sàng")
                 }
 
                 appWidgetManager.updateAppWidget(widgetId, views)
@@ -171,8 +206,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun getWeatherEmoji(code: Int, isDay: Boolean = true): String {
-            val condition = WeatherCondition.fromWmoCode(code)
+        private fun getWeatherEmoji(code: Int, isDay: Boolean = true, rainProb: Int = 0): String {
+            val condition = WeatherCondition.fromWmoCode(code, rainProb, isDay)
             return when (condition.type) {
                 WeatherType.CLEAR -> if (isDay) "☀️" else "🌙"
                 WeatherType.PARTLY_CLOUDY -> if (isDay) "🌤️" else "☁️"

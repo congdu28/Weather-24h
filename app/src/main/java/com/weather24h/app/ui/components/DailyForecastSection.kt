@@ -94,7 +94,7 @@ fun DailyForecastSection(
 
             // 7 Days List
             dailyList.forEachIndexed { index, day ->
-                val condition = WeatherCondition.fromWmoCode(day.weatherCode)
+                val condition = WeatherCondition.fromWmoCode(day.weatherCode, day.precipitationProbability, isDay = true)
                 val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
                 val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
 
@@ -231,7 +231,7 @@ fun DayForecastDetailDialog(
     day: DailyForecast,
     onDismiss: () -> Unit
 ) {
-    val condition = WeatherCondition.fromWmoCode(day.weatherCode)
+    val condition = WeatherCondition.fromWmoCode(day.weatherCode, day.precipitationProbability, isDay = true)
     val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
     val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
     val isDark = LocalIsDarkTheme.current
@@ -448,7 +448,7 @@ fun DayForecastDetailDialog(
 
                                                 Spacer(modifier = Modifier.height(6.dp))
 
-                                                val c = WeatherCondition.fromWmoCode(item.weatherCode)
+                                                val c = WeatherCondition.fromWmoCode(item.weatherCode, item.precipitationProbability, item.isDay)
                                                 val ic = WeatherCondition.getWeatherIcon(c.type, item.isDay)
                                                 val icTint = WeatherCondition.getWeatherIconTint(c.type, item.isDay)
 

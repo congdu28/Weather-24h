@@ -18,7 +18,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="12dp">
+        android:padding="10dp">
 
         <!-- Top Row: City Name, Weather Icon & Main Temp -->
         <LinearLayout
@@ -41,28 +41,30 @@
                     android:maxLines="1"
                     android:text="Hà Nội"
                     android:textColor="#FFFFFF"
-                    android:textSize="17sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/widget_weather_desc"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
+                    android:layout_marginTop="1dp"
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:text="Trời nắng • Cảm giác 30°C"
                     android:textColor="#CBD5E1"
-                    android:textSize="11.5sp" />
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/widget_range"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
-                    android:text="T:24° • C:32°"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Cao: 32° • Thấp: 24°"
                     android:textColor="#38BDF8"
-                    android:textSize="11sp"
+                    android:textSize="10.5sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -72,7 +74,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="6dp"
                 android:text="☀️"
-                android:textSize="28sp" />
+                android:textSize="26sp" />
 
             <TextView
                 android:id="@+id/widget_temp"
@@ -80,7 +82,7 @@
                 android:layout_height="wrap_content"
                 android:text="28°"
                 android:textColor="#FFFFFF"
-                android:textSize="36sp"
+                android:textSize="32sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -89,7 +91,8 @@
             android:id="@+id/widget_hourly_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="5dp"
+            android:baselineAligned="false"
             android:orientation="horizontal">
 
             <!-- Hour 1 -->
@@ -399,9 +402,10 @@
 
         <!-- Bottom Row: AI Stylist Tip & Updated time -->
         <LinearLayout
+            android:id="@+id/widget_bottom_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -412,18 +416,18 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="👔 Gợi ý: Áo thun mỏng nhẹ thoáng mát"
+                android:text="👔 AI Stylist: Áo thun mỏng nhẹ thoáng mát"
                 android:textColor="#F0ABFC"
-                android:textSize="11sp" />
+                android:textSize="10.5sp" />
 
             <TextView
                 android:id="@+id/widget_updated"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:text="Weather 24h"
                 android:textColor="#94A3B8"
-                android:textSize="10sp" />
+                android:textSize="9.5sp" />
         </LinearLayout>
 
     </LinearLayout>

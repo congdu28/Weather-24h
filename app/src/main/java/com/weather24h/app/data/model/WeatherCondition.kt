@@ -24,7 +24,27 @@ data class WeatherCondition(
         get() = descriptionVi
 
     companion object {
-        fun fromWmoCode(code: Int): WeatherCondition {
+        fun fromWmoCode(code: Int, rainProb: Int = 0, isDay: Boolean = true): WeatherCondition {
+            // Nếu xác suất mưa cao (>= 40-50%), dung hòa trạng thái thời tiết chính xác với thực tế
+            if (code <= 2 && rainProb >= 50) {
+                return WeatherCondition(
+                    if (isDay) "Nắng có lúc có mưa rào" else "Đêm có lúc có mưa rào",
+                    WeatherType.RAIN
+                )
+            }
+            if (code <= 2 && rainProb in 35..49) {
+                return WeatherCondition(
+                    if (isDay) "Nắng gián đoạn, có thể mưa" else "Đêm ít mây, có thể mưa",
+                    WeatherType.PARTLY_CLOUDY
+                )
+            }
+            if (code == 3 && rainProb >= 50) {
+                return WeatherCondition("Âm u, có mưa rào", WeatherType.RAIN)
+            }
+            if (code == 3 && rainProb in 35..49) {
+                return WeatherCondition("Nhiều mây, khả năng có mưa", WeatherType.CLOUDY)
+            }
+
             return when (code) {
                 0 -> WeatherCondition("Trời quang đãng", WeatherType.CLEAR)
                 1 -> WeatherCondition("Ít mây, trời trong", WeatherType.CLEAR)

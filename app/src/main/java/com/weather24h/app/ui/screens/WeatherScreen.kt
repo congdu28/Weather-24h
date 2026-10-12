@@ -73,6 +73,7 @@ fun WeatherScreen(
         else -> true
     }
     val themeMode by viewModel.themeMode.collectAsState()
+    val favoriteCities by viewModel.favoriteCities.collectAsState()
     val isDarkTheme = com.weather24h.app.ui.theme.LocalIsDarkTheme.current
 
     Box(
@@ -199,10 +200,13 @@ fun WeatherScreen(
                     ) {
                         // 1. Current Weather Hero Card (With Favorite Star ⭐)
                         item {
+                            val isFav = remember(favoriteCities, weather.location.name) {
+                                favoriteCities.any { it.name.equals(weather.location.name, ignoreCase = true) }
+                            }
                             CurrentWeatherCard(
                                 weather = weather,
                                 onLocationClick = { showSearchDialog = true },
-                                isFavorite = viewModel.isFavoriteCity(weather.location),
+                                isFavorite = isFav,
                                 onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) }
                             )
                         }

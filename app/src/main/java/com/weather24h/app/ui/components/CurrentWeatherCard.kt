@@ -1,5 +1,7 @@
 package com.weather24h.app.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,10 +17,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -94,16 +98,23 @@ fun CurrentWeatherCard(
 
                 Spacer(modifier = Modifier.width(4.dp))
 
-                // Nút Đánh dấu yêu thích ⭐
+                // Nút Đánh dấu yêu thích ⭐ (Hiệu ứng chạm nhạy phản hồi tức thì)
+                val starScale by animateFloatAsState(
+                    targetValue = if (isFavorite) 1.2f else 1.0f,
+                    animationSpec = spring(dampingRatio = 0.45f, stiffness = 500f),
+                    label = "StarAnim"
+                )
                 IconButton(
                     onClick = onToggleFavorite,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(34.dp)
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                         contentDescription = "Yêu thích",
-                        tint = if (isFavorite) Color(0xFFFFD166) else textColor.copy(alpha = 0.6f),
-                        modifier = Modifier.size(22.dp)
+                        tint = if (isFavorite) Color(0xFFFFD166) else textColor.copy(alpha = 0.65f),
+                        modifier = Modifier
+                            .size(23.dp)
+                            .graphicsLayer(scaleX = starScale, scaleY = starScale)
                     )
                 }
             }
@@ -223,25 +234,40 @@ fun CurrentWeatherCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // High / Low & Feels like
+            // High / Low & Feels like (Ghi rõ ràng: Cảm giác thật: , Cao: , Thấp: )
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Cảm giác ${weather.current.feelsLike.roundToInt()}°C",
+                    text = "Cảm giác thật: ${weather.current.feelsLike.roundToInt()}°C",
                     color = subtextColor,
-                    fontSize = 14.sp
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = "•",
-                    color = subtextColor.copy(alpha = 0.5f),
-                    fontSize = 14.sp
+                    color = subtextColor.copy(alpha = 0.4f),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 6.dp)
                 )
                 Text(
-                    text = "C:${weather.maxTemp24h.roundToInt()}° T:${weather.minTemp24h.roundToInt()}°",
+                    text = "Cao: ${weather.maxTemp24h.roundToInt()}°C",
                     color = subtextColor,
-                    fontSize = 14.sp
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "•",
+                    color = subtextColor.copy(alpha = 0.4f),
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 6.dp)
+                )
+                Text(
+                    text = "Thấp: ${weather.minTemp24h.roundToInt()}°C",
+                    color = subtextColor,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }

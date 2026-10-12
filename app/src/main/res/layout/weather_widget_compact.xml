@@ -19,25 +19,25 @@
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:padding="10dp">
 
         <!-- Left: Weather Icon & Temp -->
         <TextView
             android:id="@+id/compact_widget_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="10dp"
+            android:layout_marginEnd="8dp"
             android:text="☀️"
-            android:textSize="32sp" />
+            android:textSize="28sp" />
 
         <TextView
             android:id="@+id/compact_widget_temp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
+            android:layout_marginEnd="10dp"
             android:text="28°"
             android:textColor="#FFFFFF"
-            android:textSize="36sp"
+            android:textSize="32sp"
             android:textStyle="bold" />
 
         <!-- Right: City & Details -->

@@ -127,28 +127,35 @@ class WeatherRepository(
     // ==========================================
     // DANH SÁCH THÀNH PHỐ YÊU THÍCH (FAVORITES)
     // ==========================================
+    @Volatile
+    private var cachedFavorites: MutableList<CityLocation>? = null
+
     fun getFavoriteCities(): List<CityLocation> {
+        cachedFavorites?.let { return ArrayList(it) }
         val json = prefs.getString("favorite_cities_json", null)
-        if (json.isNullOrEmpty()) {
-            // Mặc định cung cấp sẵn Hà Nội, Đà Nẵng, TP.HCM
+        val list = if (json.isNullOrEmpty()) {
             val initial = listOf(
                 CityLocation.DEFAULT_LOCATION,
                 CityLocation(name = "Đà Nẵng", country = "Việt Nam", latitude = 16.0544, longitude = 108.2022),
                 CityLocation(name = "TP. Hồ Chí Minh", country = "Việt Nam", latitude = 10.8231, longitude = 106.6297)
             )
             saveFavoriteCities(initial)
-            return initial
+            initial
+        } else {
+            try {
+                val type = object : TypeToken<List<CityLocation>>() {}.type
+                gson.fromJson<List<CityLocation>>(json, type) ?: emptyList()
+            } catch (_: Exception) {
+                emptyList()
+            }
         }
-        return try {
-            val type = object : TypeToken<List<CityLocation>>() {}.type
-            gson.fromJson(json, type) ?: emptyList()
-        } catch (_: Exception) {
-            emptyList()
-        }
+        val mutable = list.toMutableList()
+        cachedFavorites = mutable
+        return ArrayList(mutable)
     }
 
     fun toggleFavoriteCity(city: CityLocation): Boolean {
-        val current = getFavoriteCities().toMutableList()
+        val current = (cachedFavorites ?: getFavoriteCities().toMutableList()).toMutableList()
         val existingIndex = current.indexOfFirst { it.name.equals(city.name, ignoreCase = true) }
         val isNowFavorite = if (existingIndex >= 0) {
             current.removeAt(existingIndex)
@@ -157,15 +164,18 @@ class WeatherRepository(
             current.add(city.copy(isCurrentLocation = false))
             true
         }
+        cachedFavorites = current
         saveFavoriteCities(current)
         return isNowFavorite
     }
 
     fun isFavoriteCity(city: CityLocation): Boolean {
-        return getFavoriteCities().any { it.name.equals(city.name, ignoreCase = true) }
+        val list = cachedFavorites ?: getFavoriteCities()
+        return list.any { it.name.equals(city.name, ignoreCase = true) }
     }
 
     private fun saveFavoriteCities(list: List<CityLocation>) {
+        cachedFavorites = ArrayList(list)
         val json = gson.toJson(list)
         prefs.edit().putString("favorite_cities_json", json).apply()
     }

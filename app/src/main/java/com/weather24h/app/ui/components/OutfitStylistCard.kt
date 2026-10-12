@@ -102,7 +102,7 @@ fun OutfitStylistCard(
                     )
                     Spacer(modifier = Modifier.width(5.dp))
                     Text(
-                        text = if (outfit.isAIGenerated) "GEMINI AI STYLIST" else "SMART STYLIST",
+                        text = "AI GỢI Ý STYLIST",
                         color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -447,7 +447,7 @@ fun OutfitStylistSkeletonCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "GEMINI AI ĐANG PHÂN TÍCH...",
+                        text = "AI GỢI Ý STYLIST ĐANG PHÂN TÍCH...",
                         color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,

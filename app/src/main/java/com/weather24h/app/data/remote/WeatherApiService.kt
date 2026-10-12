@@ -30,8 +30,8 @@ class WeatherApiService {
                     "latitude=${location.latitude}&" +
                     "longitude=${location.longitude}&" +
                     "current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&" +
-                    "hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,is_day&" +
-                    "daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max&" +
+                    "hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,is_day&" +
+                    "daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max,precipitation_sum&" +
                     "timezone=auto&" +
                     "models=${model.apiValue}"
 
@@ -236,13 +236,32 @@ class WeatherApiService {
         )
 
         // Parse Hourly 24h chuẩn xác theo giờ hiện tại
-        val hourlyTimes = hourlyObj.getAsJsonArray("time")
-        val hourlyTemps = hourlyObj.getAsJsonArray("temperature_2m")
-        val hourlyCodes = hourlyObj.getAsJsonArray("weather_code")
-        val hourlyRains = hourlyObj.getAsJsonArray("precipitation_probability")
-        val hourlyHumids = hourlyObj.getAsJsonArray("relative_humidity_2m")
-        val hourlyWinds = hourlyObj.getAsJsonArray("wind_speed_10m")
-        val hourlyIsDays = hourlyObj.getAsJsonArray("is_day")
+        val hourlyTimes = hourlyObj?.getAsJsonArray("time") ?: com.google.gson.JsonArray()
+        val hourlyTemps = hourlyObj?.getAsJsonArray("temperature_2m")
+        val hourlyCodes = hourlyObj?.getAsJsonArray("weather_code")
+        val hourlyRains = hourlyObj?.getAsJsonArray("precipitation_probability")
+        val hourlyPrecips = hourlyObj?.getAsJsonArray("precipitation")
+        val hourlyHumids = hourlyObj?.getAsJsonArray("relative_humidity_2m")
+        val hourlyWinds = hourlyObj?.getAsJsonArray("wind_speed_10m")
+        val hourlyIsDays = hourlyObj?.getAsJsonArray("is_day")
+
+        val getHourlyRainProb = { idx: Int ->
+            val prob = if (hourlyRains != null && idx < hourlyRains.size() && !hourlyRains.get(idx).isJsonNull) {
+                hourlyRains.get(idx).asInt
+            } else {
+                -1
+            }
+            if (prob >= 0) {
+                prob
+            } else {
+                val p = if (hourlyPrecips != null && idx < hourlyPrecips.size() && !hourlyPrecips.get(idx).isJsonNull) {
+                    hourlyPrecips.get(idx).asDouble
+                } else {
+                    0.0
+                }
+                if (p >= 1.0) 80 else if (p >= 0.1) 50 else 0
+            }
+        }
 
         // Tìm vị trí giờ hiện tại trong mảng Open-Meteo
         val now = LocalDateTime.now()
@@ -286,37 +305,52 @@ class WeatherApiService {
                 hourNum in 6..18
             }
 
+            val rainProb = getHourlyRainProb(i)
             hourlyList.add(
                 HourlyForecast(
                     timeString = tStr,
                     hourLabel = if (isFirstHour) "Hiện tại" else rawHour,
-                    temperature = if (isFirstHour) current.temperature else hourlyTemps.get(i).asDouble,
-                    weatherCode = if (isFirstHour) current.weatherCode else hourlyCodes.get(i).asInt,
-                    precipitationProbability = hourlyRains.get(i).asInt,
-                    humidity = hourlyHumids.get(i).asInt,
-                    windSpeed = hourlyWinds.get(i).asDouble,
+                    temperature = if (isFirstHour) current.temperature else (hourlyTemps?.get(i)?.asDouble ?: current.temperature),
+                    weatherCode = if (isFirstHour) current.weatherCode else (hourlyCodes?.get(i)?.asInt ?: current.weatherCode),
+                    precipitationProbability = rainProb,
+                    humidity = hourlyHumids?.get(i)?.asInt ?: current.humidity,
+                    windSpeed = hourlyWinds?.get(i)?.asDouble ?: current.windSpeed,
                     isDay = isDayHour
                 )
             )
         }
 
         // Parse Daily 7-day
-        val dailyTimes = dailyObj.getAsJsonArray("time")
-        val dailyCodes = dailyObj.getAsJsonArray("weather_code")
-        val dailyMaxs = dailyObj.getAsJsonArray("temperature_2m_max")
-        val dailyMins = dailyObj.getAsJsonArray("temperature_2m_min")
-        val dailySunrises = dailyObj.getAsJsonArray("sunrise")
-        val dailySunsets = dailyObj.getAsJsonArray("sunset")
-        val dailyUvs = dailyObj.getAsJsonArray("uv_index_max")
-        val dailyRains = dailyObj.getAsJsonArray("precipitation_probability_max")
+        val dailyTimes = dailyObj?.getAsJsonArray("time") ?: com.google.gson.JsonArray()
+        val dailyCodes = dailyObj?.getAsJsonArray("weather_code")
+        val dailyMaxs = dailyObj?.getAsJsonArray("temperature_2m_max")
+        val dailyMins = dailyObj?.getAsJsonArray("temperature_2m_min")
+        val dailySunrises = dailyObj?.getAsJsonArray("sunrise")
+        val dailySunsets = dailyObj?.getAsJsonArray("sunset")
+        val dailyUvs = dailyObj?.getAsJsonArray("uv_index_max")
+        val dailyRains = dailyObj?.getAsJsonArray("precipitation_probability_max")
+        val dailyPrecipSums = dailyObj?.getAsJsonArray("precipitation_sum")
+
+        val getDailyRainProb = { idx: Int ->
+            if (dailyRains != null && idx < dailyRains.size() && !dailyRains.get(idx).isJsonNull) {
+                dailyRains.get(idx).asInt
+            } else {
+                val pSum = if (dailyPrecipSums != null && idx < dailyPrecipSums.size() && !dailyPrecipSums.get(idx).isJsonNull) {
+                    dailyPrecipSums.get(idx).asDouble
+                } else {
+                    0.0
+                }
+                if (pSum >= 2.0) 85 else if (pSum >= 0.5) 50 else if (pSum > 0.0) 25 else 0
+            }
+        }
 
         val dailyList = mutableListOf<DailyForecast>()
         val dCount = minOf(7, dailyTimes.size())
         for (i in 0 until dCount) {
             val dateStr = dailyTimes.get(i).asString
             val dayOfWeek = if (i == 0) "Hôm nay" else parseDayOfWeek(dateStr)
-            val sunriseStr = dailySunrises.get(i).asString.substringAfter("T")
-            val sunsetStr = dailySunsets.get(i).asString.substringAfter("T")
+            val sunriseStr = dailySunrises?.get(i)?.asString?.substringAfter("T") ?: "06:00"
+            val sunsetStr = dailySunsets?.get(i)?.asString?.substringAfter("T") ?: "18:00"
 
             // Trích xuất dự báo nhiệt độ và thời tiết từng giờ của riêng ngày đó (24 giờ)
             val dayHourly = mutableListOf<HourlyForecast>()
@@ -335,28 +369,29 @@ class WeatherApiService {
                         HourlyForecast(
                             timeString = tStr,
                             hourLabel = rawHour,
-                            temperature = hourlyTemps.get(j).asDouble,
-                            weatherCode = hourlyCodes.get(j).asInt,
-                            precipitationProbability = hourlyRains.get(j).asInt,
-                            humidity = hourlyHumids.get(j).asInt,
-                            windSpeed = hourlyWinds.get(j).asDouble,
+                            temperature = hourlyTemps?.get(j)?.asDouble ?: 25.0,
+                            weatherCode = hourlyCodes?.get(j)?.asInt ?: 1,
+                            precipitationProbability = getHourlyRainProb(j),
+                            humidity = hourlyHumids?.get(j)?.asInt ?: 70,
+                            windSpeed = hourlyWinds?.get(j)?.asDouble ?: 10.0,
                             isDay = isDayHour
                         )
                     )
                 }
             }
 
+            val dailyRainProb = getDailyRainProb(i)
             dailyList.add(
                 DailyForecast(
                     dateString = dateStr,
                     dayOfWeek = dayOfWeek,
-                    maxTemp = dailyMaxs.get(i).asDouble,
-                    minTemp = dailyMins.get(i).asDouble,
-                    weatherCode = dailyCodes.get(i).asInt,
-                    precipitationProbability = dailyRains.get(i).asInt,
+                    maxTemp = dailyMaxs?.get(i)?.asDouble ?: 30.0,
+                    minTemp = dailyMins?.get(i)?.asDouble ?: 22.0,
+                    weatherCode = dailyCodes?.get(i)?.asInt ?: 1,
+                    precipitationProbability = dailyRainProb,
                     sunrise = sunriseStr,
                     sunset = sunsetStr,
-                    uvIndexMax = dailyUvs.get(i).asDouble,
+                    uvIndexMax = dailyUvs?.get(i)?.asDouble ?: 5.0,
                     hourly24h = dayHourly
                 )
             )

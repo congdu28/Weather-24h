@@ -115,7 +115,7 @@ fun HourlyForecastSection(
 
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            val condition = WeatherCondition.fromWmoCode(item.weatherCode)
+                            val condition = WeatherCondition.fromWmoCode(item.weatherCode, item.precipitationProbability, item.isDay)
                             val icon = WeatherCondition.getWeatherIcon(condition.type, item.isDay)
                             val iconTint = WeatherCondition.getWeatherIconTint(condition.type, item.isDay)
 
