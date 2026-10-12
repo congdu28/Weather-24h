@@ -100,6 +100,16 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _widgetOpacity = MutableStateFlow(repository.getWidgetOpacity())
     val widgetOpacity: StateFlow<Float> = _widgetOpacity.asStateFlow()
 
+    // Cài đặt Tự động làm mới Widget (1h/lần)
+    private val _isWidgetAutoRefresh = MutableStateFlow(repository.isWidgetAutoRefreshEnabled())
+    val isWidgetAutoRefresh: StateFlow<Boolean> = _isWidgetAutoRefresh.asStateFlow()
+
+    fun setWidgetAutoRefresh(enabled: Boolean) {
+        _isWidgetAutoRefresh.value = enabled
+        repository.setWidgetAutoRefreshEnabled(enabled)
+        PeriodicWeatherWorker.schedule(getApplication(), _periodicNotifHours.value)
+    }
+
     // Cài đặt mô hình dự báo thời tiết (ECMWF, GFS, ICON, JMA, v.v.)
     private val _forecastModel = MutableStateFlow(repository.getForecastModel())
     val forecastModel: StateFlow<com.weather24h.app.data.model.WeatherForecastModel> = _forecastModel.asStateFlow()
@@ -153,7 +163,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         repository.setAmbientGlowIntensity(clamped)
     }
 
-    private var currentCity: CityLocation = repository.getDefaultCity()
+    private var currentCity: CityLocation = repository.getLastActiveCity()
     private var autoRefreshJob: Job? = null
     private var loadWeatherJob: Job? = null
     private var loadOutfitJob: Job? = null
@@ -163,10 +173,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         // Khởi tạo các notification channel
         WeatherNotificationHelper.initChannels(application)
 
-        // Lên lịch thông báo định kỳ (Mặc định 2h/lần)
+        // Lên lịch đồng bộ định kỳ Widget (1h/lần) & Thông báo (nếu bật)
         PeriodicWeatherWorker.schedule(application, _periodicNotifHours.value)
 
-        // Load thành phố mặc định ban đầu
+        // Load thành phố mặc định/gần nhất ban đầu
         loadWeather(currentCity)
         startAutoRefreshTimer(_autoRefreshMinutes.value)
     }
@@ -181,6 +191,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         loadOutfitJob?.cancel()
 
         currentCity = city
+        repository.setLastActiveCity(city)
 
         loadWeatherJob = viewModelScope.launch {
             _uiState.value = WeatherUiState.Loading
@@ -406,6 +417,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                     isCurrentLocation = true
                 )
                 currentCity = provisionalCity
+                repository.setLastActiveCity(provisionalCity)
 
                 // Tải song song thời tiết & phân giải tên địa điểm để giảm tối đa thời gian chờ
                 val weatherDeferred = async {
@@ -432,6 +444,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 if (weather != null) {
                     val realCity = provisionalCity.copy(name = address.first, country = address.second)
                     currentCity = realCity
+                    repository.setLastActiveCity(realCity)
                     val finalWeather = weather.copy(location = realCity)
 
                     val currentState = _uiState.value

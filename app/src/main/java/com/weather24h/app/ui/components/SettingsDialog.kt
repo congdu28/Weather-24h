@@ -77,6 +77,7 @@ fun SettingsDialog(
     cardOpacity: Float = 0.80f,
     widgetThemeMode: com.weather24h.app.ui.theme.AppThemeMode = com.weather24h.app.ui.theme.AppThemeMode.SYSTEM,
     widgetOpacity: Float = 0.85f,
+    isWidgetAutoRefresh: Boolean = true,
     forecastModel: WeatherForecastModel = WeatherForecastModel.BEST_MATCH,
     favoriteCities: List<CityLocation>,
     onDismiss: () -> Unit,
@@ -87,6 +88,7 @@ fun SettingsDialog(
     onSetCardOpacity: (Float) -> Unit = {},
     onSelectWidgetThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit = {},
     onSetWidgetOpacity: (Float) -> Unit = {},
+    onSetWidgetAutoRefresh: (Boolean) -> Unit = {},
     onSelectForecastModel: (WeatherForecastModel) -> Unit = {},
     onSelectPeriodicNotifHours: (Int) -> Unit,
     onSendCurrentWeatherNotif: () -> Unit,
@@ -300,7 +302,7 @@ fun SettingsDialog(
                                         icon = Icons.Default.Widgets,
                                         iconTint = Color(0xFFF472B6),
                                         title = "Tiện ích Widget",
-                                        subtitle = "Theme: $widgetThemeLabel • Độ mờ nền: ${(widgetOpacity * 100).toInt()}% • 6 khung giờ",
+                                        subtitle = "Theme: $widgetThemeLabel • Nền: ${(widgetOpacity * 100).toInt()}% • Tự động: ${if (isWidgetAutoRefresh) "1h/lần" else "Tắt"}",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.OFFLINE_WIDGET }
@@ -1373,6 +1375,77 @@ fun SettingsDialog(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
                                                             .padding(vertical = 6.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        HorizontalDivider(color = chipBorder.copy(alpha = 0.5f), thickness = 0.8.dp)
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        // C. Tự động làm mới Widget ngầm 1h/lần
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "TỰ ĐỘNG LÀM MỚI (1H/LẦN)",
+                                                    color = contentColor,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Spacer(modifier = Modifier.height(2.dp))
+                                                Text(
+                                                    text = "Tự động chạy ngầm đồng bộ thời tiết mới nhất lên Widget mỗi 1 giờ ngay cả khi app đang đóng.",
+                                                    color = subtextColor,
+                                                    fontSize = 11.5.sp,
+                                                    lineHeight = 16.sp
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Switch(
+                                                checked = isWidgetAutoRefresh,
+                                                onCheckedChange = onSetWidgetAutoRefresh,
+                                                colors = SwitchDefaults.colors(
+                                                    checkedThumbColor = Color.White,
+                                                    checkedTrackColor = Color(0xFFF472B6)
+                                                )
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        // D. Nút làm mới trực tiếp trên Widget
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = chipBg,
+                                            border = BorderStroke(1.dp, chipBorder)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(10.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "🔄",
+                                                    fontSize = 16.sp,
+                                                    modifier = Modifier.padding(end = 8.dp)
+                                                )
+                                                Column {
+                                                    Text(
+                                                        text = "Làm mới trực tiếp trên Widget",
+                                                        color = contentColor,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                    Text(
+                                                        text = "Nhấn vào icon 🔄 trên góc phải Widget ngoài màn hình chính để cập nhật tức thì.",
+                                                        color = subtextColor,
+                                                        fontSize = 11.sp
                                                     )
                                                 }
                                             }

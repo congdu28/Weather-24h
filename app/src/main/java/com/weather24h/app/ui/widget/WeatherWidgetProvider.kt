@@ -8,15 +8,31 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.widget.RemoteViews
+import android.widget.Toast
 import com.google.gson.Gson
 import com.weather24h.app.MainActivity
 import com.weather24h.app.R
 import com.weather24h.app.data.model.WeatherCondition
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.model.WeatherType
+import com.weather24h.app.data.remote.GeminiStylistService
+import com.weather24h.app.data.remote.WeatherApiService
+import com.weather24h.app.data.repository.WeatherRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 
 class WeatherWidgetProvider : AppWidgetProvider() {
+
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_REFRESH_WIDGET) {
+            handleManualRefresh(context)
+            return
+        }
+        super.onReceive(context, intent)
+    }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         val weather = getSavedWeather(context)
@@ -36,7 +52,68 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         updateWidget(context, appWidgetManager, appWidgetId, weather)
     }
 
+    private fun handleManualRefresh(context: Context) {
+        val appContext = context.applicationContext
+        val appWidgetManager = AppWidgetManager.getInstance(appContext)
+
+        // 1. Phản hồi thị giác tức thì trên Widget: hiển thị "Đang làm mới..."
+        try {
+            val detailedViews = RemoteViews(appContext.packageName, R.layout.weather_widget)
+            detailedViews.setTextViewText(R.id.widget_updated, "Đang làm mới...")
+            val detailedComp = ComponentName(appContext, WeatherWidgetProvider::class.java)
+            val detailedIds = appWidgetManager.getAppWidgetIds(detailedComp)
+            if (detailedIds.isNotEmpty()) {
+                appWidgetManager.partiallyUpdateAppWidget(detailedIds, detailedViews)
+            }
+
+            val compactViews = RemoteViews(appContext.packageName, R.layout.weather_widget_compact)
+            compactViews.setTextViewText(R.id.compact_widget_desc, "Đang làm mới dữ liệu...")
+            val compactComp = ComponentName(appContext, CompactWeatherWidgetProvider::class.java)
+            val compactIds = appWidgetManager.getAppWidgetIds(compactComp)
+            if (compactIds.isNotEmpty()) {
+                appWidgetManager.partiallyUpdateAppWidget(compactIds, compactViews)
+            }
+        } catch (e: Exception) {}
+
+        // 2. Chạy ngầm bằng Coroutine với BroadcastReceiver.goAsync()
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val repository = WeatherRepository(
+                    context = appContext,
+                    apiService = WeatherApiService(),
+                    stylistService = GeminiStylistService(appContext)
+                )
+                val city = repository.getLastActiveCity()
+                val fresh = repository.getWeatherData(city)
+
+                withContext(Dispatchers.Main) {
+                    updateAllWidgets(appContext, fresh)
+                    Toast.makeText(
+                        appContext,
+                        "Đã cập nhật: ${fresh.location.name} (${fresh.current.temperature.roundToInt()}°C)",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    // Phục hồi lại dữ liệu đã lưu
+                    updateAllWidgets(appContext)
+                    Toast.makeText(
+                        appContext,
+                        "Không thể kết nối mạng để làm mới thời tiết",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } finally {
+                pendingResult.finish()
+            }
+        }
+    }
+
     companion object {
+        const val ACTION_REFRESH_WIDGET = "com.weather24h.app.ACTION_REFRESH_WIDGET"
+
         fun updateAllWidgets(context: Context, weather: WeatherData? = null, aiTip: String? = null) {
             val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
 
@@ -88,6 +165,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val colorDim = if (isDark) 0xFF94A3B8.toInt() else 0xFF64748B.toInt()
                 val colorAiTip = if (isDark) 0xFFF0ABFC.toInt() else 0xFF7E22CE.toInt()
                 val chipBgRes = if (isDark) R.drawable.widget_hour_chip_dark else R.drawable.widget_hour_chip_light
+                val btnRefreshBgRes = if (isDark) R.drawable.widget_refresh_btn_bg_dark else R.drawable.widget_refresh_btn_bg_light
 
                 // Cập nhật màu sắc cho các view chính
                 views.setTextColor(R.id.widget_city_name, colorPrimary)
@@ -97,7 +175,23 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextColor(R.id.widget_ai_tip, colorAiTip)
                 views.setTextColor(R.id.widget_updated, colorDim)
 
-                // Click vào widget mở ứng dụng
+                // Nút bấm Làm mới trực tiếp trên Widget
+                views.setInt(R.id.widget_btn_refresh, "setBackgroundResource", btnRefreshBgRes)
+                views.setInt(R.id.widget_btn_refresh, "setColorFilter", colorAccent)
+
+                val refreshIntent = Intent(context, WeatherWidgetProvider::class.java).apply {
+                    action = ACTION_REFRESH_WIDGET
+                }
+                val refreshPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    2001,
+                    refreshIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_btn_refresh, refreshPendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_updated, refreshPendingIntent)
+
+                // Click vào toàn bộ khối widget mở ứng dụng
                 val intent = Intent(context, MainActivity::class.java)
                 val pendingIntent = PendingIntent.getActivity(
                     context,
@@ -175,7 +269,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                         R.id.widget_range,
                         "Cao: ${weather.maxTemp24h.roundToInt()}° • Thấp: ${weather.minTemp24h.roundToInt()}°"
                     )
-                    views.setTextViewText(R.id.widget_updated, "Cập nhật ${weather.lastUpdated}")
+                    views.setTextViewText(R.id.widget_updated, "Cập nhật ${weather.lastUpdated} 🔄")
 
                     // Cập nhật 6 mốc giờ tới
                     val hourlyList = weather.hourly24h.take(6)
@@ -199,6 +293,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(R.id.widget_weather_desc, "Chạm để cập nhật thời tiết")
                     views.setTextViewText(R.id.widget_range, "Dự báo thời tiết 24h & 7 ngày")
                     views.setTextViewText(R.id.widget_ai_tip, "👔 AI Stylist sẵn sàng")
+                    views.setTextViewText(R.id.widget_updated, "Chạm để cập nhật 🔄")
                 }
 
                 appWidgetManager.updateAppWidget(widgetId, views)

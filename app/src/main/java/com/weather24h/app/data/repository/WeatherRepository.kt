@@ -124,6 +124,24 @@ class WeatherRepository(
         prefs.edit().putString("default_city_json", json).apply()
     }
 
+    fun getLastActiveCity(): CityLocation {
+        val json = prefs.getString("last_active_city_json", null)
+        return if (!json.isNullOrEmpty()) {
+            try {
+                gson.fromJson(json, CityLocation::class.java)
+            } catch (e: Exception) {
+                getDefaultCity()
+            }
+        } else {
+            getDefaultCity()
+        }
+    }
+
+    fun setLastActiveCity(city: CityLocation) {
+        val json = gson.toJson(city)
+        prefs.edit().putString("last_active_city_json", json).apply()
+    }
+
     // ==========================================
     // DANH SÁCH THÀNH PHỐ YÊU THÍCH (FAVORITES)
     // ==========================================
@@ -294,6 +312,14 @@ class WeatherRepository(
 
     fun setWidgetOpacity(opacity: Float) {
         prefs.edit().putFloat("widget_bg_opacity", opacity.coerceIn(0.0f, 1.0f)).apply()
+    }
+
+    fun isWidgetAutoRefreshEnabled(): Boolean {
+        return prefs.getBoolean("widget_auto_refresh_enabled", true)
+    }
+
+    fun setWidgetAutoRefreshEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("widget_auto_refresh_enabled", enabled).apply()
     }
 
     // ==========================================

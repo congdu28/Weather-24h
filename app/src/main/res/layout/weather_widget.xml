@@ -84,6 +84,16 @@
                 android:textColor="#FFFFFF"
                 android:textSize="32sp"
                 android:textStyle="bold" />
+
+            <ImageView
+                android:id="@+id/widget_btn_refresh"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/widget_refresh_btn_bg_dark"
+                android:contentDescription="Làm mới thời tiết"
+                android:padding="6dp"
+                android:src="@drawable/ic_refresh" />
         </LinearLayout>
 
         <!-- Hourly Forecast Section (6 Upcoming Hours Timeline) -->

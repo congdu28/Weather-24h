@@ -76,6 +76,22 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextColor(R.id.compact_widget_desc, colorSecondary)
                 views.setTextColor(R.id.compact_widget_sub, colorAccent)
 
+                // Nút bấm Làm mới trực tiếp trên Widget Tối giản
+                val btnRefreshBgRes = if (isDark) R.drawable.widget_refresh_btn_bg_dark else R.drawable.widget_refresh_btn_bg_light
+                views.setInt(R.id.compact_widget_btn_refresh, "setBackgroundResource", btnRefreshBgRes)
+                views.setInt(R.id.compact_widget_btn_refresh, "setColorFilter", colorAccent)
+
+                val refreshIntent = Intent(context, WeatherWidgetProvider::class.java).apply {
+                    action = WeatherWidgetProvider.ACTION_REFRESH_WIDGET
+                }
+                val refreshPendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    2002,
+                    refreshIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.compact_widget_btn_refresh, refreshPendingIntent)
+
                 val intent = Intent(context, MainActivity::class.java)
                 val pendingIntent = PendingIntent.getActivity(
                     context,
