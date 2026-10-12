@@ -67,16 +67,20 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val themeMode by viewModel.themeMode.collectAsState()
-            Weather24hTheme(themeMode = themeMode) {
+            val cardOpacity by viewModel.cardOpacity.collectAsState()
+            Weather24hTheme(
+                themeMode = themeMode,
+                cardOpacity = cardOpacity
+            ) {
                 WeatherScreen(
                     viewModel = viewModel,
-                    onRequestGps = { checkLocationPermissions() }
+                    onRequestGps = { isPullRefresh -> checkLocationPermissions(isPullRefresh) }
                 )
             }
         }
     }
 
-    private fun checkLocationPermissions() {
+    private fun checkLocationPermissions(isPullRefresh: Boolean = false) {
         val hasFine = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -88,7 +92,7 @@ class MainActivity : ComponentActivity() {
         ) == PackageManager.PERMISSION_GRANTED
 
         if (hasFine || hasCoarse) {
-            fetchGpsLocation()
+            fetchGpsLocation(isPullRefresh)
         } else {
             locationPermissionLauncher.launch(
                 arrayOf(
@@ -99,19 +103,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun fetchGpsLocation() {
+    private fun fetchGpsLocation(isPullRefresh: Boolean = false) {
         try {
             val fusedClient = LocationServices.getFusedLocationProviderClient(this)
             fusedClient.lastLocation.addOnSuccessListener { location ->
                 if (location != null) {
-                    viewModel.setLocationFromGps(location.latitude, location.longitude)
+                    viewModel.setLocationFromGps(location.latitude, location.longitude, isPullRefresh = isPullRefresh)
                 } else {
                     fusedClient.getCurrentLocation(
                         com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
                         null
                     ).addOnSuccessListener { freshLoc ->
                         if (freshLoc != null) {
-                            viewModel.setLocationFromGps(freshLoc.latitude, freshLoc.longitude)
+                            viewModel.setLocationFromGps(freshLoc.latitude, freshLoc.longitude, isPullRefresh = isPullRefresh)
                         } else {
                             Toast.makeText(this, "Chưa xác định được tọa độ GPS. Vui lòng bật định vị trên máy.", Toast.LENGTH_SHORT).show()
                         }

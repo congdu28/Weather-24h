@@ -234,40 +234,47 @@ fun CurrentWeatherCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // High / Low & Feels like (Ghi rõ ràng: Cảm giác thật: , Cao: , Thấp: )
+            // High / Low & Feels like (Ghi rõ ràng: Cảm giác thật: , Cao: , Thấp: - đảm bảo 1 hàng không bị rớt dòng)
             Row(
                 horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Cảm giác thật: ${weather.current.feelsLike.roundToInt()}°C",
+                    text = "Cảm giác thật: ${weather.current.feelsLike.roundToInt()}°",
                     color = subtextColor,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 Text(
                     text = "•",
                     color = subtextColor.copy(alpha = 0.4f),
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(horizontal = 6.dp)
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
                 Text(
-                    text = "Cao: ${weather.maxTemp24h.roundToInt()}°C",
+                    text = "Cao: ${weather.maxTemp24h.roundToInt()}°",
                     color = subtextColor,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    softWrap = false
                 )
                 Text(
                     text = "•",
                     color = subtextColor.copy(alpha = 0.4f),
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(horizontal = 6.dp)
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
                 Text(
-                    text = "Thấp: ${weather.minTemp24h.roundToInt()}°C",
+                    text = "Thấp: ${weather.minTemp24h.roundToInt()}°",
                     color = subtextColor,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

@@ -102,61 +102,141 @@ class WeatherApiService {
         }
     }
 
-    suspend fun getAddressFromCoordinates(context: android.content.Context, latitude: Double, longitude: Double): Pair<String, String> = withContext(Dispatchers.IO) {
-        // 1. Dùng Geocoder gốc của Android với Locale tiếng Việt
+    suspend fun getAddressFromCoordinates(
+        context: android.content.Context,
+        latitude: Double,
+        longitude: Double,
+        apiKey: String? = null
+    ): Pair<String, String> = withContext(Dispatchers.IO) {
+        // 1. Nếu có Google Maps / Gemini API Key, thử tra cứu Google Maps Geocoding API chính xác tuyệt đối
+        if (!apiKey.isNullOrBlank()) {
+            try {
+                val googleUrl = "https://maps.googleapis.com/maps/api/geocode/json?latlng=$latitude,$longitude&language=vi&key=$apiKey"
+                val request = Request.Builder().url(googleUrl).build()
+                val response = client.newCall(request).execute()
+                val body = response.body?.string()
+                if (body != null) {
+                    val json = gson.fromJson(body, JsonObject::class.java)
+                    val status = json.get("status")?.asString
+                    if (status == "OK") {
+                        val results = json.getAsJsonArray("results")
+                        if (results != null && results.size() > 0) {
+                            val firstResult = results[0].asJsonObject
+                            val components = firstResult.getAsJsonArray("address_components")
+                            var gWard: String? = null
+                            var gDistrict: String? = null
+                            var gProvince: String? = null
+                            var gCountry: String? = null
+
+                            if (components != null) {
+                                for (comp in components) {
+                                    val obj = comp.asJsonObject
+                                    val types = obj.getAsJsonArray("types")?.map { it.asString } ?: emptyList()
+                                    val longName = obj.get("long_name")?.asString ?: ""
+
+                                    if (types.contains("sublocality_level_1") || types.contains("sublocality") || types.contains("neighborhood")) {
+                                        if (gWard == null) gWard = longName
+                                    } else if (types.contains("administrative_area_level_2")) {
+                                        if (gDistrict == null) gDistrict = longName
+                                    } else if (types.contains("administrative_area_level_1")) {
+                                        if (gProvince == null) gProvince = longName
+                                    } else if (types.contains("country")) {
+                                        if (gCountry == null) gCountry = longName
+                                    }
+                                }
+                            }
+
+                            if (!gWard.isNullOrBlank() || !gDistrict.isNullOrBlank() || !gProvince.isNullOrBlank()) {
+                                return@withContext formatHierarchyLocation(gWard, gDistrict, gProvince, gCountry ?: "Việt Nam")
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+
+        // 2. Dùng Geocoder gốc của Android (Google Play Services Geocoder) với Locale tiếng Việt
         try {
             val geocoder = android.location.Geocoder(context, java.util.Locale("vi", "VN"))
             val addresses = geocoder.getFromLocation(latitude, longitude, 1)
             if (!addresses.isNullOrEmpty()) {
                 val addr = addresses[0]
-                var ward = addr.subLocality
-                var district = addr.subAdminArea ?: addr.locality
-                val province = addr.adminArea
+                var ward: String? = addr.subLocality
+                var district: String? = addr.subAdminArea
+                var province: String? = addr.adminArea
 
-                // Nếu Geocoder không tách riêng subLocality, phân tích chuỗi địa chỉ đầy đủ
+                // Phân tích chuỗi địa chỉ đầy đủ (getAddressLine) để bóc tách Phường/Xã -> Quận/Huyện -> Tỉnh
                 val fullLine = addr.getAddressLine(0)
                 if (!fullLine.isNullOrBlank()) {
                     val segments = fullLine.split(",").map { it.trim() }
-                    if (ward.isNullOrBlank()) {
-                        ward = segments.firstOrNull { seg ->
-                            seg.startsWith("Phường", ignoreCase = true) ||
-                            seg.startsWith("Xã", ignoreCase = true) ||
-                            seg.startsWith("Thị trấn", ignoreCase = true) ||
-                            seg.startsWith("P.", ignoreCase = true) ||
-                            seg.startsWith("X.", ignoreCase = true)
+                    for (seg in segments) {
+                        val lower = seg.lowercase()
+                        if (ward == null && (
+                            lower.startsWith("phường") || lower.startsWith("xã") ||
+                            lower.startsWith("thị trấn") || lower.startsWith("p.") ||
+                            lower.startsWith("x.") || lower.startsWith("tt.") ||
+                            lower.contains("phường ") || lower.contains("xã ")
+                        )) {
+                            ward = seg
+                        } else if (district == null && (
+                            lower.startsWith("quận") || lower.startsWith("huyện") ||
+                            lower.startsWith("thị xã") || lower.startsWith("q.") ||
+                            lower.startsWith("h.") || lower.startsWith("tx.") ||
+                            (lower.startsWith("thành phố") && !isCentralCity(seg)) ||
+                            (lower.startsWith("tp.") && !isCentralCity(seg))
+                        )) {
+                            district = seg
+                        } else if (province == null && (
+                            lower.startsWith("tỉnh") || isCentralCity(seg)
+                        )) {
+                            province = seg
                         }
                     }
-                    if (district.isNullOrBlank()) {
-                        district = segments.firstOrNull { seg ->
-                            seg.startsWith("Quận", ignoreCase = true) ||
-                            seg.startsWith("Huyện", ignoreCase = true) ||
-                            seg.startsWith("Thị xã", ignoreCase = true) ||
-                            seg.startsWith("Thành phố", ignoreCase = true) ||
-                            seg.startsWith("Q.", ignoreCase = true) ||
-                            seg.startsWith("H.", ignoreCase = true) ||
-                            seg.startsWith("TP.", ignoreCase = true)
-                        }
-                    }
                 }
 
-                val name = when {
-                    !ward.isNullOrBlank() && !district.isNullOrBlank() -> "$ward, $district"
-                    !ward.isNullOrBlank() && !province.isNullOrBlank() -> "$ward, $province"
-                    !district.isNullOrBlank() && !province.isNullOrBlank() -> "$district, $province"
-                    else -> ward ?: district ?: province ?: "Vị trí của bạn"
+                if (district == null && addr.locality != null && !isCentralCity(addr.locality!!)) {
+                    district = addr.locality
                 }
 
-                val country = if (!province.isNullOrBlank() && !name.contains(province)) {
-                    "$province, Việt Nam"
-                } else {
-                    addr.countryName ?: "Việt Nam"
+                if (!ward.isNullOrBlank() || !district.isNullOrBlank() || !province.isNullOrBlank()) {
+                    return@withContext formatHierarchyLocation(ward, district, province, addr.countryName ?: "Việt Nam")
                 }
-
-                return@withContext Pair(name, country)
             }
         } catch (_: Exception) {}
 
-        // 2. Dự phòng qua REST Reverse Geocoding API BigDataCloud
+        // 3. Dự phòng qua OpenStreetMap Nominatim Reverse Geocoding
+        try {
+            val osmUrl = "https://nominatim.openstreetmap.org/reverse?lat=$latitude&lon=$longitude&format=json&accept-language=vi"
+            val osmRequest = Request.Builder()
+                .url(osmUrl)
+                .header("User-Agent", "Weather24h-App/1.0 (Android; vi-VN)")
+                .build()
+            val osmResponse = client.newCall(osmRequest).execute()
+            val osmBody = osmResponse.body?.string()
+            if (osmBody != null) {
+                val json = gson.fromJson(osmBody, JsonObject::class.java)
+                val addressObj = json.getAsJsonObject("address")
+                if (addressObj != null) {
+                    val osmWard = addressObj.get("suburb")?.asString
+                        ?: addressObj.get("quarter")?.asString
+                        ?: addressObj.get("neighbourhood")?.asString
+                        ?: addressObj.get("village")?.asString
+                    val osmDistrict = addressObj.get("city_district")?.asString
+                        ?: addressObj.get("district")?.asString
+                        ?: addressObj.get("county")?.asString
+                    val osmProvince = addressObj.get("city")?.asString
+                        ?: addressObj.get("state")?.asString
+                        ?: addressObj.get("province")?.asString
+                    val osmCountry = addressObj.get("country")?.asString ?: "Việt Nam"
+
+                    if (!osmWard.isNullOrBlank() || !osmDistrict.isNullOrBlank() || !osmProvince.isNullOrBlank()) {
+                        return@withContext formatHierarchyLocation(osmWard, osmDistrict, osmProvince, osmCountry)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        // 4. Dự phòng qua REST Reverse Geocoding API BigDataCloud
         try {
             val url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$latitude&longitude=$longitude&localityLanguage=vi"
             val request = Request.Builder().url(url).build()
@@ -169,7 +249,6 @@ class WeatherApiService {
                 val principalSubdivision = json.get("principalSubdivision")?.asString ?: ""
                 val countryName = json.get("countryName")?.asString ?: "Việt Nam"
 
-                // Tìm kiếm cấp phường/xã/quận/huyện trong localityInfo
                 var adminWard: String? = null
                 var adminDistrict: String? = null
                 val adminArray = json.getAsJsonObject("localityInfo")?.getAsJsonArray("administrative")
@@ -186,28 +265,64 @@ class WeatherApiService {
                     }
                 }
 
-                val wardOrLocality = adminWard ?: locality
-                val districtOrCity = adminDistrict ?: city
+                val finalWard = adminWard ?: locality.takeIf { it.contains("phường", ignoreCase = true) || it.contains("xã", ignoreCase = true) }
+                val finalDistrict = adminDistrict ?: city.takeIf { !isCentralCity(it) }
 
-                val name = when {
-                    wardOrLocality.isNotEmpty() && districtOrCity.isNotEmpty() && wardOrLocality != districtOrCity -> "$wardOrLocality, $districtOrCity"
-                    wardOrLocality.isNotEmpty() -> wardOrLocality
-                    districtOrCity.isNotEmpty() -> districtOrCity
-                    principalSubdivision.isNotEmpty() -> principalSubdivision
-                    else -> "Vị trí của bạn"
-                }
-
-                val country = if (principalSubdivision.isNotEmpty() && !name.contains(principalSubdivision)) {
-                    "$principalSubdivision, $countryName"
-                } else {
-                    countryName
-                }
-
-                return@withContext Pair(name, country)
+                return@withContext formatHierarchyLocation(finalWard, finalDistrict, principalSubdivision, countryName)
             }
         } catch (_: Exception) {}
 
         Pair("Vị trí của bạn", "GPS")
+    }
+
+    private fun isCentralCity(name: String): Boolean {
+        val lower = name.lowercase()
+        return lower.contains("hà nội") ||
+                lower.contains("hồ chí minh") ||
+                lower.contains("đà nẵng") ||
+                lower.contains("hải phòng") ||
+                lower.contains("cần thơ")
+    }
+
+    private fun formatHierarchyLocation(
+        ward: String?,
+        district: String?,
+        province: String?,
+        country: String = "Việt Nam"
+    ): Pair<String, String> {
+        val cleanWard = ward?.trim()?.takeIf { it.isNotBlank() }
+        val cleanDistrict = district?.trim()?.takeIf { it.isNotBlank() }
+        val cleanProvince = province?.trim()?.takeIf { it.isNotBlank() }
+        val cleanCountry = country.trim().ifBlank { "Việt Nam" }
+
+        // Ưu tiên hiển thị hành chính Việt Nam: Cấp Phường/Xã -> Cấp Quận/Huyện -> Cấp Tỉnh/TP
+        val primaryName = when {
+            cleanWard != null && cleanDistrict != null && !cleanWard.equals(cleanDistrict, ignoreCase = true) -> {
+                "$cleanWard, $cleanDistrict"
+            }
+            cleanWard != null && cleanProvince != null && !cleanWard.equals(cleanProvince, ignoreCase = true) -> {
+                "$cleanWard, $cleanProvince"
+            }
+            cleanDistrict != null && cleanProvince != null && !cleanDistrict.equals(cleanProvince, ignoreCase = true) -> {
+                "$cleanDistrict, $cleanProvince"
+            }
+            cleanWard != null -> cleanWard
+            cleanDistrict != null -> cleanDistrict
+            cleanProvince != null -> cleanProvince
+            else -> "Vị trí của bạn"
+        }
+
+        val secondaryLocation = when {
+            cleanProvince != null && !primaryName.contains(cleanProvince, ignoreCase = true) -> {
+                "$cleanProvince, $cleanCountry"
+            }
+            cleanDistrict != null && !primaryName.contains(cleanDistrict, ignoreCase = true) -> {
+                "$cleanDistrict, $cleanCountry"
+            }
+            else -> cleanCountry
+        }
+
+        return Pair(primaryName, secondaryLocation)
     }
 
     private fun parseWeatherData(

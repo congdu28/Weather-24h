@@ -15,6 +15,7 @@ enum class AppThemeMode(val title: String) {
 }
 
 val LocalIsDarkTheme = staticCompositionLocalOf { true }
+val LocalCardOpacity = staticCompositionLocalOf { 0.80f }
 val LocalCardGlassBg = staticCompositionLocalOf { CardGlassBgDark }
 val LocalCardBorder = staticCompositionLocalOf { CardBorderDark }
 val LocalContentTextColor = staticCompositionLocalOf { Color.White }
@@ -47,6 +48,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun Weather24hTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
+    cardOpacity: Float = 0.80f,
     content: @Composable () -> Unit
 ) {
     val isDark = when (themeMode) {
@@ -56,13 +58,17 @@ fun Weather24hTheme(
     }
 
     val colorScheme = if (isDark) DarkColorScheme else LightColorScheme
-    val cardGlassBg = if (isDark) CardGlassBgDark else CardGlassBgLight
-    val cardBorder = if (isDark) CardBorderDark else CardBorderLight
+    val clampedOpacity = cardOpacity.coerceIn(0.20f, 1.0f)
+    val baseDark = Color(0xFF0F172A)
+    val baseLight = Color.White
+    val cardGlassBg = if (isDark) baseDark.copy(alpha = clampedOpacity) else baseLight.copy(alpha = clampedOpacity)
+    val cardBorder = if (isDark) CardBorderDark.copy(alpha = (clampedOpacity * 0.40f).coerceIn(0.08f, 0.40f)) else CardBorderLight.copy(alpha = (clampedOpacity * 0.30f).coerceIn(0.06f, 0.30f))
     val contentTextColor = if (isDark) Color.White else Color(0xFF0F172A)
     val subtextColor = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569)
 
     CompositionLocalProvider(
         LocalIsDarkTheme provides isDark,
+        LocalCardOpacity provides clampedOpacity,
         LocalCardGlassBg provides cardGlassBg,
         LocalCardBorder provides cardBorder,
         LocalContentTextColor provides contentTextColor,

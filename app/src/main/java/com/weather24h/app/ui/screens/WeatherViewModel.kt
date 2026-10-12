@@ -41,6 +41,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _uiState = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading)
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
 
+    // Trạng thái đang làm mới mượt mà (Pull-to-refresh & Nút cập nhật góc trên)
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private val _searchResults = MutableStateFlow<List<CityLocation>>(emptyList())
     val searchResults: StateFlow<List<CityLocation>> = _searchResults.asStateFlow()
 
@@ -79,6 +83,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _bgDimmingLevel = MutableStateFlow(repository.getBgDimmingLevel())
     val bgDimmingLevel: StateFlow<Float> = _bgDimmingLevel.asStateFlow()
 
+    // Cài đặt độ mờ / trong suốt khối thời tiết màn hình chính (0.20f đến 1.0f)
+    private val _cardOpacity = MutableStateFlow(repository.getCardOpacity())
+    val cardOpacity: StateFlow<Float> = _cardOpacity.asStateFlow()
+
     private val _ambientGlowStyle = MutableStateFlow(repository.getAmbientGlowStyle())
     val ambientGlowStyle: StateFlow<AmbientGlowStyle> = _ambientGlowStyle.asStateFlow()
 
@@ -95,6 +103,14 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     // Cài đặt mô hình dự báo thời tiết (ECMWF, GFS, ICON, JMA, v.v.)
     private val _forecastModel = MutableStateFlow(repository.getForecastModel())
     val forecastModel: StateFlow<com.weather24h.app.data.model.WeatherForecastModel> = _forecastModel.asStateFlow()
+
+    fun isCurrentCityGps(): Boolean = currentCity.isCurrentLocation
+
+    fun setCardOpacity(opacity: Float) {
+        val clamped = opacity.coerceIn(0.20f, 1.0f)
+        _cardOpacity.value = clamped
+        repository.setCardOpacity(clamped)
+    }
 
     fun setThemeMode(mode: com.weather24h.app.ui.theme.AppThemeMode) {
         _themeMode.value = mode
@@ -214,8 +230,36 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun refreshWeather() {
-        loadWeather(currentCity)
+    fun refreshWeather(isPullRefresh: Boolean = false) {
+        if (!isPullRefresh || _uiState.value !is WeatherUiState.Success) {
+            loadWeather(currentCity)
+            return
+        }
+
+        // Tải làm mới ngầm (không reset UI về loading spinner, giữ trải nghiệm mượt mà)
+        loadWeatherJob?.cancel()
+        loadWeatherJob = viewModelScope.launch {
+            _isRefreshing.value = true
+            try {
+                val weather = repository.getWeatherData(currentCity)
+                if (!isActive) return@launch
+
+                val currentState = _uiState.value
+                if (currentState is WeatherUiState.Success) {
+                    _uiState.value = currentState.copy(weather = weather)
+                }
+
+                if (_periodicNotifHours.value > 0) {
+                    WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), weather)
+                }
+
+                loadOutfitForWeather(weather)
+            } catch (_: Exception) {
+                // Giữ lại dữ liệu hiện tại khi cập nhật nền thất bại
+            } finally {
+                _isRefreshing.value = false
+            }
+        }
     }
 
     fun refreshOutfit() {
@@ -340,59 +384,77 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun setLocationFromGps(lat: Double, lon: Double) {
+    fun setLocationFromGps(lat: Double, lon: Double, isPullRefresh: Boolean = false) {
         gpsJob?.cancel()
         loadWeatherJob?.cancel()
         loadOutfitJob?.cancel()
 
         gpsJob = viewModelScope.launch {
-            _uiState.value = WeatherUiState.Loading
-
-            val provisionalCity = CityLocation(
-                name = "Vị trí của bạn",
-                country = "Việt Nam",
-                latitude = lat,
-                longitude = lon,
-                isCurrentLocation = true
-            )
-            currentCity = provisionalCity
-
-            // Tải song song thời tiết & phân giải tên địa điểm để giảm tối đa thời gian chờ
-            val weatherDeferred = async {
-                try {
-                    repository.getWeatherData(provisionalCity)
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
-            val addressDeferred = async {
-                try {
-                    repository.getAddressFromCoordinates(lat, lon)
-                } catch (_: Exception) {
-                    Pair("Vị trí của bạn", "Việt Nam")
-                }
-            }
-
-            val weather = weatherDeferred.await()
-            val address = addressDeferred.await()
-
-            if (!isActive) return@launch
-
-            if (weather != null) {
-                val realCity = provisionalCity.copy(name = address.first, country = address.second)
-                currentCity = realCity
-                val finalWeather = weather.copy(location = realCity)
-
-                _uiState.value = WeatherUiState.Success(
-                    weather = finalWeather,
-                    outfit = null,
-                    isOutfitLoading = true
-                )
-
-                loadOutfitForWeather(finalWeather)
+            val isBackgroundUpdate = isPullRefresh && _uiState.value is WeatherUiState.Success
+            if (isBackgroundUpdate) {
+                _isRefreshing.value = true
             } else {
-                _uiState.value = WeatherUiState.Error("Không thể tải thời tiết tại vị trí GPS này.")
+                _uiState.value = WeatherUiState.Loading
+            }
+
+            try {
+                val provisionalCity = CityLocation(
+                    name = "Vị trí của bạn",
+                    country = "Việt Nam",
+                    latitude = lat,
+                    longitude = lon,
+                    isCurrentLocation = true
+                )
+                currentCity = provisionalCity
+
+                // Tải song song thời tiết & phân giải tên địa điểm để giảm tối đa thời gian chờ
+                val weatherDeferred = async {
+                    try {
+                        repository.getWeatherData(provisionalCity)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+
+                val addressDeferred = async {
+                    try {
+                        repository.getAddressFromCoordinates(lat, lon)
+                    } catch (_: Exception) {
+                        Pair("Vị trí của bạn", "Việt Nam")
+                    }
+                }
+
+                val weather = weatherDeferred.await()
+                val address = addressDeferred.await()
+
+                if (!isActive) return@launch
+
+                if (weather != null) {
+                    val realCity = provisionalCity.copy(name = address.first, country = address.second)
+                    currentCity = realCity
+                    val finalWeather = weather.copy(location = realCity)
+
+                    val currentState = _uiState.value
+                    if (isBackgroundUpdate && currentState is WeatherUiState.Success) {
+                        _uiState.value = currentState.copy(weather = finalWeather)
+                    } else {
+                        _uiState.value = WeatherUiState.Success(
+                            weather = finalWeather,
+                            outfit = null,
+                            isOutfitLoading = true
+                        )
+                    }
+
+                    if (_periodicNotifHours.value > 0) {
+                        WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), finalWeather)
+                    }
+
+                    loadOutfitForWeather(finalWeather)
+                } else if (!isBackgroundUpdate) {
+                    _uiState.value = WeatherUiState.Error("Không thể tải thời tiết tại vị trí GPS này.")
+                }
+            } finally {
+                _isRefreshing.value = false
             }
         }
     }

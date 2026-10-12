@@ -56,7 +56,7 @@ class WeatherRepository(
     }
 
     suspend fun getAddressFromCoordinates(lat: Double, lon: Double): Pair<String, String> {
-        return apiService.getAddressFromCoordinates(context, lat, lon)
+        return apiService.getAddressFromCoordinates(context, lat, lon, apiKey = getGeminiApiKey())
     }
 
     suspend fun getOutfitRecommendation(weather: WeatherData): OutfitRecommendation {
@@ -310,5 +310,17 @@ class WeatherRepository(
 
     fun setForecastModel(model: com.weather24h.app.data.model.WeatherForecastModel) {
         prefs.edit().putString("weather_forecast_model", model.name).apply()
+    }
+
+    // ==========================================
+    // CÀI ĐẶT ĐỘ MỜ KHỐI THỜI TIẾT MÀN HÌNH CHÍNH (CARD OPACITY)
+    // ==========================================
+    fun getCardOpacity(): Float {
+        // Mặc định độ đục các thẻ thời tiết là 0.80f (80%), từ 0.20f (rất mờ/trong suốt) đến 1.0f (đặc hoàn toàn)
+        return prefs.getFloat("card_bg_opacity", 0.80f)
+    }
+
+    fun setCardOpacity(opacity: Float) {
+        prefs.edit().putFloat("card_bg_opacity", opacity.coerceIn(0.20f, 1.0f)).apply()
     }
 }

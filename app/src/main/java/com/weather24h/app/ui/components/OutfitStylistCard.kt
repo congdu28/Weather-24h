@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.OutfitRecommendation
+import com.weather24h.app.ui.theme.LocalCardOpacity
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -39,18 +40,19 @@ fun OutfitStylistCard(
     }
 
     val isDark = LocalIsDarkTheme.current
+    val cardOpacity = LocalCardOpacity.current
     val cardGradient = if (isDark) {
         Brush.linearGradient(
             listOf(
-                Color(0xFF581C87).copy(alpha = 0.50f),
-                Color(0xFF1E1B4B).copy(alpha = 0.70f)
+                Color(0xFF581C87).copy(alpha = (0.50f * (cardOpacity / 0.80f)).coerceIn(0.15f, 0.95f)),
+                Color(0xFF1E1B4B).copy(alpha = (0.70f * (cardOpacity / 0.80f)).coerceIn(0.20f, 0.98f))
             )
         )
     } else {
         Brush.linearGradient(
             listOf(
-                Color(0xFFFAF5FF),
-                Color(0xFFF3E8FF)
+                Color(0xFFFAF5FF).copy(alpha = cardOpacity),
+                Color(0xFFF3E8FF).copy(alpha = cardOpacity)
             )
         )
     }
@@ -396,18 +398,19 @@ fun OutfitStylistSkeletonCard(
         )
     }
 
+    val cardOpacity = LocalCardOpacity.current
     val skeletonBg = if (isDark) {
         Brush.linearGradient(
             listOf(
-                Color(0xFF3B0764).copy(alpha = 0.40f),
-                Color(0xFF1E1B4B).copy(alpha = 0.60f)
+                Color(0xFF3B0764).copy(alpha = (0.40f * (cardOpacity / 0.80f)).coerceIn(0.12f, 0.90f)),
+                Color(0xFF1E1B4B).copy(alpha = (0.60f * (cardOpacity / 0.80f)).coerceIn(0.18f, 0.95f))
             )
         )
     } else {
         Brush.linearGradient(
             listOf(
-                Color(0xFFFAF5FF),
-                Color(0xFFF3E8FF)
+                Color(0xFFFAF5FF).copy(alpha = cardOpacity),
+                Color(0xFFF3E8FF).copy(alpha = cardOpacity)
             )
         )
     }

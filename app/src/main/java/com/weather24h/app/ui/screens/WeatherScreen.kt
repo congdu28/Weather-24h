@@ -3,10 +3,15 @@ package com.weather24h.app.ui.screens
 import android.app.Activity
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -15,11 +20,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.weather24h.app.data.model.WeatherCondition
 import com.weather24h.app.data.model.WeatherType
 import com.weather24h.app.ui.components.*
@@ -28,10 +41,11 @@ import com.weather24h.app.ui.theme.getSkyGradient
 @Composable
 fun WeatherScreen(
     viewModel: WeatherViewModel,
-    onRequestGps: () -> Unit
+    onRequestGps: (Boolean) -> Unit = {}
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
     val autoRefreshMinutes by viewModel.autoRefreshMinutes.collectAsState()
@@ -43,6 +57,7 @@ fun WeatherScreen(
     val isSevereAlerts by viewModel.isSevereAlerts.collectAsState()
     val periodicNotifHours by viewModel.periodicNotifHours.collectAsState()
     val bgDimmingLevel by viewModel.bgDimmingLevel.collectAsState()
+    val cardOpacity by viewModel.cardOpacity.collectAsState()
     val ambientGlowStyle by viewModel.ambientGlowStyle.collectAsState()
     val ambientGlowIntensity by viewModel.ambientGlowIntensity.collectAsState()
     val widgetThemeMode by viewModel.widgetThemeMode.collectAsState()
@@ -135,6 +150,40 @@ fun WeatherScreen(
                 }
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Nút cập nhật thời tiết mới nhất (hiệu ứng xoay tròn mượt mà)
+                    val refreshRotation by animateFloatAsState(
+                        targetValue = if (isRefreshing) 720f else 0f,
+                        animationSpec = if (isRefreshing) {
+                            infiniteRepeatable(
+                                animation = tween(1000, easing = LinearEasing),
+                                repeatMode = RepeatMode.Restart
+                            )
+                        } else {
+                            spring(stiffness = Spring.StiffnessLow)
+                        },
+                        label = "RefreshSpin"
+                    )
+
+                    IconButton(
+                        onClick = {
+                            if (viewModel.isCurrentCityGps()) {
+                                onRequestGps(true)
+                            } else {
+                                viewModel.refreshWeather(isPullRefresh = true)
+                            }
+                        },
+                        enabled = !isRefreshing
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Cập nhật thời tiết mới nhất",
+                            tint = if (isDarkTheme) Color.White else Color(0xFF0F172A),
+                            modifier = Modifier
+                                .size(22.dp)
+                                .graphicsLayer(rotationZ = refreshRotation)
+                        )
+                    }
+
                     IconButton(onClick = { showSearchDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -192,65 +241,174 @@ fun WeatherScreen(
                 is WeatherUiState.Success -> {
                     val weather = state.weather
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // 1. Current Weather Hero Card (With Favorite Star ⭐)
-                        item {
-                            val isFav = remember(favoriteCities, weather.location.name) {
-                                favoriteCities.any { it.name.equals(weather.location.name, ignoreCase = true) }
+                    // Cơ chế Pull-To-Refresh mượt mà và trực quan
+                    var pullOffset by remember { mutableFloatStateOf(0f) }
+                    val density = LocalDensity.current
+                    val pullThreshold = with(density) { 72.dp.toPx() }
+                    val maxPull = with(density) { 120.dp.toPx() }
+
+                    val nestedScrollConnection = remember {
+                        object : NestedScrollConnection {
+                            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                                if (source == NestedScrollSource.Drag && pullOffset > 0f && available.y < 0f) {
+                                    val consumed = available.y.coerceAtLeast(-pullOffset)
+                                    pullOffset += consumed
+                                    return Offset(0f, consumed)
+                                }
+                                return Offset.Zero
                             }
-                            CurrentWeatherCard(
-                                weather = weather,
-                                onLocationClick = { showSearchDialog = true },
-                                isFavorite = isFav,
-                                onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) }
-                            )
-                        }
 
-                        // 2. Hourly 24h Forecast Section
-                        item {
-                            HourlyForecastSection(hourlyList = weather.hourly24h)
-                        }
+                            override fun onPostScroll(
+                                consumed: Offset,
+                                available: Offset,
+                                source: NestedScrollSource
+                            ): Offset {
+                                if (source == NestedScrollSource.Drag && available.y > 0f) {
+                                    pullOffset = (pullOffset + available.y * 0.45f).coerceAtMost(maxPull)
+                                    return Offset(0f, available.y)
+                                }
+                                return Offset.Zero
+                            }
 
-                        // 3. AI Smart Outfit Stylist Card (Renders shimmer skeleton when loading)
-                        item {
-                            OutfitStylistCard(
-                                outfit = state.outfit,
-                                isLoading = state.isOutfitLoading,
-                                onRefresh = { viewModel.refreshOutfit() },
-                                onConfigureApiKey = { showSettingsDialog = true }
-                            )
+                            override suspend fun onPreFling(available: Velocity): Velocity {
+                                if (pullOffset >= pullThreshold && !isRefreshing) {
+                                    if (viewModel.isCurrentCityGps()) {
+                                        onRequestGps(true)
+                                    } else {
+                                        viewModel.refreshWeather(isPullRefresh = true)
+                                    }
+                                }
+                                pullOffset = 0f
+                                return Velocity.Zero
+                            }
                         }
+                    }
 
-                        // 4. 7-Day Forecast Section
-                        item {
-                            DailyForecastSection(dailyList = weather.daily7Days)
-                        }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .nestedScroll(nestedScrollConnection)
+                    ) {
+                        // Floating badge indicator khi kéo hoặc đang cập nhật
+                        val showPullIndicator = pullOffset > 10f || isRefreshing
+                        val pullProgress = (pullOffset / pullThreshold).coerceIn(0f, 1f)
 
-                        // 5. Detailed Weather Metrics Grid
-                        item {
-                            WeatherMetricsGrid(weather = weather)
-                        }
-
-                        // Footer Updated Time
-                        item {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 16.dp),
-                                contentAlignment = Alignment.Center
+                        AnimatedVisibility(
+                            visible = showPullIndicator,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically(),
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .zIndex(10f)
+                                .padding(top = 8.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isDarkTheme) Color(0xFF1E293B).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.95f),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (isDarkTheme) Color.White.copy(alpha = 0.2f) else Color(0xFF0F172A).copy(alpha = 0.15f)
+                                ),
+                                shadowElevation = 6.dp
                             ) {
-                                Text(
-                                    text = if (weather.isOffline)
-                                        "Dữ liệu ngoại tuyến • ${weather.forecastModel.title} • Lưu lúc ${weather.lastUpdated}"
-                                    else
-                                        "Nguồn: ${weather.forecastModel.title} • Cập nhật lúc ${weather.lastUpdated}",
-                                    color = if (isDarkTheme) Color.White.copy(alpha = 0.55f) else Color(0xFF475569),
-                                    fontSize = 12.sp
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                                ) {
+                                    if (isRefreshing) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(15.dp),
+                                            color = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Đang cập nhật thời tiết...",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+                                        )
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowDownward,
+                                            contentDescription = null,
+                                            tint = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                            modifier = Modifier
+                                                .size(15.dp)
+                                                .graphicsLayer(rotationZ = pullProgress * 180f)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = if (pullOffset >= pullThreshold) "Thả tay để cập nhật" else "Vuốt xuống để cập nhật",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // 1. Current Weather Hero Card (With Favorite Star ⭐)
+                            item {
+                                val isFav = remember(favoriteCities, weather.location.name) {
+                                    favoriteCities.any { it.name.equals(weather.location.name, ignoreCase = true) }
+                                }
+                                CurrentWeatherCard(
+                                    weather = weather,
+                                    onLocationClick = { showSearchDialog = true },
+                                    isFavorite = isFav,
+                                    onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) }
                                 )
+                            }
+
+                            // 2. Hourly 24h Forecast Section
+                            item {
+                                HourlyForecastSection(hourlyList = weather.hourly24h)
+                            }
+
+                            // 3. AI Smart Outfit Stylist Card (Renders shimmer skeleton when loading)
+                            item {
+                                OutfitStylistCard(
+                                    outfit = state.outfit,
+                                    isLoading = state.isOutfitLoading,
+                                    onRefresh = { viewModel.refreshOutfit() },
+                                    onConfigureApiKey = { showSettingsDialog = true }
+                                )
+                            }
+
+                            // 4. 7-Day Forecast Section
+                            item {
+                                DailyForecastSection(dailyList = weather.daily7Days)
+                            }
+
+                            // 5. Detailed Weather Metrics Grid
+                            item {
+                                WeatherMetricsGrid(weather = weather)
+                            }
+
+                            // Footer Updated Time
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (weather.isOffline)
+                                            "Dữ liệu ngoại tuyến • ${weather.forecastModel.title} • Lưu lúc ${weather.lastUpdated}"
+                                        else
+                                            "Nguồn: ${weather.forecastModel.title} • Cập nhật lúc ${weather.lastUpdated}",
+                                        color = if (isDarkTheme) Color.White.copy(alpha = 0.55f) else Color(0xFF475569),
+                                        fontSize = 12.sp
+                                    )
+                                }
                             }
                         }
                     }
@@ -269,7 +427,7 @@ fun WeatherScreen(
                     viewModel.loadWeather(city)
                 },
                 onUseGps = {
-                    onRequestGps()
+                    onRequestGps(false)
                 },
                 favoriteCities = favoriteCities,
                 onToggleFavorite = { city ->
@@ -291,6 +449,7 @@ fun WeatherScreen(
                 isSevereAlerts = isSevereAlerts,
                 periodicNotifHours = periodicNotifHours,
                 bgDimmingLevel = bgDimmingLevel,
+                cardOpacity = cardOpacity,
                 ambientGlowStyle = ambientGlowStyle,
                 ambientGlowIntensity = ambientGlowIntensity,
                 widgetThemeMode = widgetThemeMode,
@@ -300,6 +459,7 @@ fun WeatherScreen(
                 onDismiss = { showSettingsDialog = false },
                 onSelectThemeMode = { viewModel.setThemeMode(it) },
                 onSetBgDimmingLevel = { viewModel.setBgDimmingLevel(it) },
+                onSetCardOpacity = { viewModel.setCardOpacity(it) },
                 onSelectAmbientGlowStyle = { viewModel.setAmbientGlowStyle(it) },
                 onSetAmbientGlowIntensity = { viewModel.setAmbientGlowIntensity(it) },
                 onSelectWidgetThemeMode = { viewModel.setWidgetThemeMode(it) },

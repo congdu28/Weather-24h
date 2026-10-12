@@ -74,6 +74,7 @@ fun SettingsDialog(
     bgDimmingLevel: Float,
     ambientGlowStyle: com.weather24h.app.ui.theme.AmbientGlowStyle,
     ambientGlowIntensity: Float,
+    cardOpacity: Float = 0.80f,
     widgetThemeMode: com.weather24h.app.ui.theme.AppThemeMode = com.weather24h.app.ui.theme.AppThemeMode.SYSTEM,
     widgetOpacity: Float = 0.85f,
     forecastModel: WeatherForecastModel = WeatherForecastModel.BEST_MATCH,
@@ -83,6 +84,7 @@ fun SettingsDialog(
     onSetBgDimmingLevel: (Float) -> Unit,
     onSelectAmbientGlowStyle: (com.weather24h.app.ui.theme.AmbientGlowStyle) -> Unit,
     onSetAmbientGlowIntensity: (Float) -> Unit,
+    onSetCardOpacity: (Float) -> Unit = {},
     onSelectWidgetThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit = {},
     onSetWidgetOpacity: (Float) -> Unit = {},
     onSelectForecastModel: (WeatherForecastModel) -> Unit = {},
@@ -240,7 +242,7 @@ fun SettingsDialog(
                                         icon = Icons.Default.Palette,
                                         iconTint = Color(0xFFA855F7),
                                         title = "Giao diện & Theme",
-                                        subtitle = "${currentThemeMode.title} • Ambient: ${ambientGlowStyle.title}",
+                                        subtitle = "${currentThemeMode.title} • Độ mờ khối: ${(cardOpacity * 100).toInt()}% • Ambient: ${ambientGlowStyle.title}",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.THEME }
@@ -487,6 +489,90 @@ fun SettingsDialog(
                                                         text = label,
                                                         color = if (isPresSelected) Color(0xFF38BDF8) else contentColor.copy(alpha = 0.85f),
                                                         fontSize = 11.5.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        textAlign = TextAlign.Center,
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 7.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 2.5. Độ mờ & trong suốt các khối thời tiết màn hình chính
+                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "ĐỘ MỜ KHỐI THỜI TIẾT",
+                                                color = sectionHeaderColor,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.7.sp,
+                                                modifier = Modifier.weight(1f, fill = false),
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                            val opacityPercent = (cardOpacity * 100).toInt()
+                                            Text(
+                                                text = "$opacityPercent%",
+                                                color = Color(0xFF38BDF8),
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Điều chỉnh độ trong suốt của các thẻ thời tiết trên màn hình chính để nhìn xuyên thấu bầu trời.",
+                                            color = subtextColor,
+                                            fontSize = 11.5.sp,
+                                            lineHeight = 16.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Slider(
+                                            value = cardOpacity,
+                                            onValueChange = onSetCardOpacity,
+                                            valueRange = 0.20f..1.0f,
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = Color(0xFF38BDF8),
+                                                activeTrackColor = Color(0xFF38BDF8),
+                                                inactiveTrackColor = if (isDark) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.15f)
+                                            )
+                                        )
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        // 4 nút preset tiện lợi: 40%, 60%, 80%, 100%
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            listOf(
+                                                Pair(0.40f, "40% Mờ"),
+                                                Pair(0.60f, "60%"),
+                                                Pair(0.80f, "80% Chuẩn"),
+                                                Pair(1.00f, "100% Đặc")
+                                            ).forEach { (preset, label) ->
+                                                val isPresSelected = kotlin.math.abs(cardOpacity - preset) < 0.05f
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (isPresSelected) Color(0xFF38BDF8).copy(alpha = 0.22f) else chipBg,
+                                                    border = BorderStroke(1.dp, if (isPresSelected) Color(0xFF38BDF8) else chipBorder),
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clickable { onSetCardOpacity(preset) }
+                                                ) {
+                                                    Text(
+                                                        text = label,
+                                                        color = if (isPresSelected) Color(0xFF38BDF8) else contentColor.copy(alpha = 0.85f),
+                                                        fontSize = 11.sp,
                                                         fontWeight = FontWeight.Medium,
                                                         textAlign = TextAlign.Center,
                                                         modifier = Modifier
