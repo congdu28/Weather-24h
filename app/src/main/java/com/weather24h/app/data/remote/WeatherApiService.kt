@@ -98,6 +98,52 @@ class WeatherApiService {
         }
     }
 
+    suspend fun getAddressFromCoordinates(context: android.content.Context, latitude: Double, longitude: Double): Pair<String, String> = withContext(Dispatchers.IO) {
+        // 1. Dùng Geocoder gốc của Android với Locale tiếng Việt
+        try {
+            val geocoder = android.location.Geocoder(context, java.util.Locale("vi", "VN"))
+            val addresses = geocoder.getFromLocation(latitude, longitude, 1)
+            if (!addresses.isNullOrEmpty()) {
+                val addr = addresses[0]
+                val district = addr.subAdminArea ?: addr.locality ?: addr.subLocality
+                val city = addr.adminArea ?: addr.countryName
+                val name = if (!district.isNullOrBlank() && !city.isNullOrBlank() && district != city) {
+                    "$district, $city"
+                } else {
+                    district ?: city ?: "Vị trí của bạn"
+                }
+                val country = addr.countryName ?: "Việt Nam"
+                return@withContext Pair(name, country)
+            }
+        } catch (_: Exception) {}
+
+        // 2. Dự phòng qua REST Reverse Geocoding API miễn phí chuẩn xác
+        try {
+            val url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=$latitude&longitude=$longitude&localityLanguage=vi"
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            val body = response.body?.string()
+            if (body != null) {
+                val json = gson.fromJson(body, JsonObject::class.java)
+                val city = json.get("city")?.asString ?: json.get("principalSubdivision")?.asString ?: ""
+                val locality = json.get("locality")?.asString ?: ""
+                val country = json.get("countryName")?.asString ?: "Việt Nam"
+                val name = if (locality.isNotEmpty() && city.isNotEmpty() && locality != city) {
+                    "$locality, $city"
+                } else if (city.isNotEmpty()) {
+                    city
+                } else if (locality.isNotEmpty()) {
+                    locality
+                } else {
+                    "Vị trí của bạn"
+                }
+                return@withContext Pair(name, country)
+            }
+        } catch (_: Exception) {}
+
+        Pair("Vị trí của bạn", "GPS")
+    }
+
     private fun parseWeatherData(location: CityLocation, json: JsonObject, aqi: AirQuality?): WeatherData {
         val currentObj = json.getAsJsonObject("current")
         val hourlyObj = json.getAsJsonObject("hourly")

@@ -14,6 +14,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
+import com.weather24h.app.BuildConfig
+
 class GeminiStylistService(context: Context) {
     private val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
     private val client = OkHttpClient.Builder()
@@ -23,12 +25,38 @@ class GeminiStylistService(context: Context) {
     private val gson = Gson()
 
     fun saveApiKey(apiKey: String) {
-        prefs.edit().putString("gemini_api_key", apiKey.trim()).apply()
+        val trimmed = apiKey.trim()
+        if (trimmed.isEmpty()) {
+            clearCustomKey()
+        } else {
+            prefs.edit().putString("gemini_api_key", trimmed).apply()
+        }
+    }
+
+    fun clearCustomKey() {
+        prefs.edit().remove("gemini_api_key").apply()
+    }
+
+    fun getCustomApiKey(): String? {
+        val key = prefs.getString("gemini_api_key", null)?.trim()
+        return if (!key.isNullOrEmpty()) key else null
+    }
+
+    fun getDefaultApiKey(): String? {
+        val key = BuildConfig.DEFAULT_GEMINI_API_KEY.trim()
+        return if (key.isNotEmpty()) key else null
     }
 
     fun getApiKey(): String? {
-        val key = prefs.getString("gemini_api_key", null)
-        return if (!key.isNullOrBlank()) key.trim() else null
+        return getCustomApiKey() ?: getDefaultApiKey()
+    }
+
+    fun isUsingCustomKey(): Boolean {
+        return getCustomApiKey() != null
+    }
+
+    fun hasAnyKey(): Boolean {
+        return getApiKey() != null
     }
 
     suspend fun getOutfitRecommendation(weather: WeatherData): OutfitRecommendation = withContext(Dispatchers.IO) {

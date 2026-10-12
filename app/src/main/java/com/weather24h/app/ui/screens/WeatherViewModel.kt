@@ -9,9 +9,12 @@ import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 sealed interface WeatherUiState {
@@ -26,6 +29,7 @@ sealed interface WeatherUiState {
 
 class WeatherViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = WeatherRepository(
+        context = application,
         apiService = WeatherApiService(),
         stylistService = GeminiStylistService(application)
     )
@@ -39,10 +43,15 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
 
+    private val _autoRefreshMinutes = MutableStateFlow(repository.getAutoRefreshInterval())
+    val autoRefreshMinutes: StateFlow<Int> = _autoRefreshMinutes.asStateFlow()
+
     private var currentCity: CityLocation = CityLocation.DEFAULT_LOCATION
+    private var autoRefreshJob: Job? = null
 
     init {
         loadWeather(currentCity)
+        startAutoRefreshTimer(_autoRefreshMinutes.value)
     }
 
     fun loadWeather(city: CityLocation) {
@@ -63,7 +72,13 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun refreshWeather() {
-        loadWeather(currentCity)
+        viewModelScope.launch {
+            try {
+                val weather = repository.getWeatherData(currentCity)
+                val currentOutfit = (_uiState.value as? WeatherUiState.Success)?.outfit
+                _uiState.value = WeatherUiState.Success(weather = weather, outfit = currentOutfit, isOutfitLoading = false)
+            } catch (_: Exception) {}
+        }
     }
 
     fun refreshOutfit() {
@@ -86,23 +101,51 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun saveGeminiApiKey(key: String) {
+    fun saveCustomGeminiApiKey(key: String) {
         repository.saveGeminiApiKey(key)
         refreshOutfit()
     }
 
-    fun getGeminiApiKey(): String? {
-        return repository.getGeminiApiKey()
+    fun clearCustomGeminiApiKey() {
+        repository.clearCustomGeminiApiKey()
+        refreshOutfit()
+    }
+
+    fun getCustomApiKey(): String? = repository.getCustomApiKey()
+    fun isUsingCustomKey(): Boolean = repository.isUsingCustomKey()
+    fun hasDefaultKey(): Boolean = repository.hasDefaultKey()
+
+    fun setAutoRefreshInterval(minutes: Int) {
+        _autoRefreshMinutes.value = minutes
+        repository.setAutoRefreshInterval(minutes)
+        startAutoRefreshTimer(minutes)
+    }
+
+    private fun startAutoRefreshTimer(minutes: Int) {
+        autoRefreshJob?.cancel()
+        if (minutes > 0) {
+            autoRefreshJob = viewModelScope.launch {
+                while (isActive) {
+                    delay(minutes * 60 * 1000L)
+                    refreshWeather()
+                }
+            }
+        }
     }
 
     fun setLocationFromGps(lat: Double, lon: Double) {
-        val gpsCity = CityLocation(
-            name = "Vị trí của bạn",
-            country = "GPS",
-            latitude = lat,
-            longitude = lon,
-            isCurrentLocation = true
-        )
-        loadWeather(gpsCity)
+        viewModelScope.launch {
+            _uiState.value = WeatherUiState.Loading
+            // Xác định chính xác quận/huyện, thành phố bằng reverse geocoding tiếng Việt
+            val address = repository.getAddressFromCoordinates(lat, lon)
+            val gpsCity = CityLocation(
+                name = address.first,
+                country = address.second,
+                latitude = lat,
+                longitude = lon,
+                isCurrentLocation = true
+            )
+            loadWeather(gpsCity)
+        }
     }
 }

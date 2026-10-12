@@ -3,6 +3,16 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val localProps = java.util.Properties()
+val localPropsFile = rootProject.file("local.properties")
+if (localPropsFile.exists()) {
+    localProps.load(localPropsFile.inputStream())
+}
+val defaultGeminiKey: String = localProps.getProperty("GEMINI_API_KEY")
+    ?: System.getenv("GEMINI_API_KEY")
+    ?: (project.findProperty("GEMINI_API_KEY") as? String)
+    ?: ""
+
 android {
     namespace = "com.weather24h.app"
     compileSdk = 34
@@ -18,6 +28,8 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "DEFAULT_GEMINI_API_KEY", "\"$defaultGeminiKey\"")
     }
 
     buildTypes {
@@ -42,6 +54,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {

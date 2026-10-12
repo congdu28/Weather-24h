@@ -29,9 +29,10 @@ fun WeatherScreen(
     val uiState by viewModel.uiState.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
+    val autoRefreshMinutes by viewModel.autoRefreshMinutes.collectAsState()
 
     var showSearchDialog by remember { mutableStateOf(false) }
-    var showGeminiDialog by remember { mutableStateOf(false) }
+    var showSettingsDialog by remember { mutableStateOf(false) }
 
     val weatherType = when (val state = uiState) {
         is WeatherUiState.Success -> WeatherCondition.fromWmoCode(state.weather.current.weatherCode).type
@@ -87,10 +88,10 @@ fun WeatherScreen(
                             modifier = Modifier.size(22.dp)
                         )
                     }
-                    IconButton(onClick = { showGeminiDialog = true }) {
+                    IconButton(onClick = { showSettingsDialog = true }) {
                         Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Cài đặt Gemini AI",
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Cài đặt",
                             tint = Color(0xFFF0ABFC),
                             modifier = Modifier.size(22.dp)
                         )
@@ -161,7 +162,7 @@ fun WeatherScreen(
                                     outfit = state.outfit,
                                     isLoading = state.isOutfitLoading,
                                     onRefresh = { viewModel.refreshOutfit() },
-                                    onConfigureApiKey = { showGeminiDialog = true }
+                                    onConfigureApiKey = { showSettingsDialog = true }
                                 )
                             }
                         }
@@ -212,12 +213,21 @@ fun WeatherScreen(
             )
         }
 
-        if (showGeminiDialog) {
-            GeminiApiKeyDialog(
-                initialKey = viewModel.getGeminiApiKey(),
-                onDismiss = { showGeminiDialog = false },
-                onSaveKey = { key ->
-                    viewModel.saveGeminiApiKey(key)
+        if (showSettingsDialog) {
+            SettingsDialog(
+                initialCustomKey = viewModel.getCustomApiKey(),
+                isUsingCustomKey = viewModel.isUsingCustomKey(),
+                hasDefaultKey = viewModel.hasDefaultKey(),
+                currentAutoRefreshMinutes = autoRefreshMinutes,
+                onDismiss = { showSettingsDialog = false },
+                onSaveCustomKey = { key ->
+                    viewModel.saveCustomGeminiApiKey(key)
+                },
+                onClearCustomKey = {
+                    viewModel.clearCustomGeminiApiKey()
+                },
+                onSelectAutoRefreshInterval = { minutes ->
+                    viewModel.setAutoRefreshInterval(minutes)
                 }
             )
         }
