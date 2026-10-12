@@ -110,27 +110,6 @@ object SevereWeatherDetector {
             )
         }
 
-        // 5. CẢNH BÁO KHÔNG KHÍ Ô NHIỄM (AQI > 150 hoặc PM2.5 > 55.4)
-        val pm25 = weather.airQuality?.pm25 ?: 0.0
-        val aqi = weather.airQuality?.aqiIndex ?: 0
-        if (pm25 >= 55.4 || aqi >= 150) {
-            alerts.add(
-                SevereWeatherAlert(
-                    id = "alert_aqi",
-                    title = "CHẤT LƯỢNG KHÔNG KHÍ KÉM (BỤI MỊN PM2.5)",
-                    headline = "Chỉ số bụi mịn PM2.5 là ${pm25.toInt()} µg/m³. Nhóm nhạy cảm (người già, trẻ nhỏ, người hen suyễn) có thể bị ảnh hưởng hô hấp.",
-                    severity = AlertSeverity.WARNING,
-                    iconEmoji = "😷",
-                    timeInfo = "Hôm nay",
-                    safetyTips = listOf(
-                        "Đeo khẩu trang đạt chuẩn chống bụi mịn (N95/KF94) khi ra đường.",
-                        "Đóng cửa sổ và hạn chế mở cửa thông gió khi giao thông đông đúc.",
-                        "Sử dụng máy lọc không khí trong phòng ngủ nếu có."
-                    )
-                )
-            )
-        }
-
         // 6. CẢNH BÁO RÉT ĐẬM / RÉT HẠI (Min temp <= 13°C)
         val minTemp = weather.minTemp24h
         if (minTemp <= 13.0 && minTemp > 0.0) {

@@ -52,19 +52,19 @@ fun getAirQualityLevelInfo(pm25: Double): AirQualityLevelInfo {
             label = "Trung bình",
             color = Color(0xFFFBBF24),
             advice = "Chất lượng không khí ở mức chấp nhận được.",
-            outdoorAdvice = "Nhóm người nhạy cảm nên cân nhắc giảm bớt vận động mạnh ngoài trời."
+            outdoorAdvice = "Nhóm người nhạy cảm (người già, trẻ nhỏ) nên giảm bớt vận động mạnh ngoài trời."
         )
         pm25 <= 150.4 -> AirQualityLevelInfo(
             label = "Kém",
             color = Color(0xFFF97316),
-            advice = "Nồng độ bụi mịn PM2.5 ở mức cao, có thể ảnh hưởng hô hấp.",
-            outdoorAdvice = "Nên đeo khẩu trang chống bụi PM2.5 khi ra ngoài, hạn chế mở cửa lâu."
+            advice = "Nồng độ bụi mịn PM2.5 cao, nhóm nhạy cảm dễ bị kích ứng hô hấp.",
+            outdoorAdvice = "Nhóm nhạy cảm (người già, trẻ nhỏ, người hen suyễn) nên đeo khẩu trang chống bụi N95/KF94 khi ra đường và đóng bớt cửa sổ thông gió."
         )
         else -> AirQualityLevelInfo(
             label = "Nguy hại",
             color = Color(0xFFEF4444),
-            advice = "Cảnh báo ô nhiễm nghiêm trọng, nguy cơ hại sức khỏe.",
-            outdoorAdvice = "Hạn chế ra ngoài, đóng kín cửa sổ và sử dụng máy lọc không khí."
+            advice = "Cảnh báo ô nhiễm không khí nguy hại cho mọi đối tượng.",
+            outdoorAdvice = "Khuyến cáo ở trong nhà, đóng kín cửa sổ, bật máy lọc không khí và đeo khẩu trang N95 đạt chuẩn nếu bắt buộc phải ra ngoài."
         )
     }
 }
