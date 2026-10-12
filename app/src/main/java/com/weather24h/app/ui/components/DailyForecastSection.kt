@@ -27,8 +27,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.weather24h.app.data.model.DailyForecast
 import com.weather24h.app.data.model.WeatherCondition
-import com.weather24h.app.ui.theme.CardBorder
-import com.weather24h.app.ui.theme.CardGlassBg
+import com.weather24h.app.ui.theme.LocalCardBorder
+import com.weather24h.app.ui.theme.LocalCardGlassBg
+import com.weather24h.app.ui.theme.LocalContentTextColor
+import com.weather24h.app.ui.theme.LocalIsDarkTheme
+import com.weather24h.app.ui.theme.LocalSubtextColor
 import kotlin.math.roundToInt
 
 @Composable
@@ -39,6 +42,9 @@ fun DailyForecastSection(
     if (dailyList.isEmpty()) return
 
     var selectedDay by remember { mutableStateOf<DailyForecast?>(null) }
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
 
     val globalMin = dailyList.minOfOrNull { it.minTemp } ?: 20.0
     val globalMax = dailyList.maxOfOrNull { it.maxTemp } ?: 35.0
@@ -48,8 +54,8 @@ fun DailyForecastSection(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(CardGlassBg)
-            .border(1.dp, CardBorder, RoundedCornerShape(24.dp))
+            .background(LocalCardGlassBg.current)
+            .border(1.dp, LocalCardBorder.current, RoundedCornerShape(24.dp))
             .padding(18.dp)
     ) {
         Column {
@@ -63,13 +69,13 @@ fun DailyForecastSection(
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
                         contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.8f),
+                        tint = contentColor.copy(alpha = 0.8f),
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "DỰ BÁO 7 NGÀY TỚI",
-                        color = Color.White.copy(alpha = 0.85f),
+                        color = contentColor.copy(alpha = 0.85f),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
@@ -78,7 +84,7 @@ fun DailyForecastSection(
 
                 Text(
                     text = "Nhấn để xem chi tiết",
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = subtextColor,
                     fontSize = 11.sp
                 )
             }
@@ -106,7 +112,7 @@ fun DailyForecastSection(
                     // Day of Week
                     Text(
                         text = day.dayOfWeek,
-                        color = Color.White,
+                        color = contentColor,
                         fontSize = 14.sp,
                         fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Medium,
                         modifier = Modifier.width(70.dp)
@@ -137,7 +143,7 @@ fun DailyForecastSection(
                     // Min Temp
                     Text(
                         text = "${day.minTemp.roundToInt()}°",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = subtextColor,
                         fontSize = 14.sp,
                         textAlign = TextAlign.End,
                         modifier = Modifier.width(30.dp)
@@ -151,7 +157,7 @@ fun DailyForecastSection(
                             .weight(1f)
                             .height(6.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            .background(Color.Black.copy(alpha = 0.25f))
+                            .background(if (isDark) Color.Black.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.08f))
                     ) {
                         Box(
                             modifier = Modifier
@@ -176,7 +182,7 @@ fun DailyForecastSection(
                     // Max Temp
                     Text(
                         text = "${day.maxTemp.roundToInt()}°",
-                        color = Color.White,
+                        color = contentColor,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Start,
@@ -189,14 +195,14 @@ fun DailyForecastSection(
                     Icon(
                         imageVector = Icons.Default.ChevronRight,
                         contentDescription = "Chi tiết",
-                        tint = Color.White.copy(alpha = 0.4f),
+                        tint = subtextColor.copy(alpha = 0.6f),
                         modifier = Modifier.size(16.dp)
                     )
                 }
 
                 if (index < dailyList.size - 1) {
                     Divider(
-                        color = Color.White.copy(alpha = 0.1f),
+                        color = if (isDark) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.08f),
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
@@ -221,6 +227,13 @@ fun DayForecastDetailDialog(
     val condition = WeatherCondition.fromWmoCode(day.weatherCode)
     val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
     val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
+    val cardBg = if (isDark) Color(0xFF131A2A) else Color.White
+    val cardBorderColor = if (isDark) LocalCardBorder.current else Color(0x1F000000)
+    val dialogBg = if (isDark) Color(0xFF0B132B) else Color(0xFFF1F5F9)
+    val buttonBg = if (isDark) Color(0xFF1E293B) else Color(0xFFE2E8F0)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -231,7 +244,7 @@ fun DayForecastDetailDialog(
         }
 
         Surface(
-            color = Color(0xFF0B132B),
+            color = dialogBg,
             modifier = Modifier.fillMaxSize()
         ) {
             Column(
@@ -254,14 +267,14 @@ fun DayForecastDetailDialog(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF1E293B))
+                                .background(buttonBg)
                                 .clickable { onDismiss() },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowBack,
                                 contentDescription = "Quay lại",
-                                tint = Color.White,
+                                tint = contentColor,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -271,13 +284,13 @@ fun DayForecastDetailDialog(
                         Column {
                             Text(
                                 text = "Dự báo • ${day.dayOfWeek}",
-                                color = Color.White,
+                                color = contentColor,
                                 fontSize = 19.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
                                 text = "Ngày ${day.dateString}",
-                                color = Color.White.copy(alpha = 0.65f),
+                                color = subtextColor,
                                 fontSize = 12.5.sp
                             )
                         }
@@ -287,7 +300,7 @@ fun DayForecastDetailDialog(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Đóng",
-                            tint = Color.White.copy(alpha = 0.7f),
+                            tint = subtextColor,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -304,8 +317,8 @@ fun DayForecastDetailDialog(
                     // 1. Thẻ tổng quan thời tiết ngày đó
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = Color(0xFF131A2A),
-                        border = BorderStroke(1.dp, CardBorder),
+                        color = cardBg,
+                        border = BorderStroke(1.dp, cardBorderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -325,7 +338,7 @@ fun DayForecastDetailDialog(
 
                             Text(
                                 text = condition.description,
-                                color = Color.White,
+                                color = contentColor,
                                 fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -346,7 +359,7 @@ fun DayForecastDetailDialog(
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "Cao nhất ${day.maxTemp.roundToInt()}°C",
-                                        color = Color.White,
+                                        color = contentColor,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -356,13 +369,13 @@ fun DayForecastDetailDialog(
                                     Icon(
                                         imageVector = Icons.Default.ArrowDownward,
                                         contentDescription = "Thấp nhất",
-                                        tint = Color(0xFF48CAE4),
+                                        tint = Color(0xFF0284C7),
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                     Text(
                                         text = "Thấp nhất ${day.minTemp.roundToInt()}°C",
-                                        color = Color.White.copy(alpha = 0.85f),
+                                        color = subtextColor,
                                         fontSize = 15.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
@@ -374,8 +387,8 @@ fun DayForecastDetailDialog(
                     // 2. Lưới thông số quan trọng trong ngày
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFF131A2A),
-                        border = BorderStroke(1.dp, CardBorder),
+                        color = cardBg,
+                        border = BorderStroke(1.dp, cardBorderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -386,7 +399,7 @@ fun DayForecastDetailDialog(
                         ) {
                             Text(
                                 text = "CÁC CHỈ SỐ DỰ KIẾN TRONG NGÀY",
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = subtextColor,
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.8.sp
@@ -396,10 +409,12 @@ fun DayForecastDetailDialog(
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 DayDetailMetricItem(
                                     icon = Icons.Default.WaterDrop,
-                                    iconTint = Color(0xFF38BDF8),
+                                    iconTint = Color(0xFF0284C7),
                                     title = "XÁC SUẤT MƯA",
                                     value = "${day.precipitationProbability}%",
                                     desc = if (day.precipitationProbability >= 40) "Nguy cơ mưa cao" else "Ít khả năng mưa",
+                                    contentColor = contentColor,
+                                    subtextColor = subtextColor,
                                     modifier = Modifier.weight(1f)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -409,11 +424,13 @@ fun DayForecastDetailDialog(
                                     title = "CHỈ SỐ UV TỐI ĐA",
                                     value = String.format("%.1f", day.uvIndexMax),
                                     desc = getUvAdvice(day.uvIndexMax),
+                                    contentColor = contentColor,
+                                    subtextColor = subtextColor,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
 
-                            Divider(color = Color.White.copy(alpha = 0.08f))
+                            Divider(color = if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f))
 
                             // Hàng 2: Mặt trời mọc & Mặt trời lặn
                             Row(modifier = Modifier.fillMaxWidth()) {
@@ -423,6 +440,8 @@ fun DayForecastDetailDialog(
                                     title = "BÌNH MINH",
                                     value = day.sunrise.ifEmpty { "05:45" },
                                     desc = "Bình minh ngày mới",
+                                    contentColor = contentColor,
+                                    subtextColor = subtextColor,
                                     modifier = Modifier.weight(1f)
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -432,6 +451,8 @@ fun DayForecastDetailDialog(
                                     title = "HOÀNG HÔN",
                                     value = day.sunset.ifEmpty { "18:15" },
                                     desc = "Bắt đầu chuyển tối",
+                                    contentColor = contentColor,
+                                    subtextColor = subtextColor,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -441,8 +462,8 @@ fun DayForecastDetailDialog(
                     // 3. Gợi ý trang phục & chuẩn bị cho ngày này
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = Color(0xFF131A2A),
-                        border = BorderStroke(1.dp, CardBorder),
+                        color = cardBg,
+                        border = BorderStroke(1.dp, cardBorderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -460,7 +481,7 @@ fun DayForecastDetailDialog(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "GỢI Ý TRANG PHỤC & LƯU Ý",
-                                    color = Color.White,
+                                    color = contentColor,
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.5.sp
@@ -475,7 +496,7 @@ fun DayForecastDetailDialog(
                                 day.minTemp <= 19.0 -> "Trời se lạnh về đêm và sáng sớm (${day.minTemp.roundToInt()}°C). Nên chuẩn bị áo khoác nhẹ hoặc khăn mỏng."
                                 else -> "Thời tiết dễ chịu (${day.minTemp.roundToInt()}° - ${day.maxTemp.roundToInt()}°C). Thích hợp với mọi trang phục công sở hay dạo phố thường ngày."
                             }
-                            DailyTipRow(icon = Icons.Default.CheckCircle, text = clothingTip, tint = Color(0xFF34D399))
+                            DailyTipRow(icon = Icons.Default.CheckCircle, text = clothingTip, tint = Color(0xFF10B981), textColor = contentColor)
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -485,7 +506,7 @@ fun DayForecastDetailDialog(
                             } else {
                                 "Xác suất mưa thấp (${day.precipitationProbability}%). Thời tiết thuận lợi cho các hoạt động ngoài trời, dã ngoại hoặc thể thao."
                             }
-                            DailyTipRow(icon = Icons.Default.Umbrella, text = rainTip, tint = Color(0xFF38BDF8))
+                            DailyTipRow(icon = Icons.Default.Umbrella, text = rainTip, tint = Color(0xFF0284C7), textColor = contentColor)
 
                             Spacer(modifier = Modifier.height(8.dp))
 
@@ -495,7 +516,7 @@ fun DayForecastDetailDialog(
                             } else {
                                 "Chỉ số UV ở mức ${String.format("%.1f", day.uvIndexMax)} an toàn cho da dưới ánh nắng tự nhiên."
                             }
-                            DailyTipRow(icon = Icons.Default.Shield, text = uvTip, tint = Color(0xFFFBBF24))
+                            DailyTipRow(icon = Icons.Default.Shield, text = uvTip, tint = Color(0xFFFBBF24), textColor = contentColor)
                         }
                     }
 
@@ -503,12 +524,12 @@ fun DayForecastDetailDialog(
                     Button(
                         onClick = onDismiss,
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E293B)),
+                        colors = ButtonDefaults.buttonColors(containerColor = buttonBg),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 16.dp)
                     ) {
-                        Text("Đóng chi tiết", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        Text("Đóng chi tiết", color = contentColor, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
@@ -523,18 +544,20 @@ private fun DayDetailMetricItem(
     title: String,
     value: String,
     desc: String,
+    contentColor: Color,
+    subtextColor: Color,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(imageVector = icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(15.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text(text = title, color = Color.White.copy(alpha = 0.65f), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(text = title, color = subtextColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(modifier = Modifier.height(6.dp))
-        Text(text = value, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(text = value, color = contentColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(2.dp))
-        Text(text = desc, color = Color.White.copy(alpha = 0.7f), fontSize = 11.sp)
+        Text(text = desc, color = subtextColor, fontSize = 11.sp)
     }
 }
 
@@ -542,7 +565,8 @@ private fun DayDetailMetricItem(
 private fun DailyTipRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
-    tint: Color
+    tint: Color,
+    textColor: Color
 ) {
     Row(
         verticalAlignment = Alignment.Top,
@@ -559,7 +583,7 @@ private fun DailyTipRow(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
-            color = Color.White.copy(alpha = 0.85f),
+            color = textColor,
             fontSize = 12.5.sp,
             lineHeight = 18.sp
         )

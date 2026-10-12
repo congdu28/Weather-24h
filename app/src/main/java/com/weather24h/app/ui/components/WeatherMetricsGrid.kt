@@ -19,8 +19,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.WeatherData
-import com.weather24h.app.ui.theme.CardBorder
-import com.weather24h.app.ui.theme.CardGlassBg
+import com.weather24h.app.ui.theme.LocalCardBorder
+import com.weather24h.app.ui.theme.LocalCardGlassBg
+import com.weather24h.app.ui.theme.LocalContentTextColor
+import com.weather24h.app.ui.theme.LocalIsDarkTheme
+import com.weather24h.app.ui.theme.LocalSubtextColor
 import kotlin.math.roundToInt
 
 @Composable
@@ -32,6 +35,9 @@ fun WeatherMetricsGrid(
     val todayDaily = weather.daily7Days.firstOrNull()
     val uv = todayDaily?.uvIndexMax ?: current.uvIndex
     val aqi = weather.airQuality
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Title
@@ -42,13 +48,13 @@ fun WeatherMetricsGrid(
             Icon(
                 imageVector = Icons.Default.Tune,
                 contentDescription = null,
-                tint = Color.White.copy(alpha = 0.8f),
+                tint = contentColor.copy(alpha = 0.8f),
                 modifier = Modifier.size(16.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "CÁC CHỈ SỐ THỜI TIẾT",
-                color = Color.White.copy(alpha = 0.85f),
+                color = contentColor.copy(alpha = 0.85f),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
@@ -159,7 +165,7 @@ fun WeatherMetricsGrid(
                 title = "ÁP SUẤT",
                 value = "${current.surfacePressure.roundToInt()} hPa",
                 subtext = "Áp suất chuẩn",
-                accentColor = Color.White.copy(alpha = 0.8f),
+                accentColor = if (isDark) Color.White.copy(alpha = 0.8f) else Color(0xFF64748B),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -191,8 +197,8 @@ fun MetricCard(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(CardGlassBg)
-            .border(1.dp, CardBorder, RoundedCornerShape(20.dp))
+            .background(LocalCardGlassBg.current)
+            .border(1.dp, LocalCardBorder.current, RoundedCornerShape(20.dp))
             .padding(14.dp)
     ) {
         Column(
@@ -212,7 +218,7 @@ fun MetricCard(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = title,
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = LocalSubtextColor.current,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
@@ -225,7 +231,7 @@ fun MetricCard(
 
             Text(
                 text = value,
-                color = Color.White,
+                color = LocalContentTextColor.current,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -236,7 +242,7 @@ fun MetricCard(
 
             Text(
                 text = subtext,
-                color = Color.White.copy(alpha = 0.75f),
+                color = LocalSubtextColor.current,
                 fontSize = 11.sp,
                 lineHeight = 14.sp,
                 minLines = 2,

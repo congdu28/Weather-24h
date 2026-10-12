@@ -38,12 +38,18 @@ fun CurrentWeatherCard(
 ) {
     val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode)
 
+    val isDark = com.weather24h.app.ui.theme.LocalIsDarkTheme.current
+    val cardBg = com.weather24h.app.ui.theme.LocalCardGlassBg.current
+    val cardBorder = com.weather24h.app.ui.theme.LocalCardBorder.current
+    val textColor = com.weather24h.app.ui.theme.LocalContentTextColor.current
+    val subtextColor = com.weather24h.app.ui.theme.LocalSubtextColor.current
+
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
-            .background(CardGlassBg)
-            .border(1.dp, CardBorder, RoundedCornerShape(28.dp))
+            .background(cardBg)
+            .border(1.dp, cardBorder, RoundedCornerShape(28.dp))
             .padding(vertical = 22.dp, horizontal = 20.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -66,13 +72,13 @@ fun CurrentWeatherCard(
                     Icon(
                         imageVector = if (weather.location.isCurrentLocation) Icons.Default.MyLocation else Icons.Default.LocationOn,
                         contentDescription = "Location",
-                        tint = Color.White,
+                        tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = weather.location.name,
-                        color = Color.White,
+                        color = textColor,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -80,7 +86,7 @@ fun CurrentWeatherCard(
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = "Select City",
-                        tint = Color.White.copy(alpha = 0.8f),
+                        tint = textColor.copy(alpha = 0.8f),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -95,7 +101,7 @@ fun CurrentWeatherCard(
                     Icon(
                         imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                         contentDescription = "Yêu thích",
-                        tint = if (isFavorite) Color(0xFFFFD166) else Color.White.copy(alpha = 0.6f),
+                        tint = if (isFavorite) Color(0xFFFFD166) else textColor.copy(alpha = 0.6f),
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -104,7 +110,7 @@ fun CurrentWeatherCard(
             if (weather.location.country.isNotEmpty()) {
                 Text(
                     text = weather.location.displayName,
-                    color = Color.White.copy(alpha = 0.75f),
+                    color = subtextColor,
                     fontSize = 13.sp
                 )
             }
@@ -149,7 +155,7 @@ fun CurrentWeatherCard(
 
                 Text(
                     text = "${weather.current.temperature.roundToInt()}°",
-                    color = Color.White,
+                    color = textColor,
                     fontSize = 72.sp,
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = (-2).sp
@@ -165,7 +171,7 @@ fun CurrentWeatherCard(
             ) {
                 Text(
                     text = condition.description,
-                    color = Color.White,
+                    color = textColor,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -199,17 +205,17 @@ fun CurrentWeatherCard(
             ) {
                 Text(
                     text = "Cảm giác ${weather.current.feelsLike.roundToInt()}°C",
-                    color = Color.White.copy(alpha = 0.85f),
+                    color = subtextColor,
                     fontSize = 14.sp
                 )
                 Text(
                     text = "•",
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = subtextColor.copy(alpha = 0.5f),
                     fontSize = 14.sp
                 )
                 Text(
                     text = "C:${weather.maxTemp24h.roundToInt()}° T:${weather.minTemp24h.roundToInt()}°",
-                    color = Color.White.copy(alpha = 0.85f),
+                    color = subtextColor,
                     fontSize = 14.sp
                 )
             }

@@ -65,11 +65,13 @@ fun WeatherScreen(
         is WeatherUiState.Success -> state.weather.current.isDay
         else -> true
     }
+    val themeMode by viewModel.themeMode.collectAsState()
+    val isDarkTheme = com.weather24h.app.ui.theme.LocalIsDarkTheme.current
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(getSkyGradient(weatherType, isDay))
+            .background(getSkyGradient(weatherType, isDay, isDarkTheme))
     ) {
         // Living dynamic weather atmosphere effect (Sun rays, rain streaks, storm lightning, clouds, stars)
         WeatherAtmosphereEffect(
@@ -95,13 +97,13 @@ fun WeatherScreen(
                     Icon(
                         imageVector = Icons.Default.Cloud,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = if (isDarkTheme) Color.White else Color(0xFF0F172A),
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Weather 24h",
-                        color = Color.White,
+                        color = if (isDarkTheme) Color.White else Color(0xFF0F172A),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp
@@ -113,7 +115,7 @@ fun WeatherScreen(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Tìm kiếm",
-                            tint = Color.White,
+                            tint = if (isDarkTheme) Color.White else Color(0xFF0F172A),
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -121,7 +123,7 @@ fun WeatherScreen(
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Cài đặt",
-                            tint = Color(0xFFF0ABFC),
+                            tint = if (isDarkTheme) Color(0xFFF0ABFC) else Color(0xFF9333EA),
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -133,11 +135,11 @@ fun WeatherScreen(
                 is WeatherUiState.Loading -> {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = Color.White)
+                            CircularProgressIndicator(color = if (isDarkTheme) Color.White else Color(0xFF0284C7))
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Đang tải dữ liệu Weather 24h...",
-                                color = Color.White,
+                                color = if (isDarkTheme) Color.White else Color(0xFF0F172A),
                                 fontSize = 15.sp
                             )
                         }
@@ -219,7 +221,7 @@ fun WeatherScreen(
                                         "Dữ liệu ngoại tuyến • Lưu lúc ${weather.lastUpdated}"
                                     else
                                         "Cập nhật lúc ${weather.lastUpdated}",
-                                    color = Color.White.copy(alpha = 0.5f),
+                                    color = if (isDarkTheme) Color.White.copy(alpha = 0.5f) else Color(0xFF475569),
                                     fontSize = 12.sp
                                 )
                             }
@@ -251,6 +253,7 @@ fun WeatherScreen(
 
         if (showSettingsDialog) {
             SettingsDialog(
+                currentThemeMode = themeMode,
                 initialCustomKey = viewModel.getCustomApiKey(),
                 isUsingCustomKey = viewModel.isUsingCustomKey(),
                 hasDefaultKey = viewModel.hasDefaultKey(),
@@ -261,6 +264,7 @@ fun WeatherScreen(
                 isSevereAlerts = isSevereAlerts,
                 favoriteCities = favoriteCities,
                 onDismiss = { showSettingsDialog = false },
+                onSelectThemeMode = { viewModel.setThemeMode(it) },
                 onSaveCustomKey = { key ->
                     viewModel.saveCustomGeminiApiKey(key)
                 },

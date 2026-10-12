@@ -26,7 +26,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Home Screen Weather Widget -->
+        <!-- Home Screen Weather Widget (Hourly Forecast 4x2) -->
         <receiver
             android:name=".ui.widget.WeatherWidgetProvider"
             android:exported="true">
@@ -36,6 +36,18 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/weather_widget_info" />
+        </receiver>
+
+        <!-- Home Screen Compact Weather Widget (2x1 / 3x1) -->
+        <receiver
+            android:name=".ui.widget.CompactWeatherWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/compact_widget_info" />
         </receiver>
 
     </application>

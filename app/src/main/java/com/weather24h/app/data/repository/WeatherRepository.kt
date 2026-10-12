@@ -201,4 +201,20 @@ class WeatherRepository(
 
     fun getAutoRefreshInterval(): Int = prefs.getInt("auto_refresh_minutes", 60)
     fun setAutoRefreshInterval(minutes: Int) = prefs.edit().putInt("auto_refresh_minutes", minutes).apply()
+
+    // ==========================================
+    // CÀI ĐẶT THEME (SÁNG / TỐI / HỆ THỐNG)
+    // ==========================================
+    fun getThemeMode(): com.weather24h.app.ui.theme.AppThemeMode {
+        val str = prefs.getString("app_theme_mode", com.weather24h.app.ui.theme.AppThemeMode.SYSTEM.name)
+        return try {
+            com.weather24h.app.ui.theme.AppThemeMode.valueOf(str ?: com.weather24h.app.ui.theme.AppThemeMode.SYSTEM.name)
+        } catch (_: Exception) {
+            com.weather24h.app.ui.theme.AppThemeMode.SYSTEM
+        }
+    }
+
+    fun setThemeMode(mode: com.weather24h.app.ui.theme.AppThemeMode) {
+        prefs.edit().putString("app_theme_mode", mode.name).apply()
+    }
 }

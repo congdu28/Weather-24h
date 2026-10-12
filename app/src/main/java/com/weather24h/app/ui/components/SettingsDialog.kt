@@ -48,6 +48,7 @@ import com.weather24h.app.data.model.CityLocation
 
 private enum class SettingsSubScreen {
     MAIN,
+    THEME,
     NOTIFICATIONS,
     LOCATION_CITIES,
     GEMINI_API,
@@ -59,6 +60,7 @@ private enum class SettingsSubScreen {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsDialog(
+    currentThemeMode: com.weather24h.app.ui.theme.AppThemeMode,
     initialCustomKey: String?,
     isUsingCustomKey: Boolean,
     hasDefaultKey: Boolean,
@@ -69,6 +71,7 @@ fun SettingsDialog(
     isSevereAlerts: Boolean,
     favoriteCities: List<CityLocation>,
     onDismiss: () -> Unit,
+    onSelectThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit,
     onSaveCustomKey: (String) -> Unit,
     onClearCustomKey: () -> Unit,
     onSelectAutoRefreshInterval: (Int) -> Unit,
@@ -160,6 +163,7 @@ fun SettingsDialog(
                     Text(
                         text = when (currentSubScreen) {
                             SettingsSubScreen.MAIN -> "Cài đặt"
+                            SettingsSubScreen.THEME -> "Giao diện & Theme"
                             SettingsSubScreen.NOTIFICATIONS -> "Thông báo thời tiết"
                             SettingsSubScreen.LOCATION_CITIES -> "Cài đặt vị trí"
                             SettingsSubScreen.GEMINI_API -> "Quản lý API Key Gemini"
@@ -193,6 +197,17 @@ fun SettingsDialog(
                                     .verticalScroll(rememberScrollState()),
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
+                                // NHÓM 0: GIAO DIỆN & THEME
+                                InsetGroupCard {
+                                    SettingsRowItem(
+                                        icon = Icons.Default.Palette,
+                                        iconTint = Color(0xFFA855F7),
+                                        title = "Giao diện & Theme",
+                                        subtitle = currentThemeMode.title,
+                                        onClick = { currentSubScreen = SettingsSubScreen.THEME }
+                                    )
+                                }
+
                                 // NHÓM 1: THÔNG BÁO THỜI TIẾT
                                 InsetGroupCard {
                                     SettingsRowItem(
@@ -254,6 +269,74 @@ fun SettingsDialog(
                                 }
 
                                 Spacer(modifier = Modifier.height(20.dp))
+                            }
+                        }
+
+                        // 1.5. SUB-SCREEN: GIAO DIỆN & THEME (SÁNG / TỐI / THEO THIẾT BỊ)
+                        SettingsSubScreen.THEME -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                InsetGroupCard {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = "CHẾ ĐỘ HIỂN THỊ ỨNG DỤNG",
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.7.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        listOf(
+                                            Triple(com.weather24h.app.ui.theme.AppThemeMode.SYSTEM, "Theo thiết bị (Tự động)", "Tự động đổi theme Sáng/Tối theo cài đặt của hệ điều hành"),
+                                            Triple(com.weather24h.app.ui.theme.AppThemeMode.DARK, "Chế độ Tối (Khuyên dùng)", "Màu nền sẫm sâu, bảo vệ mắt, tiết kiệm pin OLED và nổi bật icon thời tiết"),
+                                            Triple(com.weather24h.app.ui.theme.AppThemeMode.LIGHT, "Chế độ Sáng", "Màu sắc tươi tắn, thanh khiết, chữ đậm rõ nét dưới ánh sáng ngoài trời")
+                                        ).forEach { (mode, title, desc) ->
+                                            val isSelected = currentThemeMode == mode
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable {
+                                                        onSelectThemeMode(mode)
+                                                        Toast.makeText(context, "Đã chọn: $title", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    .padding(vertical = 12.dp, horizontal = 6.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = title,
+                                                        color = if (isSelected) Color(0xFF38BDF8) else Color.White,
+                                                        fontSize = 14.5.sp,
+                                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                                    )
+                                                    Spacer(modifier = Modifier.height(3.dp))
+                                                    Text(
+                                                        text = desc,
+                                                        color = Color.White.copy(alpha = 0.6f),
+                                                        fontSize = 11.5.sp,
+                                                        lineHeight = 16.sp
+                                                    )
+                                                }
+                                                if (isSelected) {
+                                                    Icon(
+                                                        Icons.Default.CheckCircle,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFF38BDF8),
+                                                        modifier = Modifier.size(22.dp)
+                                                    )
+                                                }
+                                            }
+                                            ItemDivider()
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -588,18 +671,65 @@ fun SettingsDialog(
                                             )
                                             Spacer(modifier = Modifier.width(10.dp))
                                             Text(
-                                                text = "TIỆN ÍCH WIDGET MÀN HÌNH CHÍNH",
+                                                text = "CÁC KIỂU WIDGET MÀN HÌNH CHÍNH",
                                                 color = Color.White,
                                                 fontSize = 14.sp,
                                                 fontWeight = FontWeight.Bold
                                             )
                                         }
-                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        // Kiểu 1: Dự báo chi tiết theo giờ (4x2)
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = Color.White.copy(alpha = 0.06f),
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                                        ) {
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Text(
+                                                    text = "1. Widget Dự báo chi tiết theo giờ (4x2)",
+                                                    color = Color(0xFF38BDF8),
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Hiển thị đầy đủ nhiệt độ, thời tiết hiện tại, thanh dự báo 4 mốc giờ tới kèm xác suất mưa (%) và lời khuyên phối đồ AI Stylist.",
+                                                    color = Color.White.copy(alpha = 0.75f),
+                                                    fontSize = 11.5.sp,
+                                                    lineHeight = 16.sp
+                                                )
+                                            }
+                                        }
+
+                                        // Kiểu 2: Widget Tối giản & Đồng hồ (2x1 / 3x1)
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = Color.White.copy(alpha = 0.06f),
+                                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                                        ) {
+                                            Column(modifier = Modifier.padding(12.dp)) {
+                                                Text(
+                                                    text = "2. Widget Tối giản & Đồng hồ (2x1 / 3x1)",
+                                                    color = Color(0xFF34D399),
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "Thiết kế siêu gọn, thanh lịch: biểu tượng thời tiết ngày/đêm lớn, nhiệt độ to rõ ràng, độ ẩm và phạm vi Cao/Thấp trong ngày.",
+                                                    color = Color.White.copy(alpha = 0.75f),
+                                                    fontSize = 11.5.sp,
+                                                    lineHeight = 16.sp
+                                                )
+                                            }
+                                        }
+
                                         Text(
-                                            text = "Cách thêm Widget ra màn hình điện thoại:\n• Bước 1: Nhấn giữ vào vùng trống trên màn hình chính của bạn.\n• Bước 2: Chọn mục 'Tiện ích' (Widgets).\n• Bước 3: Tìm ứng dụng 'Weather 24h' và kéo thả Widget ra vị trí bạn thích!",
+                                            text = "Cách thêm Widget ra màn hình điện thoại:\n• Bước 1: Nhấn giữ vào vùng trống trên màn hình chính của bạn.\n• Bước 2: Chọn mục 'Tiện ích' (Widgets).\n• Bước 3: Tìm ứng dụng 'Weather 24h' và kéo thả Widget bạn thích ra màn hình!",
                                             color = Color.White.copy(alpha = 0.75f),
-                                            fontSize = 12.5.sp,
-                                            lineHeight = 19.sp
+                                            fontSize = 12.sp,
+                                            lineHeight = 18.sp
                                         )
                                     }
                                 }

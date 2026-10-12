@@ -66,6 +66,15 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _isSevereAlerts = MutableStateFlow(repository.isSevereAlertsEnabled())
     val isSevereAlerts: StateFlow<Boolean> = _isSevereAlerts.asStateFlow()
 
+    // Cài đặt Theme giao diện (Sáng / Tối / Theo thiết bị)
+    private val _themeMode = MutableStateFlow(repository.getThemeMode())
+    val themeMode: StateFlow<com.weather24h.app.ui.theme.AppThemeMode> = _themeMode.asStateFlow()
+
+    fun setThemeMode(mode: com.weather24h.app.ui.theme.AppThemeMode) {
+        _themeMode.value = mode
+        repository.setThemeMode(mode)
+    }
+
     private var currentCity: CityLocation = repository.getDefaultCity()
     private var autoRefreshJob: Job? = null
     private var loadWeatherJob: Job? = null

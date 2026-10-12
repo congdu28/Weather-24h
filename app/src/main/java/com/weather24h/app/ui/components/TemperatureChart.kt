@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+import com.weather24h.app.ui.theme.LocalIsDarkTheme
+
 @Composable
 fun TemperatureChart(
     temperatures: List<Double>,
@@ -22,6 +24,7 @@ fun TemperatureChart(
 ) {
     if (temperatures.size < 2) return
 
+    val isDark = LocalIsDarkTheme.current
     val totalWidth = itemWidth * temperatures.size
 
     Canvas(
@@ -75,8 +78,8 @@ fun TemperatureChart(
             path = fillPath,
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.35f),
-                    Color.White.copy(alpha = 0.02f)
+                    if (isDark) Color.White.copy(alpha = 0.35f) else Color(0xFF0284C7).copy(alpha = 0.25f),
+                    if (isDark) Color.White.copy(alpha = 0.02f) else Color(0xFF0284C7).copy(alpha = 0.01f)
                 )
             )
         )
@@ -84,19 +87,19 @@ fun TemperatureChart(
         // 3. Stroke line
         drawPath(
             path = path,
-            color = Color.White.copy(alpha = 0.9f),
+            color = if (isDark) Color.White.copy(alpha = 0.9f) else Color(0xFF0284C7),
             style = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
         )
 
         // 4. Dot markers
         points.forEach { point ->
             drawCircle(
-                color = Color.White,
+                color = if (isDark) Color.White else Color(0xFF0284C7),
                 radius = 3.5.dp.toPx(),
                 center = point
             )
             drawCircle(
-                color = Color(0xFF2193B0),
+                color = if (isDark) Color(0xFF2193B0) else Color(0xFFBAE6FD),
                 radius = 3.5.dp.toPx(),
                 center = point,
                 style = Stroke(width = 1.5.dp.toPx())
