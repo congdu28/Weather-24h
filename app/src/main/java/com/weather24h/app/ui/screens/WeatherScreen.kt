@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.weather24h.app.data.model.SevereWeatherDetector
 import com.weather24h.app.data.model.WeatherCondition
 import com.weather24h.app.data.model.WeatherType
 import com.weather24h.app.ui.components.*
@@ -247,6 +248,7 @@ fun WeatherScreen(
                 }
                 is WeatherUiState.Success -> {
                     val weather = state.weather
+                    val severeAlerts = remember(weather) { SevereWeatherDetector.detectAlerts(weather) }
 
                     // Cơ chế Pull-To-Refresh mượt mà và trực quan
                     var pullOffset by remember { mutableFloatStateOf(0f) }
@@ -377,12 +379,24 @@ fun WeatherScreen(
                                 )
                             }
 
+                            // 1b. Cảnh báo thời tiết nguy hiểm / cực đoan (Nếu có)
+                            if (severeAlerts.isNotEmpty()) {
+                                item {
+                                    SevereWeatherAlertCard(alerts = severeAlerts)
+                                }
+                            }
+
                             // 2. Hourly 24h Forecast Section
                             item {
                                 HourlyForecastSection(hourlyList = weather.hourly24h)
                             }
 
-                            // 3. AI Smart Outfit Stylist Card (Renders shimmer skeleton when loading)
+                            // 3. Bản đồ Radar Mưa & Mây động trực tiếp (RainViewer / Satellite)
+                            item {
+                                WeatherRadarCard(weather = weather)
+                            }
+
+                            // 4. AI Smart Outfit Stylist Card (Renders shimmer skeleton when loading)
                             item {
                                 OutfitStylistCard(
                                     outfit = state.outfit,
@@ -392,12 +406,17 @@ fun WeatherScreen(
                                 )
                             }
 
-                            // 4. 7-Day Forecast Section
+                            // 5. 7-Day Forecast Section
                             item {
                                 DailyForecastSection(dailyList = weather.daily7Days)
                             }
 
-                            // 5. Detailed Weather Metrics Grid
+                            // 6. Chỉ số Sức khỏe & Hoạt động Ngoài trời (Phơi đồ, Rửa xe, Nồm ẩm, v.v.)
+                            item {
+                                LifestyleIndexCard(weather = weather)
+                            }
+
+                            // 7. Detailed Weather Metrics Grid
                             item {
                                 WeatherMetricsGrid(weather = weather)
                             }

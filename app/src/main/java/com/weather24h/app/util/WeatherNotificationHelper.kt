@@ -8,7 +8,9 @@ import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.weather24h.app.MainActivity
+import com.weather24h.app.data.model.AlertSeverity
 import com.weather24h.app.data.model.OutfitRecommendation
+import com.weather24h.app.data.model.SevereWeatherDetector
 import com.weather24h.app.data.model.WeatherCondition
 import com.weather24h.app.data.model.WeatherData
 import kotlin.math.roundToInt
@@ -104,11 +106,13 @@ object WeatherNotificationHelper {
         initChannels(context)
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
 
-        val code = weather.current.weatherCode
-        val uv = weather.current.uvIndex
-        val cityName = weather.location.name
+        val detectedAlerts = SevereWeatherDetector.detectAlerts(weather)
+        val severeAlert = detectedAlerts.firstOrNull { it.severity == AlertSeverity.DANGER || it.severity == AlertSeverity.WARNING }
+            ?: return
 
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
         val pendingIntent = PendingIntent.getActivity(
             context,
             1002,
@@ -116,47 +120,21 @@ object WeatherNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Cảnh báo dông sét (WMO 95, 96, 99)
-        if (code in listOf(95, 96, 99)) {
-            val alert = NotificationCompat.Builder(context, CHANNEL_ALERT_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("⚡ Cảnh báo Dông bão & Sấm chớp tại $cityName")
-                .setContentText("Khu vực đang có dông sét mạnh. Hạn chế ra ngoài và chú ý an toàn!")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .build()
-            manager.notify(2001, alert)
-            return
-        }
+        val tipsSummary = severeAlert.safetyTips.joinToString("\n• ", prefix = "• ")
+        val alert = NotificationCompat.Builder(context, CHANNEL_ALERT_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle("${severeAlert.iconEmoji} ${severeAlert.title} - ${weather.location.name}")
+            .setContentText("${severeAlert.timeInfo}: ${severeAlert.headline}")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("${severeAlert.headline} (${severeAlert.timeInfo})\n\n🛡️ Khuyến cáo an toàn:\n$tipsSummary")
+            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
 
-        // Cảnh báo mưa rào to (WMO 65, 82)
-        if (code in listOf(65, 82)) {
-            val alert = NotificationCompat.Builder(context, CHANNEL_ALERT_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("🌧️ Cảnh báo Mưa to diện rộng tại $cityName")
-                .setContentText("Đang có mưa rào lớn. Đừng quên mang áo mưa hoặc ô gấp gọn khi ra ngoài!")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .build()
-            manager.notify(2002, alert)
-            return
-        }
-
-        // Cảnh báo tia UV nguy hại (UV >= 8)
-        if (uv >= 8.0) {
-            val alert = NotificationCompat.Builder(context, CHANNEL_ALERT_ID)
-                .setSmallIcon(android.R.drawable.ic_dialog_alert)
-                .setContentTitle("☀️ Cảnh báo Tia UV cực cao (Chỉ số: ${"%.1f".format(uv)})")
-                .setContentText("Bức xạ cực tím ở mức rất nguy hại. Hãy bôi kem chống nắng và che chắn kỹ!")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
-                .build()
-            manager.notify(2003, alert)
-            return
-        }
+        manager.notify(2001, alert)
     }
 
     /**
