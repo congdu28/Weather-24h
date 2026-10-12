@@ -49,6 +49,12 @@ fun WeatherScreen(
             .fillMaxSize()
             .background(getSkyGradient(weatherType, isDay))
     ) {
+        // Living dynamic weather atmosphere effect (Sun rays, rain streaks, storm lightning, clouds, stars)
+        WeatherAtmosphereEffect(
+            type = weatherType,
+            isDay = isDay
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -156,16 +162,14 @@ fun WeatherScreen(
                             HourlyForecastSection(hourlyList = weather.hourly24h)
                         }
 
-                        // 3. AI Smart Outfit Stylist Card
-                        if (state.outfit != null) {
-                            item {
-                                OutfitStylistCard(
-                                    outfit = state.outfit,
-                                    isLoading = state.isOutfitLoading,
-                                    onRefresh = { viewModel.refreshOutfit() },
-                                    onConfigureApiKey = { showSettingsDialog = true }
-                                )
-                            }
+                        // 3. AI Smart Outfit Stylist Card (Renders shimmer skeleton when loading)
+                        item {
+                            OutfitStylistCard(
+                                outfit = state.outfit,
+                                isLoading = state.isOutfitLoading,
+                                onRefresh = { viewModel.refreshOutfit() },
+                                onConfigureApiKey = { showSettingsDialog = true }
+                            )
                         }
 
                         // 4. 7-Day Forecast Section

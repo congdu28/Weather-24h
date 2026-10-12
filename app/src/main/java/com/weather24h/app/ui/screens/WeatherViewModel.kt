@@ -48,47 +48,85 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     private var currentCity: CityLocation = CityLocation.DEFAULT_LOCATION
     private var autoRefreshJob: Job? = null
+    private var loadWeatherJob: Job? = null
+    private var loadOutfitJob: Job? = null
+    private var gpsJob: Job? = null
 
     init {
         loadWeather(currentCity)
         startAutoRefreshTimer(_autoRefreshMinutes.value)
     }
 
+    /**
+     * Tải dữ liệu thời tiết cho một thành phố cụ thể.
+     * Tự động hủy mọi tác vụ cũ đang chạy để tránh race condition (bị nhảy về thành phố cũ).
+     */
     fun loadWeather(city: CityLocation) {
+        // Hủy ngay các tác vụ nền cũ (GPS hoặc lấy dữ liệu thành phố trước)
+        gpsJob?.cancel()
+        loadWeatherJob?.cancel()
+        loadOutfitJob?.cancel()
+
         currentCity = city
-        viewModelScope.launch {
+
+        loadWeatherJob = viewModelScope.launch {
             _uiState.value = WeatherUiState.Loading
             try {
                 val weather = repository.getWeatherData(city)
-                _uiState.value = WeatherUiState.Success(weather = weather, outfit = null, isOutfitLoading = true)
+                if (!isActive) return@launch
 
-                // Load outfit recommendation
-                val outfit = repository.getOutfitRecommendation(weather)
-                _uiState.value = WeatherUiState.Success(weather = weather, outfit = outfit, isOutfitLoading = false)
+                // Cập nhật giao diện thời tiết ngay lập tức (không chờ AI Stylist)
+                _uiState.value = WeatherUiState.Success(
+                    weather = weather,
+                    outfit = null,
+                    isOutfitLoading = true
+                )
+
+                // Tải gợi ý trang phục AI độc lập trong background
+                loadOutfitForWeather(weather)
             } catch (e: Exception) {
-                _uiState.value = WeatherUiState.Error("Không thể tải dữ liệu thời tiết. Vui lòng thử lại!")
+                if (isActive) {
+                    _uiState.value = WeatherUiState.Error("Không thể tải thời tiết cho ${city.name}. Vui lòng thử lại!")
+                }
+            }
+        }
+    }
+
+    /**
+     * Tải gợi ý AI Stylist độc lập, kiểm tra đúng thành phố trước khi gán dữ liệu.
+     */
+    private fun loadOutfitForWeather(weather: WeatherData) {
+        loadOutfitJob?.cancel()
+        loadOutfitJob = viewModelScope.launch {
+            try {
+                val outfit = repository.getOutfitRecommendation(weather)
+                if (!isActive) return@launch
+
+                val currentState = _uiState.value
+                // Chỉ áp dụng outfit nếu người dùng vẫn đang xem đúng thành phố này
+                if (currentState is WeatherUiState.Success && currentState.weather.cityName == weather.cityName) {
+                    _uiState.value = currentState.copy(outfit = outfit, isOutfitLoading = false)
+                }
+            } catch (_: Exception) {
+                if (isActive) {
+                    val currentState = _uiState.value
+                    if (currentState is WeatherUiState.Success) {
+                        _uiState.value = currentState.copy(isOutfitLoading = false)
+                    }
+                }
             }
         }
     }
 
     fun refreshWeather() {
-        viewModelScope.launch {
-            try {
-                val weather = repository.getWeatherData(currentCity)
-                val currentOutfit = (_uiState.value as? WeatherUiState.Success)?.outfit
-                _uiState.value = WeatherUiState.Success(weather = weather, outfit = currentOutfit, isOutfitLoading = false)
-            } catch (_: Exception) {}
-        }
+        loadWeather(currentCity)
     }
 
     fun refreshOutfit() {
         val currentState = _uiState.value
         if (currentState is WeatherUiState.Success) {
-            viewModelScope.launch {
-                _uiState.value = currentState.copy(isOutfitLoading = true)
-                val newOutfit = repository.getOutfitRecommendation(currentState.weather)
-                _uiState.value = currentState.copy(outfit = newOutfit, isOutfitLoading = false)
-            }
+            _uiState.value = currentState.copy(isOutfitLoading = true)
+            loadOutfitForWeather(currentState.weather)
         }
     }
 
@@ -134,10 +172,17 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setLocationFromGps(lat: Double, lon: Double) {
-        viewModelScope.launch {
+        // Hủy mọi request đang dở trước đó
+        gpsJob?.cancel()
+        loadWeatherJob?.cancel()
+        loadOutfitJob?.cancel()
+
+        gpsJob = viewModelScope.launch {
             _uiState.value = WeatherUiState.Loading
-            // Xác định chính xác quận/huyện, thành phố bằng reverse geocoding tiếng Việt
+            // Geocoding chi tiết tiếng Việt
             val address = repository.getAddressFromCoordinates(lat, lon)
+            if (!isActive) return@launch
+
             val gpsCity = CityLocation(
                 name = address.first,
                 country = address.second,
