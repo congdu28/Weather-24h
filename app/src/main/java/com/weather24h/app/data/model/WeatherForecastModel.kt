@@ -8,6 +8,9 @@ enum class WeatherForecastModel(
     val badge: String,
     val badgeColor: Long
 ) {
+    val displayName: String get() = title
+    val agency: String get() = provider
+
     BEST_MATCH(
         apiValue = "best_match",
         title = "Tự động tối ưu (Best Match)",

@@ -280,7 +280,7 @@ fun SettingsDialog(
                                         icon = Icons.Default.Public,
                                         iconTint = Color(0xFF0EA5E9),
                                         title = "Mô hình dự báo thời tiết",
-                                        subtitle = "${forecastModel.displayName} (${forecastModel.agency})",
+                                        subtitle = "${forecastModel.title} (${forecastModel.provider})",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.FORECAST_MODEL }
@@ -956,7 +956,7 @@ fun SettingsDialog(
                                                     onSelectForecastModel(model)
                                                     Toast.makeText(
                                                         context,
-                                                        "Đã chuyển sang mô hình: ${model.displayName}",
+                                                        "Đã chuyển sang mô hình: ${model.title}",
                                                         Toast.LENGTH_SHORT
                                                     ).show()
                                                 }
@@ -1726,7 +1726,7 @@ private fun ForecastModelSelectCard(
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(
-                        text = model.displayName,
+                        text = model.title,
                         color = contentColor,
                         fontSize = 14.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
@@ -1750,7 +1750,7 @@ private fun ForecastModelSelectCard(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Cơ quan: ${model.agency}",
+                text = "Cơ quan: ${model.provider}",
                 color = Color(0xFF0284C7),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium
