@@ -32,12 +32,13 @@ jobs:
         run: chmod +x gradlew || true
 
       - name: Build APK with Gradle
-        run: ./gradlew assembleRelease -x lint -x lintVitalRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace
 
       - name: Rename APK file
         run: |
           mkdir -p release-apk
-          find app/build/outputs/apk -name "*.apk" -exec cp {} release-apk/Weather24h-v1.0.0.apk \;
+          APK_FILE=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          cp "$APK_FILE" release-apk/Weather24h-v1.0.0.apk
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
