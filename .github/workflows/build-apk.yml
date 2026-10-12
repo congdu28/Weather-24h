@@ -39,14 +39,16 @@ jobs:
       - name: Rename APK file
         run: |
           mkdir -p release-apk
+          TAG_OR_REF="${{ github.ref_name }}"
+          [ -z "$TAG_OR_REF" ] && TAG_OR_REF="latest"
           APK_FILE=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          cp "$APK_FILE" release-apk/Weather24h-v1.0.0.apk
+          cp "$APK_FILE" "release-apk/Weather24h-${TAG_OR_REF}.apk"
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Weather24h-Release-APK
-          path: release-apk/Weather24h-v1.0.0.apk
+          path: release-apk/*.apk
 
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
@@ -54,7 +56,7 @@ jobs:
         with:
           name: "Weather 24h Release ${{ github.ref_name }}"
           tag_name: ${{ github.ref_name }}
-          files: release-apk/Weather24h-v1.0.0.apk
+          files: release-apk/*.apk
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
