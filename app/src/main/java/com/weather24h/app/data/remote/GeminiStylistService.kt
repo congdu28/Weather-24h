@@ -55,6 +55,10 @@ class GeminiStylistService(context: Context) {
         }
     }
 
+    fun hasDefaultKey(): Boolean {
+        return !getDefaultApiKey().isNullOrEmpty()
+    }
+
     fun getApiKey(): String? {
         return getCustomApiKey() ?: getDefaultApiKey()
     }
