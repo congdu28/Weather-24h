@@ -8,9 +8,6 @@ enum class WeatherForecastModel(
     val badge: String,
     val badgeColor: Long
 ) {
-    val displayName: String get() = title
-    val agency: String get() = provider
-
     BEST_MATCH(
         apiValue = "best_match",
         title = "Tự động tối ưu (Best Match)",
@@ -58,5 +55,8 @@ enum class WeatherForecastModel(
         description = "Mô hình toàn cầu ARPEGE nổi tiếng của Pháp về phân tích độ ẩm và áp suất khí quyển.",
         badge = "Châu Âu ARPEGE",
         badgeColor = 0xFFA855F7
-    )
+    );
+
+    val displayName: String get() = title
+    val agency: String get() = provider
 }
