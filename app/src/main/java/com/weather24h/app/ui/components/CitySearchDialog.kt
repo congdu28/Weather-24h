@@ -8,10 +8,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +35,8 @@ fun CitySearchDialog(
     isSearching: Boolean,
     onSelectCity: (CityLocation) -> Unit,
     onUseGps: () -> Unit,
-    favoriteCities: List<CityLocation> = emptyList()
+    favoriteCities: List<CityLocation> = emptyList(),
+    onToggleFavorite: (CityLocation) -> Unit = {}
 ) {
     var query by remember { mutableStateOf("") }
 
@@ -172,10 +175,16 @@ fun CitySearchDialog(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(searchResults) { city ->
-                                CityItemRow(city = city, onClick = {
-                                    onSelectCity(city)
-                                    onDismiss()
-                                })
+                                val isFav = favoriteCities.any { it.name.equals(city.name, ignoreCase = true) }
+                                CityItemRow(
+                                    city = city,
+                                    isFavorite = isFav,
+                                    onToggleFavorite = { onToggleFavorite(city) },
+                                    onClick = {
+                                        onSelectCity(city)
+                                        onDismiss()
+                                    }
+                                )
                             }
                         }
                     }
@@ -197,7 +206,7 @@ fun CitySearchDialog(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "THÀNH PHỐ YÊU THÍCH",
+                                        text = "THÀNH PHỐ YÊU THÍCH (${favoriteCities.size})",
                                         color = Color.White.copy(alpha = 0.85f),
                                         fontSize = 11.5.sp,
                                         fontWeight = FontWeight.Bold,
@@ -214,30 +223,47 @@ fun CitySearchDialog(
                                         Surface(
                                             shape = RoundedCornerShape(12.dp),
                                             color = Color(0xFFFFD166).copy(alpha = 0.15f),
-                                            modifier = Modifier
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .clickable {
-                                                    onSelectCity(city)
-                                                    onDismiss()
-                                                }
+                                            modifier = Modifier.clip(RoundedCornerShape(12.dp))
                                         ) {
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                                modifier = Modifier.padding(start = 10.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
                                             ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Star,
-                                                    contentDescription = null,
-                                                    tint = Color(0xFFFFD166),
-                                                    modifier = Modifier.size(13.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(5.dp))
-                                                Text(
-                                                    text = city.name,
-                                                    color = Color.White,
-                                                    fontSize = 13.sp,
-                                                    fontWeight = FontWeight.SemiBold
-                                                )
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier
+                                                        .clickable {
+                                                            onSelectCity(city)
+                                                            onDismiss()
+                                                        }
+                                                        .padding(vertical = 6.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Star,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFFFFD166),
+                                                        modifier = Modifier.size(13.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(5.dp))
+                                                    Text(
+                                                        text = city.name,
+                                                        color = Color.White,
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
+                                                Spacer(modifier = Modifier.width(2.dp))
+                                                IconButton(
+                                                    onClick = { onToggleFavorite(city) },
+                                                    modifier = Modifier.size(26.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Close,
+                                                        contentDescription = "Xóa khỏi yêu thích",
+                                                        tint = Color.White.copy(alpha = 0.65f),
+                                                        modifier = Modifier.size(14.dp)
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -261,22 +287,40 @@ fun CitySearchDialog(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 CityLocation.POPULAR_CITIES.forEach { city ->
+                                    val isFav = favoriteCities.any { it.name.equals(city.name, ignoreCase = true) }
                                     Surface(
                                         shape = RoundedCornerShape(12.dp),
-                                        color = Color.White.copy(alpha = 0.08f),
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .clickable {
-                                                onSelectCity(city)
-                                                onDismiss()
-                                            }
+                                        color = if (isFav) Color(0xFFFFD166).copy(alpha = 0.14f) else Color.White.copy(alpha = 0.08f),
+                                        modifier = Modifier.clip(RoundedCornerShape(12.dp))
                                     ) {
-                                        Text(
-                                            text = city.name,
-                                            color = Color.White,
-                                            fontSize = 13.sp,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                        )
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(start = 10.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
+                                        ) {
+                                            Text(
+                                                text = city.name,
+                                                color = Color.White,
+                                                fontSize = 13.sp,
+                                                modifier = Modifier
+                                                    .clickable {
+                                                        onSelectCity(city)
+                                                        onDismiss()
+                                                    }
+                                                    .padding(vertical = 6.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(2.dp))
+                                            IconButton(
+                                                onClick = { onToggleFavorite(city) },
+                                                modifier = Modifier.size(26.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
+                                                    contentDescription = "Yêu thích",
+                                                    tint = if (isFav) Color(0xFFFFD166) else Color.White.copy(alpha = 0.45f),
+                                                    modifier = Modifier.size(15.dp)
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -291,6 +335,8 @@ fun CitySearchDialog(
 @Composable
 private fun CityItemRow(
     city: CityLocation,
+    isFavorite: Boolean = false,
+    onToggleFavorite: () -> Unit = {},
     onClick: () -> Unit
 ) {
     Surface(
@@ -299,33 +345,54 @@ private fun CityItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(14.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 8.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = null,
-                tint = Color(0xFF38BDF8),
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Text(
-                    text = city.name,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(onClick = onClick)
+                    .padding(vertical = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = Color(0xFF38BDF8),
+                    modifier = Modifier.size(18.dp)
                 )
-                if (city.displayName.isNotEmpty()) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
                     Text(
-                        text = city.displayName,
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 12.sp
+                        text = city.name,
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
+                    if (city.displayName.isNotEmpty()) {
+                        Text(
+                            text = city.displayName,
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 12.sp
+                        )
+                    }
                 }
+            }
+
+            IconButton(
+                onClick = onToggleFavorite,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
+                    contentDescription = if (isFavorite) "Bỏ yêu thích" else "Thêm yêu thích",
+                    tint = if (isFavorite) Color(0xFFFFD166) else Color.White.copy(alpha = 0.45f),
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }

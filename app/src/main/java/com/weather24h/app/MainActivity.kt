@@ -102,7 +102,18 @@ class MainActivity : ComponentActivity() {
                 if (location != null) {
                     viewModel.setLocationFromGps(location.latitude, location.longitude)
                 } else {
-                    Toast.makeText(this, "Chưa xác định được tọa độ GPS. Vui lòng bật định vị trên máy.", Toast.LENGTH_SHORT).show()
+                    fusedClient.getCurrentLocation(
+                        com.google.android.gms.location.Priority.PRIORITY_BALANCED_POWER_ACCURACY,
+                        null
+                    ).addOnSuccessListener { freshLoc ->
+                        if (freshLoc != null) {
+                            viewModel.setLocationFromGps(freshLoc.latitude, freshLoc.longitude)
+                        } else {
+                            Toast.makeText(this, "Chưa xác định được tọa độ GPS. Vui lòng bật định vị trên máy.", Toast.LENGTH_SHORT).show()
+                        }
+                    }.addOnFailureListener {
+                        Toast.makeText(this, "Lỗi khi lấy vị trí GPS.", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }.addOnFailureListener {
                 Toast.makeText(this, "Lỗi khi lấy vị trí GPS.", Toast.LENGTH_SHORT).show()

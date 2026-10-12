@@ -3,10 +3,12 @@
     android:initialKeyguardLayout="@layout/weather_widget"
     android:initialLayout="@layout/weather_widget"
     android:minWidth="180dp"
-    android:minHeight="100dp"
-    android:previewImage="@android:drawable/ic_dialog_map"
+    android:minHeight="80dp"
+    android:minResizeWidth="140dp"
+    android:minResizeHeight="70dp"
+    android:previewImage="@drawable/ic_launcher"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="3"
     android:targetCellHeight="2"
     android:updatePeriodMillis="1800000"
-    android:widgetCategory="home_screen" />
+    android:widgetCategory="home_screen|keyguard" />

@@ -9,6 +9,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +27,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -34,6 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -160,7 +164,10 @@ fun SettingsDialog(
                 AnimatedContent(
                     targetState = currentSubScreen,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label = "SettingsNav"
+                    label = "SettingsNav",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 ) { screen ->
                     when (screen) {
                         // 1. MÀN HÌNH CHÍNH (THEO PHONG CÁCH INSET GROUPED CARDS TRONG ẢNH MẪU)
@@ -463,20 +470,25 @@ fun SettingsDialog(
 
                                             Row(
                                                 modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
-                                                TextButton(onClick = {
-                                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                                                    val text = clipboard?.primaryClip?.getItemAt(0)?.text?.toString()?.trim()
-                                                    if (!text.isNullOrEmpty()) {
-                                                        apiKeyText = text
-                                                        Toast.makeText(context, "Đã dán key từ Clipboard", Toast.LENGTH_SHORT).show()
-                                                    }
-                                                }) {
-                                                    Icon(Icons.Default.ContentPaste, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(15.dp))
+                                                OutlinedButton(
+                                                    onClick = {
+                                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                                        val text = clipboard?.primaryClip?.getItemAt(0)?.text?.toString()?.trim()
+                                                        if (!text.isNullOrEmpty()) {
+                                                            apiKeyText = text
+                                                            Toast.makeText(context, "Đã dán key từ Clipboard", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                    },
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(14.dp))
                                                     Spacer(modifier = Modifier.width(4.dp))
-                                                    Text("Dán từ Clipboard", color = Color(0xFF38BDF8), fontSize = 12.sp)
+                                                    Text("Dán từ Clipboard", fontSize = 11.5.sp, maxLines = 1)
                                                 }
 
                                                 Button(
@@ -488,9 +500,10 @@ fun SettingsDialog(
                                                         }
                                                     },
                                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA855F7)),
-                                                    shape = RoundedCornerShape(10.dp)
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    modifier = Modifier.weight(1f)
                                                 ) {
-                                                    Text("Lưu Key", color = Color.White, fontSize = 12.5.sp)
+                                                    Text("Lưu Key", color = Color.White, fontSize = 12.sp)
                                                 }
                                             }
                                         }
@@ -550,48 +563,70 @@ fun SettingsDialog(
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 InsetGroupCard {
-                                    Column(modifier = Modifier.padding(14.dp)) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Widgets,
+                                                contentDescription = null,
+                                                tint = Color(0xFFC084FC),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Text(
+                                                text = "TIỆN ÍCH WIDGET MÀN HÌNH CHÍNH",
+                                                color = Color.White,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(10.dp))
                                         Text(
-                                            text = "TIỆN ÍCH WIDGET MÀN HÌNH CHÍNH",
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = "Cách thêm Widget ra màn hình điện thoại:\n1. Nhấn giữ vào vùng trống trên màn hình chính của bạn.\n2. Chọn mục 'Tiện ích' (Widgets).\n3. Tìm kiếm 'Weather 24h' và kéo thả widget ra màn hình!",
-                                            color = Color.White.copy(alpha = 0.7f),
-                                            fontSize = 12.sp,
-                                            lineHeight = 18.sp
+                                            text = "Cách thêm Widget ra màn hình điện thoại:\n• Bước 1: Nhấn giữ vào vùng trống trên màn hình chính của bạn.\n• Bước 2: Chọn mục 'Tiện ích' (Widgets).\n• Bước 3: Tìm ứng dụng 'Weather 24h' và kéo thả Widget ra vị trí bạn thích!",
+                                            color = Color.White.copy(alpha = 0.75f),
+                                            fontSize = 12.5.sp,
+                                            lineHeight = 19.sp
                                         )
                                     }
                                 }
 
                                 InsetGroupCard {
-                                    Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = "BỘ NHỚ ĐỆM NGOẠI TUYẾN",
-                                            color = Color.White,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(modifier = Modifier.height(6.dp))
-                                        Text(
-                                            text = "Ứng dụng tự động lưu trữ dữ liệu thời tiết gần nhất để bạn có thể xem tức thì ngay cả khi không có kết nối Internet.",
-                                            color = Color.White.copy(alpha = 0.7f),
-                                            fontSize = 12.sp,
-                                            lineHeight = 17.sp
-                                        )
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Storage,
+                                                contentDescription = null,
+                                                tint = Color(0xFF38BDF8),
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(10.dp))
+                                            Text(
+                                                text = "BỘ NHỚ ĐỆM NGOẠI TUYẾN (CACHE)",
+                                                color = Color.White,
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                         Spacer(modifier = Modifier.height(10.dp))
-                                        OutlinedButton(
+                                        Text(
+                                            text = "Dữ liệu thời tiết và gợi ý phong cách Gemini được tự động lưu vào máy. Khi bạn mất kết nối mạng hoặc ở vùng sóng yếu, ứng dụng vẫn hoạt động tức thì với dữ liệu đã lưu.",
+                                            color = Color.White.copy(alpha = 0.75f),
+                                            fontSize = 12.5.sp,
+                                            lineHeight = 18.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(14.dp))
+                                        Button(
                                             onClick = {
                                                 onClearCache()
-                                                Toast.makeText(context, "Đã xóa bộ nhớ đệm thành công!", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Đã xóa toàn bộ bộ nhớ đệm ngoại tuyến!", Toast.LENGTH_SHORT).show()
                                             },
-                                            shape = RoundedCornerShape(10.dp),
-                                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF87171))
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444).copy(alpha = 0.2f)),
+                                            border = BorderStroke(1.dp, Color(0xFFEF4444).copy(alpha = 0.5f)),
+                                            modifier = Modifier.fillMaxWidth()
                                         ) {
-                                            Text("Xóa bộ nhớ đệm ngoại tuyến", fontSize = 12.sp)
+                                            Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = Color(0xFFFCA5A5), modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Xóa bộ nhớ đệm ngoại tuyến", color = Color(0xFFFCA5A5), fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
                                         }
                                     }
                                 }
@@ -615,22 +650,55 @@ fun SettingsDialog(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(64.dp)
-                                                .clip(RoundedCornerShape(20.dp))
-                                                .background(Color(0xFF0284C7)),
+                                                .size(68.dp)
+                                                .clip(RoundedCornerShape(22.dp))
+                                                .background(Brush.linearGradient(listOf(Color(0xFF0284C7), Color(0xFF7C3AED)))),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            Icon(Icons.Default.Cloud, contentDescription = null, tint = Color.White, modifier = Modifier.size(36.dp))
+                                            Icon(Icons.Default.Cloud, contentDescription = null, tint = Color.White, modifier = Modifier.size(38.dp))
                                         }
                                         Spacer(modifier = Modifier.height(12.dp))
-                                        Text("Weather 24h", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                        Text("Weather 24h", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                         Text("Phiên bản v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})", color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+
+                                        Spacer(modifier = Modifier.height(14.dp))
+
+                                        // Thông tin tác giả: CD
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = Color(0xFF38BDF8).copy(alpha = 0.15f),
+                                            border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.35f)),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                                horizontalArrangement = Arrangement.Center,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Person,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFF38BDF8),
+                                                    modifier = Modifier.size(18.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(
+                                                    text = "Tác giả: CD",
+                                                    color = Color(0xFF38BDF8),
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    letterSpacing = 0.5.sp
+                                                )
+                                            }
+                                        }
+
                                         Spacer(modifier = Modifier.height(14.dp))
                                         Text(
                                             text = "Ứng dụng thời tiết cao cấp được phát triển 100% bằng Native Android Kotlin & Jetpack Compose, tích hợp trí tuệ nhân tạo Google Gemini 3.8 Flash và API Open-Meteo.",
                                             color = Color.White.copy(alpha = 0.75f),
                                             fontSize = 12.5.sp,
-                                            lineHeight = 18.sp
+                                            lineHeight = 18.sp,
+                                            textAlign = TextAlign.Center
                                         )
                                     }
                                 }
@@ -673,7 +741,7 @@ private fun SettingsRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 15.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -691,17 +759,26 @@ private fun SettingsRowItem(
             Text(
                 text = title,
                 color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
+                fontSize = 14.5.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.wrapContentWidth()
+        ) {
             if (!subtitle.isNullOrEmpty()) {
                 Text(
                     text = subtitle,
                     color = Color.White.copy(alpha = 0.45f),
-                    fontSize = 13.sp
+                    fontSize = 12.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Spacer(modifier = Modifier.width(6.dp))
             }
@@ -778,7 +855,14 @@ private fun KeyModeSelectCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(title, color = Color.White, fontSize = 13.5.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = title,
+                    color = Color.White,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))

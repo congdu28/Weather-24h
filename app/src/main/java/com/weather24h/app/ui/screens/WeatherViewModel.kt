@@ -11,6 +11,7 @@ import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
 import com.weather24h.app.util.WeatherNotificationHelper
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -240,17 +241,53 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
         gpsJob = viewModelScope.launch {
             _uiState.value = WeatherUiState.Loading
-            val address = repository.getAddressFromCoordinates(lat, lon)
-            if (!isActive) return@launch
 
-            val gpsCity = CityLocation(
-                name = address.first,
-                country = address.second,
+            val provisionalCity = CityLocation(
+                name = "Vị trí của bạn",
+                country = "Việt Nam",
                 latitude = lat,
                 longitude = lon,
                 isCurrentLocation = true
             )
-            loadWeather(gpsCity)
+            currentCity = provisionalCity
+
+            // Tải song song thời tiết & phân giải tên địa điểm để giảm tối đa thời gian chờ
+            val weatherDeferred = async {
+                try {
+                    repository.getWeatherData(provisionalCity)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            val addressDeferred = async {
+                try {
+                    repository.getAddressFromCoordinates(lat, lon)
+                } catch (_: Exception) {
+                    Pair("Vị trí của bạn", "Việt Nam")
+                }
+            }
+
+            val weather = weatherDeferred.await()
+            val address = addressDeferred.await()
+
+            if (!isActive) return@launch
+
+            if (weather != null) {
+                val realCity = provisionalCity.copy(name = address.first, country = address.second)
+                currentCity = realCity
+                val finalWeather = weather.copy(location = realCity)
+
+                _uiState.value = WeatherUiState.Success(
+                    weather = finalWeather,
+                    outfit = null,
+                    isOutfitLoading = true
+                )
+
+                loadOutfitForWeather(finalWeather)
+            } else {
+                _uiState.value = WeatherUiState.Error("Không thể tải thời tiết tại vị trí GPS này.")
+            }
         }
     }
 }

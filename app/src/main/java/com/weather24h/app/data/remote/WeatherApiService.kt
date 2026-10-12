@@ -156,7 +156,7 @@ class WeatherApiService {
             humidity = currentObj.get("relative_humidity_2m").asInt,
             windSpeed = currentObj.get("wind_speed_10m").asDouble,
             windDirection = currentObj.get("wind_direction_10m").asInt,
-            uvIndex = 5.0,
+            uvIndex = dailyObj.getAsJsonArray("uv_index_max")?.get(0)?.asDouble ?: 5.0,
             surfacePressure = currentObj.get("surface_pressure").asDouble,
             visibilityKm = 10.0,
             precipitation = currentObj.get("precipitation").asDouble,
@@ -164,7 +164,7 @@ class WeatherApiService {
             time = currentObj.get("time").asString
         )
 
-        // Parse Hourly 24h
+        // Parse Hourly 24h chuẩn xác theo giờ hiện tại
         val hourlyTimes = hourlyObj.getAsJsonArray("time")
         val hourlyTemps = hourlyObj.getAsJsonArray("temperature_2m")
         val hourlyCodes = hourlyObj.getAsJsonArray("weather_code")
@@ -172,17 +172,46 @@ class WeatherApiService {
         val hourlyHumids = hourlyObj.getAsJsonArray("relative_humidity_2m")
         val hourlyWinds = hourlyObj.getAsJsonArray("wind_speed_10m")
 
-        val hourlyList = mutableListOf<HourlyForecast>()
-        val count = minOf(24, hourlyTimes.size())
-        for (i in 0 until count) {
+        // Tìm vị trí giờ hiện tại trong mảng Open-Meteo
+        val now = LocalDateTime.now()
+        val currentPrefix = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH").format(now)
+        val timeFromApi = currentObj.get("time")?.asString ?: ""
+        val targetPrefix = if (timeFromApi.length >= 13) timeFromApi.substring(0, 13) else currentPrefix
+
+        var startIndex = 0
+        var found = false
+        for (i in 0 until hourlyTimes.size()) {
             val tStr = hourlyTimes.get(i).asString
-            val hourLabel = if (tStr.contains("T")) tStr.substringAfter("T") else tStr
+            if (tStr.startsWith(targetPrefix)) {
+                startIndex = i
+                found = true
+                break
+            }
+        }
+
+        if (!found) {
+            for (i in 0 until hourlyTimes.size()) {
+                val tStr = hourlyTimes.get(i).asString
+                if (tStr >= targetPrefix) {
+                    startIndex = i
+                    break
+                }
+            }
+        }
+
+        val hourlyList = mutableListOf<HourlyForecast>()
+        val count = minOf(startIndex + 24, hourlyTimes.size())
+        for (i in startIndex until count) {
+            val tStr = hourlyTimes.get(i).asString
+            val rawHour = if (tStr.contains("T")) tStr.substringAfter("T") else tStr
+            val isFirstHour = (i == startIndex)
+
             hourlyList.add(
                 HourlyForecast(
                     timeString = tStr,
-                    hourLabel = if (i == 0) "Hiện tại" else hourLabel,
-                    temperature = hourlyTemps.get(i).asDouble,
-                    weatherCode = hourlyCodes.get(i).asInt,
+                    hourLabel = if (isFirstHour) "Hiện tại" else rawHour,
+                    temperature = if (isFirstHour) current.temperature else hourlyTemps.get(i).asDouble,
+                    weatherCode = if (isFirstHour) current.weatherCode else hourlyCodes.get(i).asInt,
                     precipitationProbability = hourlyRains.get(i).asInt,
                     humidity = hourlyHumids.get(i).asInt,
                     windSpeed = hourlyWinds.get(i).asDouble
@@ -254,13 +283,17 @@ class WeatherApiService {
     }
 
     private fun getFallbackMockData(location: CityLocation): WeatherData {
-        val hourly = (0..23).map { i ->
+        val now = LocalDateTime.now()
+        val currentHour = now.hour
+        val hourly = (0..23).map { offset ->
+            val hourVal = (currentHour + offset) % 24
+            val hourStr = String.format("%02d:00", hourVal)
             HourlyForecast(
-                timeString = "2026-10-12T$i:00",
-                hourLabel = if (i == 0) "Hiện tại" else String.format("%02d:00", i),
-                temperature = 28.0 + (i % 5) - 2.0,
-                weatherCode = if (i in 14..16) 61 else 1,
-                precipitationProbability = if (i in 14..16) 60 else 10,
+                timeString = "${now.toLocalDate()}T$hourStr",
+                hourLabel = if (offset == 0) "Hiện tại" else hourStr,
+                temperature = 28.0 + (offset % 5) - 2.0,
+                weatherCode = if (hourVal in 14..16) 61 else 1,
+                precipitationProbability = if (hourVal in 14..16) 60 else 10,
                 humidity = 70,
                 windSpeed = 12.0
             )

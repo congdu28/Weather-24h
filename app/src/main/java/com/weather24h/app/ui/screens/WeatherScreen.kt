@@ -225,7 +225,10 @@ fun WeatherScreen(
                 onUseGps = {
                     onRequestGps()
                 },
-                favoriteCities = favoriteCities
+                favoriteCities = favoriteCities,
+                onToggleFavorite = { city ->
+                    viewModel.toggleFavoriteCity(city)
+                }
             )
         }
 

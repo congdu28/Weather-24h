@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Glowing Sun -->
+    <group>
+        <!-- Sun Outer Glow -->
+        <path
+            android:fillAlpha="0.3"
+            android:fillColor="#FBBF24"
+            android:pathData="M66,42m-19,0a19,19 0,1 1,38 0a19,19 0,1 1,-38 0" />
+
+        <!-- Sun Core -->
+        <path android:pathData="M66,42m-13,0a13,13 0,1 1,26 0a13,13 0,1 1,-26 0">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:angle="45"
+                    android:endColor="#F59E0B"
+                    android:startColor="#FBBF24"
+                    android:type="linear" />
+            </aapt:attr>
+        </path>
+
+        <!-- Sun Rays -->
+        <path
+            android:fillColor="#FCD34D"
+            android:pathData="M66,22L66,26M66,58L66,62M46,42L50,42M82,42L86,42M52,28L55,31M77,53L80,56M52,56L55,53M77,31L80,28"
+            android:strokeWidth="2.5"
+            android:strokeColor="#FCD34D"
+            android:strokeLineCap="round" />
+    </group>
+
+    <!-- Stylized Weather Cloud -->
+    <group>
+        <!-- Cloud Shadow / Bottom depth -->
+        <path
+            android:fillAlpha="0.25"
+            android:fillColor="#1E293B"
+            android:pathData="M34,68h38a14,14 0,0 0,0 -28a17,17 0,0 0 -33,-3a12,12 0,0 0 -5,23z" />
+
+        <!-- Main Cloud Body -->
+        <path android:pathData="M33,66h38a13,13 0,0 0,0 -26a16,16 0,0 0 -31,-3a11,11 0,0 0 -7,21z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:angle="90"
+                    android:endColor="#FFFFFF"
+                    android:startColor="#E0F2FE"
+                    android:type="linear" />
+            </aapt:attr>
+        </path>
+
+        <!-- Cloud Highlight curve -->
+        <path
+            android:fillAlpha="0.5"
+            android:fillColor="#BAE6FD"
+            android:pathData="M34,65h36c6,0 11,-4 11,-10c0,-5 -4,-9 -9,-10c-1,-9 -8,-15 -17,-15c-7,0 -13,4 -16,10c-2,-1 -4,-1 -6,-1c-6,0 -10,4 -10,10c0,8 5,16 11,16z" />
+    </group>
+
+    <!-- Weather Raindrops / Sparkle -->
+    <group>
+        <path
+            android:fillColor="#38BDF8"
+            android:pathData="M38,72l-2,5a1.5,1.5 0,0 0,3 0z" />
+        <path
+            android:fillColor="#60A5FA"
+            android:pathData="M52,72l-2,5a1.5,1.5 0,0 0,3 0z" />
+        <path
+            android:fillColor="#818CF8"
+            android:pathData="M66,72l-2,5a1.5,1.5 0,0 0,3 0z" />
+    </group>
+
+</vector>
