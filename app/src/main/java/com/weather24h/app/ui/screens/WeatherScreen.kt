@@ -151,18 +151,24 @@ fun WeatherScreen(
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // Nút cập nhật thời tiết mới nhất (hiệu ứng xoay tròn mượt mà)
-                    val refreshRotation by animateFloatAsState(
-                        targetValue = if (isRefreshing) 720f else 0f,
-                        animationSpec = if (isRefreshing) {
-                            infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
+                    val infiniteTransition = rememberInfiniteTransition(label = "RefreshInfinite")
+                    val refreshRotation by if (isRefreshing) {
+                        infiniteTransition.animateFloat(
+                            initialValue = 0f,
+                            targetValue = 360f,
+                            animationSpec = infiniteRepeatable(
+                                animation = tween(900, easing = LinearEasing),
                                 repeatMode = RepeatMode.Restart
-                            )
-                        } else {
-                            spring(stiffness = Spring.StiffnessLow)
-                        },
-                        label = "RefreshSpin"
-                    )
+                            ),
+                            label = "Spinning"
+                        )
+                    } else {
+                        animateFloatAsState(
+                            targetValue = 0f,
+                            animationSpec = spring(stiffness = Spring.StiffnessLow),
+                            label = "SpinReset"
+                        )
+                    }
 
                     IconButton(
                         onClick = {
@@ -293,15 +299,13 @@ fun WeatherScreen(
                         val showPullIndicator = pullOffset > 10f || isRefreshing
                         val pullProgress = (pullOffset / pullThreshold).coerceIn(0f, 1f)
 
-                        AnimatedVisibility(
-                            visible = showPullIndicator,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically(),
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .zIndex(10f)
-                                .padding(top = 8.dp)
-                        ) {
+                        val indicatorAlpha by animateFloatAsState(
+                            targetValue = if (showPullIndicator) 1f else 0f,
+                            animationSpec = tween(200),
+                            label = "PullAlpha"
+                        )
+
+                        if (indicatorAlpha > 0.01f) {
                             Surface(
                                 shape = RoundedCornerShape(20.dp),
                                 color = if (isDarkTheme) Color(0xFF1E293B).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.95f),
@@ -309,7 +313,12 @@ fun WeatherScreen(
                                     1.dp,
                                     if (isDarkTheme) Color.White.copy(alpha = 0.2f) else Color(0xFF0F172A).copy(alpha = 0.15f)
                                 ),
-                                shadowElevation = 6.dp
+                                shadowElevation = 6.dp,
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .zIndex(10f)
+                                    .padding(top = 8.dp)
+                                    .graphicsLayer(alpha = indicatorAlpha)
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
