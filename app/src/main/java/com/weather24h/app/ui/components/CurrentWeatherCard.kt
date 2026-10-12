@@ -79,8 +79,9 @@ fun CurrentWeatherCard(
                     Text(
                         text = weather.location.name,
                         color = textColor,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
@@ -111,7 +112,8 @@ fun CurrentWeatherCard(
                 Text(
                     text = weather.location.displayName,
                     color = subtextColor,
-                    fontSize = 13.sp
+                    fontSize = 12.5.sp,
+                    maxLines = 1
                 )
             }
 
@@ -128,13 +130,13 @@ fun CurrentWeatherCard(
                     Text(
                         text = "📡 Ngoại tuyến (Đã lưu lúc ${weather.lastUpdated})",
                         color = Color(0xFFFCA5A5),
-                        fontSize = 11.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             val weatherIcon = WeatherCondition.getWeatherIcon(condition.type, weather.current.isDay)
             val iconTint = WeatherCondition.getWeatherIconTint(condition.type, weather.current.isDay)
@@ -148,7 +150,7 @@ fun CurrentWeatherCard(
                     imageVector = weatherIcon,
                     contentDescription = condition.description,
                     tint = iconTint,
-                    modifier = Modifier.size(68.dp)
+                    modifier = Modifier.size(64.dp)
                 )
 
                 Spacer(modifier = Modifier.width(14.dp))
@@ -156,9 +158,9 @@ fun CurrentWeatherCard(
                 Text(
                     text = "${weather.current.temperature.roundToInt()}°",
                     color = textColor,
-                    fontSize = 72.sp,
+                    fontSize = 64.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = (-2).sp
+                    letterSpacing = (-1.5).sp
                 )
             }
 
@@ -172,7 +174,7 @@ fun CurrentWeatherCard(
                 Text(
                     text = condition.description,
                     color = textColor,
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.SemiBold
                 )
 

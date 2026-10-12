@@ -17,11 +17,11 @@ val defaultGeminiKey: String = localProps.getProperty("GEMINI_API_KEY")
 
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.9"
+    ?: "1.0.10"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 109
+    ?: 110
 
 android {
     namespace = "com.weather24h.app"
@@ -129,6 +129,9 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+
+    // Background Tasks (WorkManager for Periodic Weather Status)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Play Services Location (GPS)
     implementation("com.google.android.gms:play-services-location:21.1.0")

@@ -69,9 +69,18 @@ fun SettingsDialog(
     isStartWithGps: Boolean,
     isMorningNotif: Boolean,
     isSevereAlerts: Boolean,
+    periodicNotifHours: Int,
+    bgDimmingLevel: Float,
+    ambientGlowStyle: com.weather24h.app.ui.theme.AmbientGlowStyle,
+    ambientGlowIntensity: Float,
     favoriteCities: List<CityLocation>,
     onDismiss: () -> Unit,
     onSelectThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit,
+    onSetBgDimmingLevel: (Float) -> Unit,
+    onSelectAmbientGlowStyle: (com.weather24h.app.ui.theme.AmbientGlowStyle) -> Unit,
+    onSetAmbientGlowIntensity: (Float) -> Unit,
+    onSelectPeriodicNotifHours: (Int) -> Unit,
+    onSendCurrentWeatherNotif: () -> Unit,
     onSaveCustomKey: (String) -> Unit,
     onClearCustomKey: () -> Unit,
     onSelectAutoRefreshInterval: (Int) -> Unit,
@@ -203,18 +212,19 @@ fun SettingsDialog(
                                         icon = Icons.Default.Palette,
                                         iconTint = Color(0xFFA855F7),
                                         title = "Giao diện & Theme",
-                                        subtitle = currentThemeMode.title,
+                                        subtitle = "${currentThemeMode.title} • Ambient: ${ambientGlowStyle.title}",
                                         onClick = { currentSubScreen = SettingsSubScreen.THEME }
                                     )
                                 }
 
                                 // NHÓM 1: THÔNG BÁO THỜI TIẾT
                                 InsetGroupCard {
+                                    val notifStatus = if (periodicNotifHours > 0) "${periodicNotifHours}h/lần" else "Tắt định kỳ"
                                     SettingsRowItem(
                                         icon = Icons.Default.Notifications,
                                         iconTint = Color(0xFF38BDF8),
                                         title = "Thông báo thời tiết",
-                                        subtitle = if (isMorningNotif || isSevereAlerts) "Đang bật" else "Tắt",
+                                        subtitle = "$notifStatus • ${if (isMorningNotif || isSevereAlerts) "Cảnh báo bật" else "Cảnh báo tắt"}",
                                         onClick = { currentSubScreen = SettingsSubScreen.NOTIFICATIONS }
                                     )
                                 }
@@ -272,7 +282,7 @@ fun SettingsDialog(
                             }
                         }
 
-                        // 1.5. SUB-SCREEN: GIAO DIỆN & THEME (SÁNG / TỐI / THEO THIẾT BỊ)
+                        // 1.5. SUB-SCREEN: GIAO DIỆN & THEME (SÁNG / TỐI / AMBIENT LIGHT / ĐỘ TỐI NỀN)
                         SettingsSubScreen.THEME -> {
                             Column(
                                 modifier = Modifier
@@ -280,6 +290,7 @@ fun SettingsDialog(
                                     .verticalScroll(rememberScrollState()),
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
+                                // 1. Chế độ hiển thị ứng dụng
                                 InsetGroupCard {
                                     Column(modifier = Modifier.padding(14.dp)) {
                                         Text(
@@ -337,6 +348,198 @@ fun SettingsDialog(
                                         }
                                     }
                                 }
+
+                                // 2. Độ sáng / tối của nền (Background Dimming)
+                                InsetGroupCard {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "ĐỘ SÁNG / TỐI CỦA NỀN",
+                                                color = Color.White.copy(alpha = 0.8f),
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.7.sp
+                                            )
+                                            val dimPercent = (bgDimmingLevel * 100).toInt()
+                                            Text(
+                                                text = if (dimPercent == 0) "Sáng gốc (0%)" else "Làm tối $dimPercent%",
+                                                color = Color(0xFF38BDF8),
+                                                fontSize = 12.5.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Kéo để làm tối nền giúp chữ và icon nổi bật, dịu mắt hơn khi dùng ban đêm.",
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            fontSize = 11.5.sp,
+                                            lineHeight = 16.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Slider(
+                                            value = bgDimmingLevel,
+                                            onValueChange = onSetBgDimmingLevel,
+                                            valueRange = 0.0f..0.8f,
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = Color(0xFF38BDF8),
+                                                activeTrackColor = Color(0xFF38BDF8),
+                                                inactiveTrackColor = Color.White.copy(alpha = 0.2f)
+                                            )
+                                        )
+
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            listOf(
+                                                Pair(0.0f, "0%"),
+                                                Pair(0.2f, "20%"),
+                                                Pair(0.4f, "40%"),
+                                                Pair(0.6f, "60%"),
+                                                Pair(0.8f, "80%")
+                                            ).forEach { (preset, label) ->
+                                                val isPresSelected = kotlin.math.abs(bgDimmingLevel - preset) < 0.05f
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (isPresSelected) Color(0xFF38BDF8).copy(alpha = 0.25f) else Color(0xFF1E293B),
+                                                    border = BorderStroke(1.dp, if (isPresSelected) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.1f)),
+                                                    modifier = Modifier.clickable { onSetBgDimmingLevel(preset) }
+                                                ) {
+                                                    Text(
+                                                        text = label,
+                                                        color = if (isPresSelected) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.8f),
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // 3. Tùy chỉnh màu gradient & Ambient Light
+                                InsetGroupCard {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = "ÁNH SÁNG AMBIENT LIGHT & GRADIENT",
+                                                color = Color.White.copy(alpha = 0.8f),
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.7.sp
+                                            )
+                                            val glowPercent = (ambientGlowIntensity * 100).toInt()
+                                            Text(
+                                                text = if (glowPercent == 0) "Tắt (0%)" else "Cường độ $glowPercent%",
+                                                color = Color(0xFFA855F7),
+                                                fontSize = 12.5.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Hiệu ứng ánh sáng hào quang phát sáng phía sau các khối thẻ thời tiết.",
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            fontSize = 11.5.sp,
+                                            lineHeight = 16.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        Slider(
+                                            value = ambientGlowIntensity,
+                                            onValueChange = onSetAmbientGlowIntensity,
+                                            valueRange = 0.0f..1.0f,
+                                            colors = SliderDefaults.colors(
+                                                thumbColor = Color(0xFFA855F7),
+                                                activeTrackColor = Color(0xFFA855F7),
+                                                inactiveTrackColor = Color.White.copy(alpha = 0.2f)
+                                            )
+                                        )
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Text(
+                                            text = "PHONG CÁCH ÁNH SÁNG",
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        com.weather24h.app.ui.theme.AmbientGlowStyle.values().forEach { style ->
+                                            val isStyleSelected = ambientGlowStyle == style
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable {
+                                                        onSelectAmbientGlowStyle(style)
+                                                        Toast.makeText(context, "Đã chọn: ${style.title}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    .padding(vertical = 10.dp, horizontal = 6.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    modifier = Modifier.weight(1f)
+                                                ) {
+                                                    // Preview gradient dots
+                                                    Row(
+                                                        modifier = Modifier.padding(end = 12.dp),
+                                                        horizontalArrangement = Arrangement.spacedBy((-6).dp)
+                                                    ) {
+                                                        listOf(style.primaryColor, style.secondaryColor, style.accentColor).forEach { color ->
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(16.dp)
+                                                                    .clip(CircleShape)
+                                                                    .background(color)
+                                                                    .border(1.dp, Color.White.copy(alpha = 0.3f), CircleShape)
+                                                            )
+                                                        }
+                                                    }
+                                                    Column {
+                                                        Text(
+                                                            text = style.title,
+                                                            color = if (isStyleSelected) Color(0xFFA855F7) else Color.White,
+                                                            fontSize = 13.5.sp,
+                                                            fontWeight = if (isStyleSelected) FontWeight.Bold else FontWeight.Medium
+                                                        )
+                                                        Spacer(modifier = Modifier.height(2.dp))
+                                                        Text(
+                                                            text = style.description,
+                                                            color = Color.White.copy(alpha = 0.55f),
+                                                            fontSize = 11.sp,
+                                                            lineHeight = 15.sp
+                                                        )
+                                                    }
+                                                }
+                                                if (isStyleSelected) {
+                                                    Icon(
+                                                        Icons.Default.CheckCircle,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFFA855F7),
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                            ItemDivider()
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
                             }
                         }
 
@@ -348,23 +551,109 @@ fun SettingsDialog(
                                     .verticalScroll(rememberScrollState()),
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
+                                // 1. Cập nhật thời tiết định kỳ lên thanh thông báo
                                 InsetGroupCard {
-                                    ToggleRowItem(
-                                        title = "Bản tin thời tiết buổi sáng",
-                                        subtitle = "Gửi tóm tắt thời tiết & gợi ý trang phục mỗi sáng (7h00)",
-                                        isChecked = isMorningNotif,
-                                        onCheckedChange = onSetMorningNotif
-                                    )
-                                    ItemDivider()
-                                    ToggleRowItem(
-                                        title = "Cảnh báo thời tiết nguy hiểm",
-                                        subtitle = "Cảnh báo khẩn khi có Dông sét, mưa lớn hoặc tia UV nguy hại",
-                                        isChecked = isSevereAlerts,
-                                        onCheckedChange = onSetSevereAlerts
-                                    )
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = "THÔNG BÁO THỜI TIẾT HIỆN TẠI (ĐỊNH KỲ)",
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.7.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Tự động gửi và cập nhật nhiệt độ thời tiết lên thanh thông báo hệ thống theo chu kỳ đã chọn.",
+                                            color = Color.White.copy(alpha = 0.6f),
+                                            fontSize = 11.5.sp,
+                                            lineHeight = 16.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        listOf(
+                                            Pair(1, "Mỗi 1 giờ / lần"),
+                                            Pair(2, "Mỗi 2 giờ / lần (Mặc định)"),
+                                            Pair(3, "Mỗi 3 giờ / lần"),
+                                            Pair(6, "Mỗi 6 giờ / lần"),
+                                            Pair(0, "Tắt thông báo định kỳ")
+                                        ).forEach { (hours, label) ->
+                                            val isSelected = periodicNotifHours == hours
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable {
+                                                        onSelectPeriodicNotifHours(hours)
+                                                        Toast.makeText(context, "Đã đặt: $label", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    .padding(vertical = 11.dp, horizontal = 6.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = label,
+                                                    color = if (isSelected) Color(0xFF38BDF8) else Color.White,
+                                                    fontSize = 14.sp,
+                                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                                )
+                                                if (isSelected) {
+                                                    Icon(
+                                                        Icons.Default.CheckCircle,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFF38BDF8),
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                            ItemDivider()
+                                        }
+
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Button(
+                                            onClick = {
+                                                onSendCurrentWeatherNotif()
+                                                Toast.makeText(context, "Đã gửi thông báo thời tiết hiện tại lên thanh thông báo!", Toast.LENGTH_SHORT).show()
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Gửi thông báo thời tiết ngay bây giờ", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                                        }
+                                    }
                                 }
 
-                                // Nút Gửi thử nghiệm
+                                // 2. Bản tin sáng & Cảnh báo nguy hiểm
+                                InsetGroupCard {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = "BẢN TIN SÁNG & CẢNH BÁO NGUY HIỂM",
+                                            color = Color.White.copy(alpha = 0.8f),
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.7.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        ToggleRowItem(
+                                            title = "Bản tin thời tiết buổi sáng",
+                                            subtitle = "Gửi tóm tắt thời tiết & gợi ý trang phục mỗi sáng (7h00)",
+                                            isChecked = isMorningNotif,
+                                            onCheckedChange = onSetMorningNotif
+                                        )
+                                        ItemDivider()
+                                        ToggleRowItem(
+                                            title = "Cảnh báo thời tiết nguy hiểm",
+                                            subtitle = "Cảnh báo khẩn khi có Dông sét, mưa lớn hoặc tia UV nguy hại",
+                                            isChecked = isSevereAlerts,
+                                            onCheckedChange = onSetSevereAlerts
+                                        )
+                                    }
+                                }
+
+                                // 3. Nút Thử nghiệm
                                 InsetGroupCard {
                                     Button(
                                         onClick = {
@@ -398,6 +687,8 @@ fun SettingsDialog(
                                         Text("Gửi thử cảnh báo Dông bão", color = Color.White, fontSize = 13.sp)
                                     }
                                 }
+
+                                Spacer(modifier = Modifier.height(16.dp))
                             }
                         }
 

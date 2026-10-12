@@ -26,6 +26,57 @@ val CardBorderLight = Color(0x1F0F172A)
 val CardGlassBg = CardGlassBgDark
 val CardBorder = CardBorderDark
 
+enum class AmbientGlowStyle(
+    val title: String,
+    val description: String,
+    val primaryColor: Color,
+    val secondaryColor: Color,
+    val accentColor: Color
+) {
+    NATURAL(
+        title = "Tự nhiên (Theo thời tiết)",
+        description = "Ánh sáng đổi nhịp nhàng theo thời tiết thực tế (Nắng, Mưa, Mây, Dông)",
+        primaryColor = Color(0xFF38BDF8),
+        secondaryColor = Color(0xFF818CF8),
+        accentColor = Color(0xFF0284C7)
+    ),
+    CYBERPUNK(
+        title = "Neon Cyberpunk",
+        description = "Ánh sáng tím hồng neon dạ quang hiện đại & huyền ảo",
+        primaryColor = Color(0xFFEC4899),
+        secondaryColor = Color(0xFF8B5CF6),
+        accentColor = Color(0xFF06B6D4)
+    ),
+    AURORA(
+        title = "Cực quang Aurora",
+        description = "Sắc xanh ngọc lục bảo và lam ngọc phát sáng phương Bắc",
+        primaryColor = Color(0xFF10B981),
+        secondaryColor = Color(0xFF06B6D4),
+        accentColor = Color(0xFF3B82F6)
+    ),
+    SUNSET(
+        title = "Hoàng hôn Sunset",
+        description = "Ánh cam hoàng hôn pha tím đào ấm áp và thơ mộng",
+        primaryColor = Color(0xFFF97316),
+        secondaryColor = Color(0xFFEC4899),
+        accentColor = Color(0xFF6366F1)
+    ),
+    OCEAN(
+        title = "Đại dương Ocean",
+        description = "Xanh biển thẳm sâu, mát mắt và thư thái",
+        primaryColor = Color(0xFF0284C7),
+        secondaryColor = Color(0xFF0EA5E9),
+        accentColor = Color(0xFF38BDF8)
+    ),
+    MIDNIGHT(
+        title = "Đêm đen Minimalist",
+        description = "Đen than chì tối giản, sâu lắng, tối ưu pin OLED",
+        primaryColor = Color(0xFF334155),
+        secondaryColor = Color(0xFF1E293B),
+        accentColor = Color(0xFF0F172A)
+    )
+}
+
 fun getSkyGradient(type: WeatherType, isDay: Boolean, isDarkTheme: Boolean = true): Brush {
     if (!isDarkTheme) {
         // Chế độ Sáng (Light Theme): Nền trời tươi sáng, thanh thoát, dịu mắt

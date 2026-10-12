@@ -16,6 +16,7 @@ import kotlin.math.roundToInt
 object WeatherNotificationHelper {
     private const val CHANNEL_MORNING_ID = "weather_morning_briefing"
     private const val CHANNEL_ALERT_ID = "weather_severe_alerts"
+    const val CHANNEL_PERIODIC_ID = "weather_periodic_status"
 
     fun initChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -42,8 +43,19 @@ object WeatherNotificationHelper {
                 enableLights(true)
             }
 
+            // Kênh 3: Thông báo thời tiết hiện tại định kỳ
+            val periodicChannel = NotificationChannel(
+                CHANNEL_PERIODIC_ID,
+                "Thời tiết hiện tại định kỳ",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Cập nhật nhiệt độ và tình trạng thời tiết lên thanh thông báo"
+                setShowBadge(false)
+            }
+
             manager.createNotificationChannel(morningChannel)
             manager.createNotificationChannel(alertChannel)
+            manager.createNotificationChannel(periodicChannel)
         }
     }
 
@@ -180,5 +192,51 @@ object WeatherNotificationHelper {
             .build()
 
         manager.notify(9999, notification)
+    }
+
+    /**
+     * Gửi thông báo thời tiết hiện tại lên thanh thông báo theo chu kỳ đã chọn
+     */
+    fun showCurrentWeatherNotification(context: Context, weather: WeatherData) {
+        initChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            3001,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode)
+        val temp = weather.current.temperature.roundToInt()
+        val feelsLike = weather.current.feelsLike.roundToInt()
+        val cityName = weather.location.name
+        val humidity = weather.current.humidity
+        val wind = weather.current.windSpeed
+
+        val title = "$cityName • $temp°C • ${condition.description}"
+        val content = "Cảm giác $feelsLike°C | Độ ẩm $humidity% | Gió $wind km/h"
+        val expandedText = "${condition.description} tại $cityName\n• Nhiệt độ: $temp°C (Cảm giác như $feelsLike°C)\n• Độ ẩm: $humidity% • Tốc độ gió: $wind km/h • Chỉ số UV: ${weather.current.uvIndex}\n• Cập nhật: ${weather.lastUpdated}"
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_PERIODIC_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(expandedText))
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        manager.notify(3001, notification)
+    }
+
+    fun cancelCurrentWeatherNotification(context: Context) {
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+        manager.cancel(3001)
     }
 }

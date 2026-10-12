@@ -309,6 +309,34 @@ class WeatherApiService {
             val sunriseStr = dailySunrises.get(i).asString.substringAfter("T")
             val sunsetStr = dailySunsets.get(i).asString.substringAfter("T")
 
+            // Trích xuất dự báo nhiệt độ và thời tiết từng giờ của riêng ngày đó (24 giờ)
+            val dayHourly = mutableListOf<HourlyForecast>()
+            for (j in 0 until hourlyTimes.size()) {
+                val tStr = hourlyTimes.get(j).asString
+                if (tStr.startsWith(dateStr)) {
+                    val rawHour = if (tStr.contains("T")) tStr.substringAfter("T") else tStr
+                    val isDayHour = if (hourlyIsDays != null && j < hourlyIsDays.size()) {
+                        hourlyIsDays.get(j).asInt == 1
+                    } else {
+                        val hNum = rawHour.substringBefore(":").toIntOrNull() ?: 12
+                        hNum in 6..18
+                    }
+
+                    dayHourly.add(
+                        HourlyForecast(
+                            timeString = tStr,
+                            hourLabel = rawHour,
+                            temperature = hourlyTemps.get(j).asDouble,
+                            weatherCode = hourlyCodes.get(j).asInt,
+                            precipitationProbability = hourlyRains.get(j).asInt,
+                            humidity = hourlyHumids.get(j).asInt,
+                            windSpeed = hourlyWinds.get(j).asDouble,
+                            isDay = isDayHour
+                        )
+                    )
+                }
+            }
+
             dailyList.add(
                 DailyForecast(
                     dateString = dateStr,
@@ -319,7 +347,8 @@ class WeatherApiService {
                     precipitationProbability = dailyRains.get(i).asInt,
                     sunrise = sunriseStr,
                     sunset = sunsetStr,
-                    uvIndexMax = dailyUvs.get(i).asDouble
+                    uvIndexMax = dailyUvs.get(i).asDouble,
+                    hourly24h = dayHourly
                 )
             )
         }
@@ -374,6 +403,19 @@ class WeatherApiService {
 
         val days = listOf("Hôm nay", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật")
         val daily = days.mapIndexed { index, name ->
+            val dayHours = (0..23).map { h ->
+                val hStr = String.format("%02d:00", h)
+                HourlyForecast(
+                    timeString = "2026-10-${12 + index}T$hStr",
+                    hourLabel = hStr,
+                    temperature = 24.0 + (h % 7),
+                    weatherCode = 1,
+                    precipitationProbability = 10,
+                    humidity = 65,
+                    windSpeed = 10.0,
+                    isDay = h in 6..18
+                )
+            }
             DailyForecast(
                 dateString = "2026-10-${12 + index}",
                 dayOfWeek = name,
@@ -383,7 +425,8 @@ class WeatherApiService {
                 precipitationProbability = if (index == 2) 65 else 15,
                 sunrise = "05:45",
                 sunset = "18:15",
-                uvIndexMax = 7.2
+                uvIndexMax = 7.2,
+                hourly24h = dayHours
             )
         }
 

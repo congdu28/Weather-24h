@@ -9,6 +9,8 @@ import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
+import com.weather24h.app.ui.theme.AmbientGlowStyle
+import com.weather24h.app.util.PeriodicWeatherWorker
 import com.weather24h.app.util.WeatherNotificationHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -66,13 +68,43 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _isSevereAlerts = MutableStateFlow(repository.isSevereAlertsEnabled())
     val isSevereAlerts: StateFlow<Boolean> = _isSevereAlerts.asStateFlow()
 
+    private val _periodicNotifHours = MutableStateFlow(repository.getPeriodicNotifIntervalHours())
+    val periodicNotifHours: StateFlow<Int> = _periodicNotifHours.asStateFlow()
+
     // Cài đặt Theme giao diện (Sáng / Tối / Theo thiết bị)
     private val _themeMode = MutableStateFlow(repository.getThemeMode())
     val themeMode: StateFlow<com.weather24h.app.ui.theme.AppThemeMode> = _themeMode.asStateFlow()
 
+    // Cài đặt độ tối nền (0.0f đến 0.8f) & Ambient Glow
+    private val _bgDimmingLevel = MutableStateFlow(repository.getBgDimmingLevel())
+    val bgDimmingLevel: StateFlow<Float> = _bgDimmingLevel.asStateFlow()
+
+    private val _ambientGlowStyle = MutableStateFlow(repository.getAmbientGlowStyle())
+    val ambientGlowStyle: StateFlow<AmbientGlowStyle> = _ambientGlowStyle.asStateFlow()
+
+    private val _ambientGlowIntensity = MutableStateFlow(repository.getAmbientGlowIntensity())
+    val ambientGlowIntensity: StateFlow<Float> = _ambientGlowIntensity.asStateFlow()
+
     fun setThemeMode(mode: com.weather24h.app.ui.theme.AppThemeMode) {
         _themeMode.value = mode
         repository.setThemeMode(mode)
+    }
+
+    fun setBgDimmingLevel(level: Float) {
+        val clamped = level.coerceIn(0.0f, 0.8f)
+        _bgDimmingLevel.value = clamped
+        repository.setBgDimmingLevel(clamped)
+    }
+
+    fun setAmbientGlowStyle(style: AmbientGlowStyle) {
+        _ambientGlowStyle.value = style
+        repository.setAmbientGlowStyle(style)
+    }
+
+    fun setAmbientGlowIntensity(intensity: Float) {
+        val clamped = intensity.coerceIn(0.0f, 1.0f)
+        _ambientGlowIntensity.value = clamped
+        repository.setAmbientGlowIntensity(clamped)
     }
 
     private var currentCity: CityLocation = repository.getDefaultCity()
@@ -84,6 +116,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     init {
         // Khởi tạo các notification channel
         WeatherNotificationHelper.initChannels(application)
+
+        // Lên lịch thông báo định kỳ (Mặc định 2h/lần)
+        PeriodicWeatherWorker.schedule(application, _periodicNotifHours.value)
 
         // Load thành phố mặc định ban đầu
         loadWeather(currentCity)
@@ -112,6 +147,11 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                     outfit = null,
                     isOutfitLoading = true
                 )
+
+                // Cập nhật thông báo thời tiết trên status bar nếu đang bật định kỳ
+                if (_periodicNotifHours.value > 0) {
+                    WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), weather)
+                }
 
                 loadOutfitForWeather(weather)
             } catch (e: Exception) {
@@ -198,6 +238,33 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     fun setSevereAlerts(enabled: Boolean) {
         repository.setSevereAlertsEnabled(enabled)
         _isSevereAlerts.value = enabled
+    }
+
+    fun setPeriodicNotifHours(hours: Int) {
+        _periodicNotifHours.value = hours
+        repository.setPeriodicNotifIntervalHours(hours)
+        PeriodicWeatherWorker.schedule(getApplication(), hours)
+
+        if (hours > 0) {
+            val currentState = _uiState.value
+            if (currentState is WeatherUiState.Success) {
+                WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), currentState.weather)
+            }
+        } else {
+            WeatherNotificationHelper.cancelCurrentWeatherNotification(getApplication())
+        }
+    }
+
+    fun sendCurrentWeatherNotification() {
+        val currentState = _uiState.value
+        if (currentState is WeatherUiState.Success) {
+            WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), currentState.weather)
+        } else {
+            val cached = repository.getCachedWeather()
+            if (cached != null) {
+                WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), cached)
+            }
+        }
     }
 
     fun sendTestNotification(isAlert: Boolean = false) {

@@ -5,6 +5,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -384,7 +385,123 @@ fun DayForecastDetailDialog(
                         }
                     }
 
-                    // 2. Lưới thông số quan trọng trong ngày
+                    // 2. Dự báo nhiệt độ theo từng giờ của ngày được chọn
+                    if (day.hourly24h.isNotEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = cardBg,
+                            border = BorderStroke(1.dp, cardBorderColor),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 14.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 16.dp, bottom = 10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        tint = Color(0xFF38BDF8),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "NHIỆT ĐỘ TỪNG GIỜ TRONG NGÀY",
+                                        color = subtextColor,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.8.sp
+                                    )
+                                }
+
+                                val itemWidth = 64.dp
+                                val temps = day.hourly24h.map { it.temperature }
+
+                                Column(
+                                    modifier = Modifier
+                                        .horizontalScroll(rememberScrollState())
+                                        .padding(horizontal = 10.dp)
+                                ) {
+                                    // Row 1: Giờ, Icon, Mưa %
+                                    Row {
+                                        day.hourly24h.forEach { item ->
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                modifier = Modifier.width(itemWidth)
+                                            ) {
+                                                Text(
+                                                    text = item.hourLabel,
+                                                    color = contentColor.copy(alpha = 0.85f),
+                                                    fontSize = 11.5.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+
+                                                Spacer(modifier = Modifier.height(6.dp))
+
+                                                val c = WeatherCondition.fromWmoCode(item.weatherCode)
+                                                val ic = WeatherCondition.getWeatherIcon(c.type, item.isDay)
+                                                val icTint = WeatherCondition.getWeatherIconTint(c.type, item.isDay)
+
+                                                Icon(
+                                                    imageVector = ic,
+                                                    contentDescription = null,
+                                                    tint = icTint,
+                                                    modifier = Modifier.size(22.dp)
+                                                )
+
+                                                Spacer(modifier = Modifier.height(4.dp))
+
+                                                if (item.precipitationProbability > 0) {
+                                                    Text(
+                                                        text = "${item.precipitationProbability}%",
+                                                        color = Color(0xFF0284C7),
+                                                        fontSize = 10.5.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                } else {
+                                                    Spacer(modifier = Modifier.height(14.dp))
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    // Row 2: Biểu đồ đường cong nhiệt độ Bezier
+                                    TemperatureChart(
+                                        temperatures = temps,
+                                        itemWidth = itemWidth
+                                    )
+
+                                    // Row 3: Nhiệt độ số và tốc độ gió
+                                    Row {
+                                        day.hourly24h.forEach { item ->
+                                            Column(
+                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                modifier = Modifier.width(itemWidth)
+                                            ) {
+                                                Text(
+                                                    text = "${item.temperature.roundToInt()}°",
+                                                    color = contentColor,
+                                                    fontSize = 14.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Text(
+                                                    text = "${item.windSpeed.roundToInt()} km/h",
+                                                    color = subtextColor,
+                                                    fontSize = 9.5.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. Lưới thông số quan trọng trong ngày
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = cardBg,

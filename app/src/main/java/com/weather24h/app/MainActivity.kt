@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity() {
     ) { isGranted ->
         if (isGranted) {
             WeatherNotificationHelper.initChannels(this)
+            viewModel.sendCurrentWeatherNotification()
         }
     }
 

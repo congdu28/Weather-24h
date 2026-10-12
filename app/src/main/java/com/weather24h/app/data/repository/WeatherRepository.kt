@@ -189,6 +189,49 @@ class WeatherRepository(
         prefs.edit().putBoolean("severe_alerts_enabled", enabled).apply()
     }
 
+    fun getPeriodicNotifIntervalHours(): Int {
+        // Mặc định là 2 giờ / lần theo yêu cầu
+        return prefs.getInt("periodic_notif_hours", 2)
+    }
+
+    fun setPeriodicNotifIntervalHours(hours: Int) {
+        prefs.edit().putInt("periodic_notif_hours", hours).apply()
+    }
+
+    // ==========================================
+    // CÀI ĐẶT ĐỘ TỐI NỀN & AMBIENT LIGHT
+    // ==========================================
+    fun getBgDimmingLevel(): Float {
+        // Mức độ làm tối nền: 0.0f (sáng gốc) đến 0.8f (tối sâu), mặc định 0.15f
+        return prefs.getFloat("bg_dimming_level", 0.15f)
+    }
+
+    fun setBgDimmingLevel(level: Float) {
+        prefs.edit().putFloat("bg_dimming_level", level.coerceIn(0.0f, 0.8f)).apply()
+    }
+
+    fun getAmbientGlowStyle(): com.weather24h.app.ui.theme.AmbientGlowStyle {
+        val name = prefs.getString("ambient_glow_style", com.weather24h.app.ui.theme.AmbientGlowStyle.NATURAL.name)
+        return try {
+            com.weather24h.app.ui.theme.AmbientGlowStyle.valueOf(name ?: com.weather24h.app.ui.theme.AmbientGlowStyle.NATURAL.name)
+        } catch (_: Exception) {
+            com.weather24h.app.ui.theme.AmbientGlowStyle.NATURAL
+        }
+    }
+
+    fun setAmbientGlowStyle(style: com.weather24h.app.ui.theme.AmbientGlowStyle) {
+        prefs.edit().putString("ambient_glow_style", style.name).apply()
+    }
+
+    fun getAmbientGlowIntensity(): Float {
+        // Cường độ phát sáng: 0.0f (tắt) đến 1.0f (rực rỡ), mặc định 0.6f
+        return prefs.getFloat("ambient_glow_intensity", 0.6f)
+    }
+
+    fun setAmbientGlowIntensity(intensity: Float) {
+        prefs.edit().putFloat("ambient_glow_intensity", intensity.coerceIn(0.0f, 1.0f)).apply()
+    }
+
     // ==========================================
     // API KEY & CHU KỲ TỰ ĐỘNG
     // ==========================================

@@ -45,7 +45,8 @@ data class DailyForecast(
     val precipitationProbability: Int,
     val sunrise: String,
     val sunset: String,
-    val uvIndexMax: Double
+    val uvIndexMax: Double,
+    val hourly24h: List<HourlyForecast> = emptyList()
 )
 
 data class AirQuality(

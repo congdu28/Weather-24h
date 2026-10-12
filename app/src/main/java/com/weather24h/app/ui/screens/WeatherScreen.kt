@@ -41,6 +41,10 @@ fun WeatherScreen(
     val isStartWithGps by viewModel.isStartWithGps.collectAsState()
     val isMorningNotif by viewModel.isMorningNotif.collectAsState()
     val isSevereAlerts by viewModel.isSevereAlerts.collectAsState()
+    val periodicNotifHours by viewModel.periodicNotifHours.collectAsState()
+    val bgDimmingLevel by viewModel.bgDimmingLevel.collectAsState()
+    val ambientGlowStyle by viewModel.ambientGlowStyle.collectAsState()
+    val ambientGlowIntensity by viewModel.ambientGlowIntensity.collectAsState()
 
     var showSearchDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -73,11 +77,28 @@ fun WeatherScreen(
             .fillMaxSize()
             .background(getSkyGradient(weatherType, isDay, isDarkTheme))
     ) {
+        // Living dynamic ambient light & glow overlay
+        AmbientGlowOverlay(
+            style = ambientGlowStyle,
+            intensity = ambientGlowIntensity,
+            weatherType = weatherType,
+            isDay = isDay
+        )
+
         // Living dynamic weather atmosphere effect (Sun rays, rain streaks, storm lightning, clouds, stars)
         WeatherAtmosphereEffect(
             type = weatherType,
             isDay = isDay
         )
+
+        // Lớp phủ làm tối nền người dùng tùy chỉnh (Background Dimming Level)
+        if (bgDimmingLevel > 0.01f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = bgDimmingLevel))
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -262,9 +283,18 @@ fun WeatherScreen(
                 isStartWithGps = isStartWithGps,
                 isMorningNotif = isMorningNotif,
                 isSevereAlerts = isSevereAlerts,
+                periodicNotifHours = periodicNotifHours,
+                bgDimmingLevel = bgDimmingLevel,
+                ambientGlowStyle = ambientGlowStyle,
+                ambientGlowIntensity = ambientGlowIntensity,
                 favoriteCities = favoriteCities,
                 onDismiss = { showSettingsDialog = false },
                 onSelectThemeMode = { viewModel.setThemeMode(it) },
+                onSetBgDimmingLevel = { viewModel.setBgDimmingLevel(it) },
+                onSelectAmbientGlowStyle = { viewModel.setAmbientGlowStyle(it) },
+                onSetAmbientGlowIntensity = { viewModel.setAmbientGlowIntensity(it) },
+                onSelectPeriodicNotifHours = { viewModel.setPeriodicNotifHours(it) },
+                onSendCurrentWeatherNotif = { viewModel.sendCurrentWeatherNotification() },
                 onSaveCustomKey = { key ->
                     viewModel.saveCustomGeminiApiKey(key)
                 },
