@@ -259,8 +259,17 @@ fun SettingsDialog(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Bottom Close button
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                // Bottom Version & Close button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Weather 24h v${com.weather24h.app.BuildConfig.VERSION_NAME}",
+                        color = Color.White.copy(alpha = 0.45f),
+                        fontSize = 12.sp
+                    )
                     TextButton(onClick = onDismiss) {
                         Text("Xong", color = Color.White, fontWeight = FontWeight.Bold)
                     }

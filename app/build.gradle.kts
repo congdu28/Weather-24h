@@ -15,16 +15,42 @@ val defaultGeminiKey: String = localProps.getProperty("GEMINI_API_KEY")
     ?: (project.findProperty("GEMINI_API_KEY") as? String)
     ?: ""
 
+val appVersionName: String = (project.findProperty("versionName") as? String)
+    ?: System.getenv("APP_VERSION_NAME")
+    ?: "1.0.4"
+
+val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
+    ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
+    ?: 104
+
 android {
     namespace = "com.weather24h.app"
     compileSdk = 34
+
+    signingConfigs {
+        create("release") {
+            val keystoreFile = rootProject.file("keystore/release.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = "weather24h"
+                keyAlias = "weather24h"
+                keyPassword = "weather24h"
+            } else {
+                val debugConfig = signingConfigs.getByName("debug")
+                storeFile = debugConfig.storeFile
+                storePassword = debugConfig.storePassword
+                keyAlias = debugConfig.keyAlias
+                keyPassword = debugConfig.keyPassword
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.weather24h.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -41,7 +67,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug") // Tiện build APK release ngay mà không cần keystore ngoài
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

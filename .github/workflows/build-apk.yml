@@ -18,12 +18,73 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Setup & Standardize Release Keystore
+        run: |
+          mkdir -p keystore
+          if [ -f keystore/release.jks ]; then
+            echo "Verifying existing keystore with keytool..."
+            if ! keytool -list -keystore keystore/release.jks -storepass weather24h -alias weather24h > /dev/null 2>&1; then
+              echo "Recreating standardized release.jks..."
+              rm -f keystore/release.jks
+              keytool -genkeypair -v -keystore keystore/release.jks -alias weather24h -keyalg RSA -keysize 2048 -validity 10000 -storepass weather24h -keypass weather24h -dname "CN=Weather24h, OU=WeatherApp, O=Weather24h, C=VN"
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git add keystore/release.jks
+              git commit -m "Chore: Persist standardized release keystore [skip ci]" || true
+              git push origin HEAD:main || true
+            else
+              echo "Keystore verified successfully with keytool!"
+            fi
+          else
+            echo "Generating permanent release.jks..."
+            keytool -genkeypair -v -keystore keystore/release.jks -alias weather24h -keyalg RSA -keysize 2048 -validity 10000 -storepass weather24h -keypass weather24h -dname "CN=Weather24h, OU=WeatherApp, O=Weather24h, C=VN"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add keystore/release.jks
+            git commit -m "Chore: Add permanent release keystore [skip ci]" || true
+            git push origin HEAD:main || true
+          fi
+
+      - name: Determine App Version and VersionCode
+        id: versioning
+        run: |
+          git fetch --tags || true
+
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            RAW_TAG="${{ github.ref_name }}"
+            TAG_NAME="$RAW_TAG"
+            VERSION_NAME="${RAW_TAG#v}"
+          else
+            # Find the latest tag or default to v1.0.3
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.3")
+            VERSION="${LATEST_TAG#v}"
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
+            NEXT_PATCH=$((PATCH + 1))
+            VERSION_NAME="${MAJOR}.${MINOR}.${NEXT_PATCH}"
+            TAG_NAME="v${VERSION_NAME}"
+          fi
+
+          # Strictly monotonic versionCode: 100 + github.run_number
+          VERSION_CODE=$((100 + ${{ github.run_number }}))
+
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+          echo "=== BUILD TARGET ==="
+          echo "Tag Name: $TAG_NAME"
+          echo "Version Name: $VERSION_NAME"
+          echo "Version Code: $VERSION_CODE"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
@@ -32,17 +93,17 @@ jobs:
         run: chmod +x gradlew || true
 
       - name: Build APK with Gradle
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease -PversionName="${{ steps.versioning.outputs.version_name }}" -PversionCode="${{ steps.versioning.outputs.version_code }}" --stacktrace
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: Rename APK file
         run: |
           mkdir -p release-apk
-          TAG_OR_REF="${{ github.ref_name }}"
-          [ -z "$TAG_OR_REF" ] && TAG_OR_REF="latest"
-          APK_FILE=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          cp "$APK_FILE" "release-apk/Weather24h-${TAG_OR_REF}.apk"
+          APK_FILE=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          [ -z "$APK_FILE" ] && APK_FILE=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          cp "$APK_FILE" "release-apk/Weather24h-${{ steps.versioning.outputs.tag_name }}.apk"
+          cp "$APK_FILE" "release-apk/Weather24h.apk"
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
@@ -51,11 +112,11 @@ jobs:
           path: release-apk/*.apk
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          name: "Weather 24h Release ${{ github.ref_name }}"
-          tag_name: ${{ github.ref_name }}
+          name: "Weather 24h Release ${{ steps.versioning.outputs.tag_name }}"
+          tag_name: ${{ steps.versioning.outputs.tag_name }}
           files: release-apk/*.apk
           generate_release_notes: true
         env:
