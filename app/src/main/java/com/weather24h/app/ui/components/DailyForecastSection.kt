@@ -400,7 +400,7 @@ fun DayForecastDetailDialog(
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 16.dp, bottom = 10.dp)
+                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Schedule,
