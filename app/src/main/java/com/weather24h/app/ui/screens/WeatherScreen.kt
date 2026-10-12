@@ -73,7 +73,6 @@ fun WeatherScreen(
         else -> true
     }
     val themeMode by viewModel.themeMode.collectAsState()
-    val favoriteCities by viewModel.favoriteCities.collectAsState()
     val isDarkTheme = com.weather24h.app.ui.theme.LocalIsDarkTheme.current
 
     Box(
