@@ -34,7 +34,6 @@ fun WeatherMetricsGrid(
     val current = weather.current
     val todayDaily = weather.daily7Days.firstOrNull()
     val uv = todayDaily?.uvIndexMax ?: current.uvIndex
-    val aqi = weather.airQuality
     val isDark = LocalIsDarkTheme.current
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
@@ -123,23 +122,12 @@ fun WeatherMetricsGrid(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Row 3: Air Quality & Sunrise/Sunset
+        // Row 3: Sunrise/Sunset & Visibility
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IntrinsicSize.Max)
         ) {
-            MetricCard(
-                icon = Icons.Default.Spa,
-                title = "KHÔNG KHÍ (AQI)",
-                value = aqi?.let { "PM2.5: ${it.pm25.roundToInt()}" } ?: "Tốt",
-                subtext = aqi?.statusText ?: "Chất lượng an toàn",
-                accentColor = Color(0xFF06D6A0),
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            )
-            Spacer(modifier = Modifier.width(12.dp))
             MetricCard(
                 icon = Icons.Default.WbTwilight,
                 title = "MẶT TRỜI MỌC/LẶN",
@@ -150,11 +138,22 @@ fun WeatherMetricsGrid(
                     .weight(1f)
                     .fillMaxHeight()
             )
+            Spacer(modifier = Modifier.width(12.dp))
+            MetricCard(
+                icon = Icons.Default.Visibility,
+                title = "TẦM NHÌN",
+                value = "${current.visibilityKm.roundToInt()} km",
+                subtext = "Tầm nhìn xa tốt",
+                accentColor = Color(0xFF118AB2),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Row 4: Pressure & Visibility
+        // Row 4: Pressure & Precipitation
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -172,11 +171,11 @@ fun WeatherMetricsGrid(
             )
             Spacer(modifier = Modifier.width(12.dp))
             MetricCard(
-                icon = Icons.Default.Visibility,
-                title = "TẦM NHÌN",
-                value = "${current.visibilityKm.roundToInt()} km",
-                subtext = "Tầm nhìn xa tốt",
-                accentColor = Color(0xFF118AB2),
+                icon = Icons.Default.Umbrella,
+                title = "LƯỢNG MƯA",
+                value = "${current.precipitation} mm",
+                subtext = if (current.precipitation > 0) "Mưa tích lũy hiện tại" else "Không có mưa",
+                accentColor = Color(0xFF38BDF8),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()

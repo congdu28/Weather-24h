@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -32,6 +33,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.ui.theme.LocalCardOpacity
+import com.weather24h.app.ui.theme.LocalContentTextColor
+import com.weather24h.app.ui.theme.LocalIsDarkTheme
+import com.weather24h.app.ui.theme.LocalSubtextColor
+import java.util.Locale
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -41,76 +46,96 @@ fun WeatherRadarCard(
 ) {
     var showFullscreenDialog by remember { mutableStateOf(false) }
     var selectedLayer by remember { mutableStateOf("radar") } // "radar" hoặc "satellite"
+    val isDark = LocalIsDarkTheme.current
     val cardOpacity = LocalCardOpacity.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
 
     val lat = weather.location.latitude
     val lon = weather.location.longitude
+    val accentColor = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
 
     // Khối thẻ xem nhanh Radar trên màn hình chính
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF0F172A).copy(alpha = 0.55f * cardOpacity),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f * cardOpacity)),
+        color = if (isDark) Color(0xFF0F172A).copy(alpha = 0.65f * cardOpacity) else Color.White.copy(alpha = 0.85f * cardOpacity),
+        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.15f * cardOpacity) else Color(0xFF38BDF8).copy(alpha = 0.35f * cardOpacity)),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            // Header: Title & Fullscreen action button
+            // Header: Title & Fullscreen action button (Responsive & Overflow-safe)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(32.dp)
-                            .background(Color(0xFF38BDF8).copy(alpha = 0.2f), CircleShape),
+                            .background(
+                                if (isDark) Color(0xFF38BDF8).copy(alpha = 0.2f) else Color(0xFFE0F2FE),
+                                CircleShape
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = "🛰️", fontSize = 16.sp)
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
                             text = "BẢN ĐỒ RADAR MƯA ĐỘNG",
-                            color = Color(0xFF38BDF8),
-                            fontSize = 12.5.sp,
+                            color = accentColor,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
+                            letterSpacing = 0.3.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "Mây mưa trực tiếp theo thời gian thực",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 11.sp
+                            color = subtextColor,
+                            fontSize = 10.5.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                // Nút Phóng to toàn màn hình
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Nút Phóng to toàn màn hình gọn gàng, không bị tràn hay co rúm
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF38BDF8).copy(alpha = 0.18f),
-                    border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (isDark) Color(0xFF38BDF8).copy(alpha = 0.18f) else Color(0xFFE0F2FE),
+                    border = BorderStroke(
+                        1.dp,
+                        if (isDark) Color(0xFF38BDF8).copy(alpha = 0.45f) else Color(0xFF0284C7).copy(alpha = 0.4f)
+                    ),
                     modifier = Modifier.clickable { showFullscreenDialog = true }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Default.Fullscreen,
                             contentDescription = "Toàn màn hình",
-                            tint = Color(0xFF38BDF8),
+                            tint = accentColor,
                             modifier = Modifier.size(15.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
                         Text(
                             text = "Phóng to",
-                            color = Color(0xFF38BDF8),
-                            fontSize = 11.5.sp,
-                            fontWeight = FontWeight.SemiBold
+                            color = accentColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1
                         )
                     }
                 }
@@ -126,12 +151,14 @@ fun WeatherRadarCard(
                 LayerPill(
                     title = "🌧️ Radar mưa",
                     isSelected = selectedLayer == "radar",
+                    isDark = isDark,
                     onClick = { selectedLayer = "radar" },
                     modifier = Modifier.weight(1f)
                 )
                 LayerPill(
                     title = "☁️ Vệ tinh mây",
                     isSelected = selectedLayer == "satellite",
+                    isDark = isDark,
                     onClick = { selectedLayer = "satellite" },
                     modifier = Modifier.weight(1f)
                 )
@@ -206,7 +233,7 @@ fun WeatherRadarCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             // Dải chú thích màu lượng mưa (Color Legend)
-            RadarLegendBar()
+            RadarLegendBar(isDark = isDark)
         }
     }
 
@@ -221,48 +248,58 @@ fun WeatherRadarCard(
                 color = Color(0xFF0F172A)
             ) {
                 Column(modifier = Modifier.fillMaxSize()) {
-                    // Top Bar trong chế độ Fullscreen
+                    // Top Bar trong chế độ Fullscreen (Responsive & gọn gàng)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0xFF1E293B))
                             .statusBarsPadding()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             IconButton(
                                 onClick = { showFullscreenDialog = false },
-                                modifier = Modifier.size(36.dp)
+                                modifier = Modifier.size(34.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Đóng",
-                                    tint = Color.White
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(6.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f, fill = false)) {
                                 Text(
-                                    text = "Radar Thời Tiết • ${weather.location.name}",
+                                    text = "Radar • ${weather.location.name}",
                                     color = Color.White,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = "Vĩ độ: ${String.format("%.2f", lat)} • Kinh độ: ${String.format("%.2f", lon)}",
+                                    text = "Vĩ độ: ${String.format(Locale.US, "%.2f", lat)} • Kinh độ: ${String.format(Locale.US, "%.2f", lon)}",
                                     color = Color(0xFF38BDF8),
-                                    fontSize = 11.sp
+                                    fontSize = 10.5.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
+
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         // Chuyển đổi lớp
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (selectedLayer == "radar") Color(0xFF38BDF8) else Color.White.copy(alpha = 0.1f),
+                                color = if (selectedLayer == "radar") Color(0xFF38BDF8) else Color.White.copy(alpha = 0.12f),
                                 modifier = Modifier.clickable { selectedLayer = "radar" }
                             ) {
                                 Text(
@@ -275,7 +312,7 @@ fun WeatherRadarCard(
                             }
                             Surface(
                                 shape = RoundedCornerShape(8.dp),
-                                color = if (selectedLayer == "satellite") Color(0xFF38BDF8) else Color.White.copy(alpha = 0.1f),
+                                color = if (selectedLayer == "satellite") Color(0xFF38BDF8) else Color.White.copy(alpha = 0.12f),
                                 modifier = Modifier.clickable { selectedLayer = "satellite" }
                             ) {
                                 Text(
@@ -321,7 +358,7 @@ fun WeatherRadarCard(
                             .navigationBarsPadding()
                             .padding(horizontal = 16.dp, vertical = 10.dp)
                     ) {
-                        RadarLegendBar()
+                        RadarLegendBar(isDark = true)
                     }
                 }
             }
@@ -333,21 +370,27 @@ fun WeatherRadarCard(
 private fun LayerPill(
     title: String,
     isSelected: Boolean,
+    isDark: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val activeColor = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
     Surface(
         shape = RoundedCornerShape(10.dp),
-        color = if (isSelected) Color(0xFF38BDF8).copy(alpha = 0.22f) else Color.White.copy(alpha = 0.06f),
+        color = if (isSelected) {
+            activeColor.copy(alpha = if (isDark) 0.22f else 0.15f)
+        } else {
+            if (isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFF1F5F9)
+        },
         border = BorderStroke(
             1.dp,
-            if (isSelected) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.12f)
+            if (isSelected) activeColor else (if (isDark) Color.White.copy(alpha = 0.12f) else Color(0xFFCBD5E1))
         ),
         modifier = modifier.clickable { onClick() }
     ) {
         Text(
             text = title,
-            color = if (isSelected) Color(0xFF38BDF8) else Color.White.copy(alpha = 0.75f),
+            color = if (isSelected) activeColor else (if (isDark) Color.White.copy(alpha = 0.75f) else Color(0xFF475569)),
             fontSize = 11.5.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -359,43 +402,66 @@ private fun LayerPill(
 }
 
 @Composable
-private fun RadarLegendBar() {
-    Row(
+private fun RadarLegendBar(isDark: Boolean = true) {
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Text(
-            text = "Cường độ mưa:",
-            color = Color.White.copy(alpha = 0.6f),
-            fontSize = 10.5.sp
-        )
-
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            LegendPill(color = Color(0xFF22C55E), label = "Mưa nhỏ")
-            LegendPill(color = Color(0xFFEAB308), label = "Vừa")
-            LegendPill(color = Color(0xFFF97316), label = "To")
-            LegendPill(color = Color(0xFFA855F7), label = "Dông sét")
+            Text(
+                text = "Lượng mưa:",
+                color = if (isDark) Color.White.copy(alpha = 0.65f) else Color(0xFF64748B),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                LegendPill(color = Color(0xFF22C55E), label = "Mưa nhỏ", isDark = isDark)
+                LegendPill(color = Color(0xFFEAB308), label = "Vừa", isDark = isDark)
+                LegendPill(color = Color(0xFFF97316), label = "To", isDark = isDark)
+                LegendPill(color = Color(0xFFA855F7), label = "Dông sét", isDark = isDark)
+            }
         }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(3.dp)
+                .clip(RoundedCornerShape(2.dp))
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(
+                            Color(0xFF22C55E),
+                            Color(0xFFEAB308),
+                            Color(0xFFF97316),
+                            Color(0xFFA855F7)
+                        )
+                    )
+                )
+        )
     }
 }
 
 @Composable
-private fun LegendPill(color: Color, label: String) {
+private fun LegendPill(color: Color, label: String, isDark: Boolean = true) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
-                .size(7.dp)
+                .size(6.dp)
                 .background(color, CircleShape)
         )
         Spacer(modifier = Modifier.width(3.dp))
         Text(
             text = label,
-            color = Color.White.copy(alpha = 0.8f),
-            fontSize = 10.sp
+            color = if (isDark) Color.White.copy(alpha = 0.85f) else Color(0xFF334155),
+            fontSize = 9.5.sp,
+            maxLines = 1
         )
     }
 }
+

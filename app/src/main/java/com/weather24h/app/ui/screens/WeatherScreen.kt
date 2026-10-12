@@ -391,12 +391,7 @@ fun WeatherScreen(
                                 HourlyForecastSection(hourlyList = weather.hourly24h)
                             }
 
-                            // 3. Bản đồ Radar Mưa & Mây động trực tiếp (RainViewer / Satellite)
-                            item {
-                                WeatherRadarCard(weather = weather)
-                            }
-
-                            // 4. AI Smart Outfit Stylist Card (Renders shimmer skeleton when loading)
+                            // 3. AI Smart Outfit Stylist Card (Renders shimmer skeleton when loading)
                             item {
                                 OutfitStylistCard(
                                     outfit = state.outfit,
@@ -406,7 +401,17 @@ fun WeatherScreen(
                                 )
                             }
 
-                            // 5. 7-Day Forecast Section
+                            // 4. Bản đồ Radar Mưa & Mây động trực tiếp (RainViewer / Satellite)
+                            item {
+                                WeatherRadarCard(weather = weather)
+                            }
+
+                            // 5. Chất lượng không khí & Bụi mịn PM2.5 / PM10 (AQI chuyên sâu)
+                            item {
+                                AirQualityCard(weather = weather)
+                            }
+
+                            // 6. 7-Day Forecast Section
                             item {
                                 DailyForecastSection(dailyList = weather.daily7Days)
                             }
