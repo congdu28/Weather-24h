@@ -120,7 +120,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 }
 
                 appWidgetManager.updateAppWidget(widgetId, views)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
             }
         }
 
@@ -143,7 +143,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
                 val json = prefs.getString("cached_weather_json", null) ?: return null
                 Gson().fromJson(json, WeatherData::class.java)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 null
             }
         }

@@ -79,7 +79,7 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 }
 
                 appWidgetManager.updateAppWidget(widgetId, views)
-            } catch (_: Exception) {}
+            } catch (e: Exception) {}
         }
 
         private fun getWeatherEmoji(code: Int, isDay: Boolean = true): String {
@@ -101,7 +101,7 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
                 val json = prefs.getString("cached_weather_json", null) ?: return null
                 Gson().fromJson(json, WeatherData::class.java)
-            } catch (_: Exception) {
+            } catch (e: Exception) {
                 null
             }
         }
