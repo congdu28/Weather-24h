@@ -15,6 +15,9 @@ data class WeatherCondition(
     val descriptionVi: String,
     val type: WeatherType
 ) {
+    val description: String
+        get() = descriptionVi
+
     companion object {
         fun fromWmoCode(code: Int): WeatherCondition {
             return when (code) {
