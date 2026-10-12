@@ -27,7 +27,7 @@ class WeatherApiService {
                     "latitude=${location.latitude}&" +
                     "longitude=${location.longitude}&" +
                     "current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&" +
-                    "hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m&" +
+                    "hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,is_day&" +
                     "daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max&" +
                     "timezone=auto"
 
@@ -171,6 +171,7 @@ class WeatherApiService {
         val hourlyRains = hourlyObj.getAsJsonArray("precipitation_probability")
         val hourlyHumids = hourlyObj.getAsJsonArray("relative_humidity_2m")
         val hourlyWinds = hourlyObj.getAsJsonArray("wind_speed_10m")
+        val hourlyIsDays = hourlyObj.getAsJsonArray("is_day")
 
         // Tìm vị trí giờ hiện tại trong mảng Open-Meteo
         val now = LocalDateTime.now()
@@ -205,6 +206,14 @@ class WeatherApiService {
             val tStr = hourlyTimes.get(i).asString
             val rawHour = if (tStr.contains("T")) tStr.substringAfter("T") else tStr
             val isFirstHour = (i == startIndex)
+            val isDayHour = if (isFirstHour) {
+                current.isDay
+            } else if (hourlyIsDays != null && i < hourlyIsDays.size()) {
+                hourlyIsDays.get(i).asInt == 1
+            } else {
+                val hourNum = rawHour.substringBefore(":").toIntOrNull() ?: 12
+                hourNum in 6..18
+            }
 
             hourlyList.add(
                 HourlyForecast(
@@ -214,7 +223,8 @@ class WeatherApiService {
                     weatherCode = if (isFirstHour) current.weatherCode else hourlyCodes.get(i).asInt,
                     precipitationProbability = hourlyRains.get(i).asInt,
                     humidity = hourlyHumids.get(i).asInt,
-                    windSpeed = hourlyWinds.get(i).asDouble
+                    windSpeed = hourlyWinds.get(i).asDouble,
+                    isDay = isDayHour
                 )
             )
         }
@@ -295,7 +305,8 @@ class WeatherApiService {
                 weatherCode = if (hourVal in 14..16) 61 else 1,
                 precipitationProbability = if (hourVal in 14..16) 60 else 10,
                 humidity = 70,
-                windSpeed = 12.0
+                windSpeed = 12.0,
+                isDay = hourVal in 6..18
             )
         }
 

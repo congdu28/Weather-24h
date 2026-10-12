@@ -130,22 +130,65 @@ fun CurrentWeatherCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Main Temperature
-            Text(
-                text = "${weather.current.temperature.roundToInt()}°",
-                color = Color.White,
-                fontSize = 72.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (-2).sp
-            )
+            val weatherIcon = WeatherCondition.getWeatherIcon(condition.type, weather.current.isDay)
+            val iconTint = WeatherCondition.getWeatherIconTint(condition.type, weather.current.isDay)
 
-            // Weather Description
-            Text(
-                text = condition.description,
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            // Main Weather Icon & Temperature
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = weatherIcon,
+                    contentDescription = condition.description,
+                    tint = iconTint,
+                    modifier = Modifier.size(68.dp)
+                )
+
+                Spacer(modifier = Modifier.width(14.dp))
+
+                Text(
+                    text = "${weather.current.temperature.roundToInt()}°",
+                    color = Color.White,
+                    fontSize = 72.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = (-2).sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Weather Description & Day/Night Indicator Tag
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = condition.description,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.2f)
+                            else Color(0xFF6366F1).copy(alpha = 0.25f)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = if (weather.current.isDay) "Ban ngày" else "Ban đêm",
+                        color = if (weather.current.isDay) Color(0xFFFFD166) else Color(0xFFBAE6FD),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(6.dp))
 

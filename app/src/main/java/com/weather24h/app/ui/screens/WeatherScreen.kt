@@ -1,5 +1,8 @@
 package com.weather24h.app.ui.screens
 
+import android.app.Activity
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +30,7 @@ fun WeatherScreen(
     viewModel: WeatherViewModel,
     onRequestGps: () -> Unit
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
@@ -39,6 +44,18 @@ fun WeatherScreen(
 
     var showSearchDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var lastBackPressTime by remember { mutableStateOf(0L) }
+
+    // Xử lý chuẩn hóa nút trở về (Back): Nếu đang ở màn hình chính, nhấn 2 lần để thoát
+    BackHandler(enabled = !showSearchDialog && !showSettingsDialog) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastBackPressTime < 2000L) {
+            (context as? Activity)?.finish()
+        } else {
+            lastBackPressTime = currentTime
+            Toast.makeText(context, "Nhấn lần nữa để thoát Weather 24h", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val weatherType = when (val state = uiState) {
         is WeatherUiState.Success -> WeatherCondition.fromWmoCode(state.weather.current.weatherCode).type

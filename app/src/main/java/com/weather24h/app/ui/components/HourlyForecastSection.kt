@@ -95,12 +95,13 @@ fun HourlyForecastSection(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             val condition = WeatherCondition.fromWmoCode(item.weatherCode)
-                            val icon = getWeatherIcon(condition.type)
+                            val icon = WeatherCondition.getWeatherIcon(condition.type, item.isDay)
+                            val iconTint = WeatherCondition.getWeatherIconTint(condition.type, item.isDay)
 
                             Icon(
                                 imageVector = icon,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = iconTint,
                                 modifier = Modifier.size(24.dp)
                             )
 
@@ -152,12 +153,4 @@ fun HourlyForecastSection(
     }
 }
 
-fun getWeatherIcon(type: WeatherType): ImageVector {
-    return when (type) {
-        WeatherType.CLEAR -> Icons.Default.WbSunny
-        WeatherType.PARTLY_CLOUDY, WeatherType.CLOUDY, WeatherType.FOG -> Icons.Default.Cloud
-        WeatherType.DRIZZLE, WeatherType.RAIN -> Icons.Default.WaterDrop
-        WeatherType.THUNDERSTORM -> Icons.Default.Thunderstorm
-        WeatherType.SNOW -> Icons.Default.WaterDrop
-    }
-}
+fun getWeatherIcon(type: WeatherType): ImageVector = WeatherCondition.getWeatherIcon(type, true)

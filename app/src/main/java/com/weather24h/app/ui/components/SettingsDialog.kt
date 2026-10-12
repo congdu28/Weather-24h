@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -97,9 +98,23 @@ fun SettingsDialog(
     )
 
     Dialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            if (currentSubScreen != SettingsSubScreen.MAIN) {
+                currentSubScreen = SettingsSubScreen.MAIN
+            } else {
+                onDismiss()
+            }
+        },
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
+        BackHandler(enabled = true) {
+            if (currentSubScreen != SettingsSubScreen.MAIN) {
+                currentSubScreen = SettingsSubScreen.MAIN
+            } else {
+                onDismiss()
+            }
+        }
+
         Surface(
             color = Color(0xFF090D16),
             modifier = Modifier.fillMaxSize()

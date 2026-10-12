@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.WeatherData
@@ -55,14 +56,20 @@ fun WeatherMetricsGrid(
         }
 
         // Row 1: UV & Humidity
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Max)
+        ) {
             MetricCard(
                 icon = Icons.Default.WbSunny,
                 title = "CHỈ SỐ UV",
                 value = String.format("%.1f", uv),
                 subtext = getUvAdvice(uv),
                 accentColor = getUvColor(uv),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             )
             Spacer(modifier = Modifier.width(12.dp))
             MetricCard(
@@ -71,21 +78,29 @@ fun WeatherMetricsGrid(
                 value = "${current.humidity}%",
                 subtext = if (current.humidity > 70) "Khá ẩm ướt" else "Độ ẩm dễ chịu",
                 accentColor = Color(0xFF48CAE4),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // Row 2: Wind & Feels Like
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Max)
+        ) {
             MetricCard(
                 icon = Icons.Default.Air,
                 title = "GIÓ",
                 value = "${current.windSpeed.roundToInt()} km/h",
                 subtext = "Hướng ${current.windDirectionText}",
                 accentColor = Color(0xFF06D6A0),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             )
             Spacer(modifier = Modifier.width(12.dp))
             MetricCard(
@@ -94,21 +109,29 @@ fun WeatherMetricsGrid(
                 value = "${current.feelsLike.roundToInt()}°C",
                 subtext = if (current.feelsLike > current.temperature) "Cảm giác nóng hơn" else "Mát mẻ hơn",
                 accentColor = Color(0xFFFFD166),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // Row 3: Air Quality & Sunrise/Sunset
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Max)
+        ) {
             MetricCard(
                 icon = Icons.Default.Spa,
                 title = "KHÔNG KHÍ (AQI)",
                 value = aqi?.let { "PM2.5: ${it.pm25.roundToInt()}" } ?: "Tốt",
                 subtext = aqi?.statusText ?: "Chất lượng an toàn",
                 accentColor = Color(0xFF06D6A0),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             )
             Spacer(modifier = Modifier.width(12.dp))
             MetricCard(
@@ -117,21 +140,29 @@ fun WeatherMetricsGrid(
                 value = todayDaily?.sunrise ?: "05:45",
                 subtext = "Lặn: ${todayDaily?.sunset ?: "18:15"}",
                 accentColor = Color(0xFFF3904F),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
         // Row 4: Pressure & Visibility
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Max)
+        ) {
             MetricCard(
                 icon = Icons.Default.Speed,
                 title = "ÁP SUẤT",
                 value = "${current.surfacePressure.roundToInt()} hPa",
                 subtext = "Áp suất chuẩn",
                 accentColor = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             )
             Spacer(modifier = Modifier.width(12.dp))
             MetricCard(
@@ -140,7 +171,9 @@ fun WeatherMetricsGrid(
                 value = "${current.visibilityKm.roundToInt()} km",
                 subtext = "Tầm nhìn xa tốt",
                 accentColor = Color(0xFF118AB2),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
             )
         }
     }
@@ -163,10 +196,13 @@ fun MetricCard(
             .padding(14.dp)
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
@@ -179,7 +215,9 @@ fun MetricCard(
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
@@ -189,7 +227,9 @@ fun MetricCard(
                 text = value,
                 color = Color.White,
                 fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -198,7 +238,10 @@ fun MetricCard(
                 text = subtext,
                 color = Color.White.copy(alpha = 0.75f),
                 fontSize = 11.sp,
-                lineHeight = 14.sp
+                lineHeight = 14.sp,
+                minLines = 2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
