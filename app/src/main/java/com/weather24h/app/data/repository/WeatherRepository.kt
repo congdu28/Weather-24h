@@ -1,11 +1,15 @@
 package com.weather24h.app.data.repository
 
 import android.content.Context
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
+import com.weather24h.app.ui.widget.WeatherWidgetProvider
+import com.weather24h.app.util.WeatherNotificationHelper
 
 class WeatherRepository(
     private val context: Context,
@@ -13,9 +17,38 @@ class WeatherRepository(
     private val stylistService: GeminiStylistService
 ) {
     private val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+    private val gson = Gson()
 
+    /**
+     * Lấy dữ liệu thời tiết (Hỗ trợ Offline-first)
+     * Khi có mạng: Tải mới, lưu cache, cập nhật Widget và kiểm tra cảnh báo.
+     * Khi mất mạng: Tự động trả về dữ liệu cache gần nhất với cờ isOffline = true.
+     */
     suspend fun getWeatherData(location: CityLocation): WeatherData {
-        return apiService.getFullWeather(location)
+        return try {
+            val freshWeather = apiService.getFullWeather(location)
+
+            // Lưu vào bộ nhớ đệm ngoại tuyến
+            saveCachedWeather(freshWeather)
+
+            // Cập nhật Widget màn hình chính
+            WeatherWidgetProvider.updateAllWidgets(context, freshWeather)
+
+            // Kiểm tra và gửi cảnh báo nếu bật tính năng
+            if (isSevereAlertsEnabled()) {
+                WeatherNotificationHelper.checkAndSendSevereAlerts(context, freshWeather)
+            }
+
+            freshWeather
+        } catch (e: Exception) {
+            // Khi mất mạng hoặc lỗi kết nối, ưu tiên lấy dữ liệu đã cache
+            val cached = getCachedWeather()
+            if (cached != null) {
+                cached.copy(isOffline = true)
+            } else {
+                throw e
+            }
+        }
     }
 
     suspend fun searchCities(query: String): List<CityLocation> {
@@ -27,39 +60,145 @@ class WeatherRepository(
     }
 
     suspend fun getOutfitRecommendation(weather: WeatherData): OutfitRecommendation {
-        return stylistService.getOutfitRecommendation(weather)
+        val outfit = stylistService.getOutfitRecommendation(weather)
+        // Cập nhật widget với tip phối đồ mới
+        WeatherWidgetProvider.updateAllWidgets(context, weather, "👔 ${outfit.styleVibe}: ${outfit.top}")
+        return outfit
     }
 
-    fun saveGeminiApiKey(apiKey: String) {
-        stylistService.saveApiKey(apiKey)
+    // ==========================================
+    // QUẢN LÝ BỘ NHỚ ĐỆM NGOẠI TUYẾN (OFFLINE CACHE)
+    // ==========================================
+    fun saveCachedWeather(weather: WeatherData) {
+        try {
+            val json = gson.toJson(weather)
+            prefs.edit()
+                .putString("cached_weather_json", json)
+                .putString("last_cached_time", weather.lastUpdated)
+                .apply()
+        } catch (_: Exception) {}
     }
 
-    fun clearCustomGeminiApiKey() {
-        stylistService.clearCustomKey()
+    fun getCachedWeather(): WeatherData? {
+        return try {
+            val json = prefs.getString("cached_weather_json", null) ?: return null
+            gson.fromJson(json, WeatherData::class.java)
+        } catch (_: Exception) {
+            null
+        }
     }
 
-    fun getGeminiApiKey(): String? {
-        return stylistService.getApiKey()
+    fun clearOfflineCache() {
+        prefs.edit()
+            .remove("cached_weather_json")
+            .remove("last_cached_time")
+            .apply()
     }
 
-    fun getCustomApiKey(): String? {
-        return stylistService.getCustomApiKey()
+    // ==========================================
+    // THÀNH PHỐ MẶC ĐỊNH & KHỞI ĐỘNG
+    // ==========================================
+    fun isStartWithGps(): Boolean {
+        return prefs.getBoolean("start_with_gps", false) // Mặc định mở theo thành phố mặc định
     }
 
-    fun isUsingCustomKey(): Boolean {
-        return stylistService.isUsingCustomKey()
+    fun setStartWithGps(enabled: Boolean) {
+        prefs.edit().putBoolean("start_with_gps", enabled).apply()
     }
 
-    fun hasDefaultKey(): Boolean {
-        return stylistService.hasDefaultKey()
+    fun getDefaultCity(): CityLocation {
+        val json = prefs.getString("default_city_json", null)
+        return if (!json.isNullOrEmpty()) {
+            try {
+                gson.fromJson(json, CityLocation::class.java)
+            } catch (_: Exception) {
+                CityLocation.DEFAULT_LOCATION
+            }
+        } else {
+            CityLocation.DEFAULT_LOCATION
+        }
     }
 
-    // Auto-refresh interval (in minutes: 0, 30, 60, 120, 180, 300)
-    fun getAutoRefreshInterval(): Int {
-        return prefs.getInt("auto_refresh_minutes", 60) // Mặc định 60 phút
+    fun setDefaultCity(city: CityLocation) {
+        val json = gson.toJson(city)
+        prefs.edit().putString("default_city_json", json).apply()
     }
 
-    fun setAutoRefreshInterval(minutes: Int) {
-        prefs.edit().putInt("auto_refresh_minutes", minutes).apply()
+    // ==========================================
+    // DANH SÁCH THÀNH PHỐ YÊU THÍCH (FAVORITES)
+    // ==========================================
+    fun getFavoriteCities(): List<CityLocation> {
+        val json = prefs.getString("favorite_cities_json", null)
+        if (json.isNullOrEmpty()) {
+            // Mặc định cung cấp sẵn Hà Nội, Đà Nẵng, TP.HCM
+            val initial = listOf(
+                CityLocation.DEFAULT_LOCATION,
+                CityLocation(name = "Đà Nẵng", country = "Việt Nam", latitude = 16.0544, longitude = 108.2022),
+                CityLocation(name = "TP. Hồ Chí Minh", country = "Việt Nam", latitude = 10.8231, longitude = 106.6297)
+            )
+            saveFavoriteCities(initial)
+            return initial
+        }
+        return try {
+            val type = object : TypeToken<List<CityLocation>>() {}.type
+            gson.fromJson(json, type) ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
+
+    fun toggleFavoriteCity(city: CityLocation): Boolean {
+        val current = getFavoriteCities().toMutableList()
+        val existingIndex = current.indexOfFirst { it.name.equals(city.name, ignoreCase = true) }
+        val isNowFavorite = if (existingIndex >= 0) {
+            current.removeAt(existingIndex)
+            false
+        } else {
+            current.add(city.copy(isCurrentLocation = false))
+            true
+        }
+        saveFavoriteCities(current)
+        return isNowFavorite
+    }
+
+    fun isFavoriteCity(city: CityLocation): Boolean {
+        return getFavoriteCities().any { it.name.equals(city.name, ignoreCase = true) }
+    }
+
+    private fun saveFavoriteCities(list: List<CityLocation>) {
+        val json = gson.toJson(list)
+        prefs.edit().putString("favorite_cities_json", json).apply()
+    }
+
+    // ==========================================
+    // CÀI ĐẶT THÔNG BÁO & CẢNH BÁO
+    // ==========================================
+    fun isMorningNotificationEnabled(): Boolean {
+        return prefs.getBoolean("morning_notif_enabled", true)
+    }
+
+    fun setMorningNotificationEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("morning_notif_enabled", enabled).apply()
+    }
+
+    fun isSevereAlertsEnabled(): Boolean {
+        return prefs.getBoolean("severe_alerts_enabled", true)
+    }
+
+    fun setSevereAlertsEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("severe_alerts_enabled", enabled).apply()
+    }
+
+    // ==========================================
+    // API KEY & CHU KỲ TỰ ĐỘNG
+    // ==========================================
+    fun saveGeminiApiKey(apiKey: String) = stylistService.saveApiKey(apiKey)
+    fun clearCustomGeminiApiKey() = stylistService.clearCustomKey()
+    fun getGeminiApiKey(): String? = stylistService.getApiKey()
+    fun getCustomApiKey(): String? = stylistService.getCustomApiKey()
+    fun isUsingCustomKey(): Boolean = stylistService.isUsingCustomKey()
+    fun hasDefaultKey(): Boolean = stylistService.hasDefaultKey()
+
+    fun getAutoRefreshInterval(): Int = prefs.getInt("auto_refresh_minutes", 60)
+    fun setAutoRefreshInterval(minutes: Int) = prefs.edit().putInt("auto_refresh_minutes", minutes).apply()
 }

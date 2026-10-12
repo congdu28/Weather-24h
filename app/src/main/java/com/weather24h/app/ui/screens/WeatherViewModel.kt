@@ -9,6 +9,7 @@ import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
+import com.weather24h.app.util.WeatherNotificationHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,23 +47,44 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _autoRefreshMinutes = MutableStateFlow(repository.getAutoRefreshInterval())
     val autoRefreshMinutes: StateFlow<Int> = _autoRefreshMinutes.asStateFlow()
 
-    private var currentCity: CityLocation = CityLocation.DEFAULT_LOCATION
+    // Danh sách thành phố yêu thích
+    private val _favoriteCities = MutableStateFlow<List<CityLocation>>(repository.getFavoriteCities())
+    val favoriteCities: StateFlow<List<CityLocation>> = _favoriteCities.asStateFlow()
+
+    // Cài đặt thành phố mặc định & khởi động
+    private val _defaultCity = MutableStateFlow(repository.getDefaultCity())
+    val defaultCity: StateFlow<CityLocation> = _defaultCity.asStateFlow()
+
+    private val _isStartWithGps = MutableStateFlow(repository.isStartWithGps())
+    val isStartWithGps: StateFlow<Boolean> = _isStartWithGps.asStateFlow()
+
+    // Cài đặt thông báo
+    private val _isMorningNotif = MutableStateFlow(repository.isMorningNotificationEnabled())
+    val isMorningNotif: StateFlow<Boolean> = _isMorningNotif.asStateFlow()
+
+    private val _isSevereAlerts = MutableStateFlow(repository.isSevereAlertsEnabled())
+    val isSevereAlerts: StateFlow<Boolean> = _isSevereAlerts.asStateFlow()
+
+    private var currentCity: CityLocation = repository.getDefaultCity()
     private var autoRefreshJob: Job? = null
     private var loadWeatherJob: Job? = null
     private var loadOutfitJob: Job? = null
     private var gpsJob: Job? = null
 
     init {
+        // Khởi tạo các notification channel
+        WeatherNotificationHelper.initChannels(application)
+
+        // Load thành phố mặc định ban đầu
         loadWeather(currentCity)
         startAutoRefreshTimer(_autoRefreshMinutes.value)
     }
 
     /**
      * Tải dữ liệu thời tiết cho một thành phố cụ thể.
-     * Tự động hủy mọi tác vụ cũ đang chạy để tránh race condition (bị nhảy về thành phố cũ).
+     * Tự động hủy mọi tác vụ cũ đang chạy để tránh race condition.
      */
     fun loadWeather(city: CityLocation) {
-        // Hủy ngay các tác vụ nền cũ (GPS hoặc lấy dữ liệu thành phố trước)
         gpsJob?.cancel()
         loadWeatherJob?.cancel()
         loadOutfitJob?.cancel()
@@ -75,14 +97,12 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 val weather = repository.getWeatherData(city)
                 if (!isActive) return@launch
 
-                // Cập nhật giao diện thời tiết ngay lập tức (không chờ AI Stylist)
                 _uiState.value = WeatherUiState.Success(
                     weather = weather,
                     outfit = null,
                     isOutfitLoading = true
                 )
 
-                // Tải gợi ý trang phục AI độc lập trong background
                 loadOutfitForWeather(weather)
             } catch (e: Exception) {
                 if (isActive) {
@@ -92,9 +112,6 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /**
-     * Tải gợi ý AI Stylist độc lập, kiểm tra đúng thành phố trước khi gán dữ liệu.
-     */
     private fun loadOutfitForWeather(weather: WeatherData) {
         loadOutfitJob?.cancel()
         loadOutfitJob = viewModelScope.launch {
@@ -103,7 +120,6 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 if (!isActive) return@launch
 
                 val currentState = _uiState.value
-                // Chỉ áp dụng outfit nếu người dùng vẫn đang xem đúng thành phố này
                 if (currentState is WeatherUiState.Success && currentState.weather.location.name == weather.location.name) {
                     _uiState.value = currentState.copy(outfit = outfit, isOutfitLoading = false)
                 }
@@ -139,6 +155,52 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    // ==========================================
+    // QUẢN LÝ THÀNH PHỐ YÊU THÍCH & MẶC ĐỊNH
+    // ==========================================
+    fun toggleFavoriteCity(city: CityLocation) {
+        repository.toggleFavoriteCity(city)
+        _favoriteCities.value = repository.getFavoriteCities()
+    }
+
+    fun isFavoriteCity(city: CityLocation): Boolean {
+        return repository.isFavoriteCity(city)
+    }
+
+    fun setDefaultCity(city: CityLocation) {
+        repository.setDefaultCity(city)
+        _defaultCity.value = city
+    }
+
+    fun setStartWithGps(enabled: Boolean) {
+        repository.setStartWithGps(enabled)
+        _isStartWithGps.value = enabled
+    }
+
+    // ==========================================
+    // CÀI ĐẶT THÔNG BÁO & NGOẠI TUYẾN
+    // ==========================================
+    fun setMorningNotification(enabled: Boolean) {
+        repository.setMorningNotificationEnabled(enabled)
+        _isMorningNotif.value = enabled
+    }
+
+    fun setSevereAlerts(enabled: Boolean) {
+        repository.setSevereAlertsEnabled(enabled)
+        _isSevereAlerts.value = enabled
+    }
+
+    fun sendTestNotification(isAlert: Boolean = false) {
+        WeatherNotificationHelper.sendTestNotification(getApplication(), isAlert)
+    }
+
+    fun clearOfflineCache() {
+        repository.clearOfflineCache()
+    }
+
+    // ==========================================
+    // API KEY & INTERVAL
+    // ==========================================
     fun saveCustomGeminiApiKey(key: String) {
         repository.saveGeminiApiKey(key)
         refreshOutfit()
@@ -172,14 +234,12 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setLocationFromGps(lat: Double, lon: Double) {
-        // Hủy mọi request đang dở trước đó
         gpsJob?.cancel()
         loadWeatherJob?.cancel()
         loadOutfitJob?.cancel()
 
         gpsJob = viewModelScope.launch {
             _uiState.value = WeatherUiState.Loading
-            // Geocoding chi tiết tiếng Việt
             val address = repository.getAddressFromCoordinates(lat, lon)
             if (!isActive) return@launch
 

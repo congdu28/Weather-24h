@@ -2,6 +2,7 @@ package com.weather24h.app
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -14,6 +15,7 @@ import com.google.android.gms.location.LocationServices
 import com.weather24h.app.ui.screens.WeatherScreen
 import com.weather24h.app.ui.screens.WeatherViewModel
 import com.weather24h.app.ui.theme.Weather24hTheme
+import com.weather24h.app.util.WeatherNotificationHelper
 
 class MainActivity : ComponentActivity() {
     private val viewModel: WeatherViewModel by viewModels()
@@ -27,7 +29,15 @@ class MainActivity : ComponentActivity() {
         if (fineLocationGranted || coarseLocationGranted) {
             fetchGpsLocation()
         } else {
-            Toast.makeText(this, "Không có quyền truy cập vị trí. Sử dụng thành phố mặc định.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Không có quyền vị trí. Sử dụng thành phố mặc định.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            WeatherNotificationHelper.initChannels(this)
         }
     }
 
@@ -36,6 +46,21 @@ class MainActivity : ComponentActivity() {
 
         // Make system bars transparent
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        // Khởi tạo notification channels
+        WeatherNotificationHelper.initChannels(this)
+
+        // Yêu cầu quyền thông báo trên Android 13+ (Tiramisu)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        // Tự động lấy GPS nếu người dùng bật tùy chọn "Luôn khởi động bằng GPS"
+        if (viewModel.isStartWithGps.value) {
+            checkLocationPermissions()
+        }
 
         setContent {
             Weather24hTheme {
@@ -82,7 +107,7 @@ class MainActivity : ComponentActivity() {
             }.addOnFailureListener {
                 Toast.makeText(this, "Lỗi khi lấy vị trí GPS.", Toast.LENGTH_SHORT).show()
             }
-        } catch (e: SecurityException) {
+        } catch (_: SecurityException) {
             // Permission not granted
         }
     }

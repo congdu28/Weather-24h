@@ -68,7 +68,8 @@ data class WeatherData(
     val hourly24h: List<HourlyForecast>,
     val daily7Days: List<DailyForecast>,
     val airQuality: AirQuality?,
-    val lastUpdated: String
+    val lastUpdated: String,
+    val isOffline: Boolean = false
 ) {
     val maxTemp24h: Double
         get() = hourly24h.maxOfOrNull { it.temperature } ?: current.temperature

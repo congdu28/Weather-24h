@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,17 +32,19 @@ fun CitySearchDialog(
     searchResults: List<CityLocation>,
     isSearching: Boolean,
     onSelectCity: (CityLocation) -> Unit,
-    onUseGps: () -> Unit
+    onUseGps: () -> Unit,
+    favoriteCities: List<CityLocation> = emptyList()
 ) {
     var query by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(24.dp),
-            color = Color(0xFF1E293B),
+            shape = RoundedCornerShape(26.dp),
+            color = Color(0xFF0F172A),
+            tonalElevation = 6.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.8f)
+                .fillMaxHeight(0.82f)
         ) {
             Column(
                 modifier = Modifier
@@ -49,12 +52,21 @@ fun CitySearchDialog(
                     .padding(20.dp)
             ) {
                 // Title
-                Text(
-                    text = "Chọn địa điểm",
-                    color = Color.White,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Chọn địa điểm",
+                        color = Color.White,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(onClick = onDismiss) {
+                        Text("Đóng", color = Color.White.copy(alpha = 0.7f))
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
@@ -67,8 +79,8 @@ fun CitySearchDialog(
                     },
                     placeholder = {
                         Text(
-                            text = "Nhập tên thành phố...",
-                            color = Color.White.copy(alpha = 0.5f),
+                            text = "Nhập tên quận, thành phố...",
+                            color = Color.White.copy(alpha = 0.45f),
                             fontSize = 14.sp
                         )
                     },
@@ -90,126 +102,229 @@ fun CitySearchDialog(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF3B82F6),
+                        focusedBorderColor = Color(0xFF38BDF8),
                         unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                        focusedContainerColor = Color.White.copy(alpha = 0.08f),
-                        unfocusedContainerColor = Color.White.copy(alpha = 0.08f)
+                        focusedContainerColor = Color.White.copy(alpha = 0.06f),
+                        unfocusedContainerColor = Color.White.copy(alpha = 0.06f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // GPS Button
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                // Use GPS Location Button
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFF0284C7).copy(alpha = 0.25f),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(0xFF3B82F6).copy(alpha = 0.2f))
                         .clickable {
-                            onDismiss()
                             onUseGps()
+                            onDismiss()
                         }
-                        .padding(horizontal = 14.dp, vertical = 12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.MyLocation,
-                        contentDescription = null,
-                        tint = Color(0xFF60A5FA),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Sử dụng vị trí hiện tại (GPS)",
-                        color = Color(0xFF93C5FD),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Popular Cities Chips
-                if (query.isEmpty()) {
-                    Text(
-                        text = "THÀNH PHỐ PHỔ BIẾN",
-                        color = Color.White.copy(alpha = 0.6f),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(14.dp)
                     ) {
-                        CityLocation.POPULAR_CITIES.forEach { city ->
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color.White.copy(alpha = 0.12f))
-                                    .clickable {
-                                        onDismiss()
-                                        onSelectCity(city)
-                                    }
-                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = city.name,
-                                    color = Color.White,
-                                    fontSize = 13.sp
-                                )
-                            }
+                        Icon(
+                            imageVector = Icons.Default.MyLocation,
+                            contentDescription = null,
+                            tint = Color(0xFF38BDF8),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Sử dụng vị trí hiện tại (GPS)",
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Tự động nhận diện quận/huyện tiếng Việt",
+                                color = Color(0xFFBAE6FD),
+                                fontSize = 11.5.sp
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // Results List
                 if (isSearching) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color.White)
+                        CircularProgressIndicator(color = Color(0xFF38BDF8))
                     }
-                } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(searchResults) { city ->
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onDismiss()
-                                        onSelectCity(city)
-                                    }
-                                    .padding(vertical = 12.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.LocationOn,
-                                    contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.6f),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
-                                    Text(
-                                        text = city.name,
-                                        color = Color.White,
-                                        fontSize = 15.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Text(
-                                        text = city.displayName,
-                                        color = Color.White.copy(alpha = 0.6f),
-                                        fontSize = 12.sp
-                                    )
-                                }
+                } else if (query.isNotEmpty()) {
+                    // Search results
+                    if (searchResults.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "Không tìm thấy địa điểm phù hợp",
+                                color = Color.White.copy(alpha = 0.6f),
+                                fontSize = 14.sp
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(searchResults) { city ->
+                                CityItemRow(city = city, onClick = {
+                                    onSelectCity(city)
+                                    onDismiss()
+                                })
                             }
-                            Divider(color = Color.White.copy(alpha = 0.08f))
                         }
                     }
+                } else {
+                    // Danh sách Thành phố yêu thích & Thành phố phổ biến
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        // 1. Thành phố yêu thích (Nếu có)
+                        if (favoriteCities.isNotEmpty()) {
+                            item {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = null,
+                                        tint = Color(0xFFFFD166),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "THÀNH PHỐ YÊU THÍCH",
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.7.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    favoriteCities.forEach { city ->
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = Color(0xFFFFD166).copy(alpha = 0.15f),
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .clickable {
+                                                    onSelectCity(city)
+                                                    onDismiss()
+                                                }
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Star,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFFFFD166),
+                                                    modifier = Modifier.size(13.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(5.dp))
+                                                Text(
+                                                    text = city.name,
+                                                    color = Color.White,
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // 2. Thành phố phổ biến gợi ý
+                        item {
+                            Text(
+                                text = "THÀNH PHỐ PHỔ BIẾN",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.7.sp
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CityLocation.POPULAR_CITIES.forEach { city ->
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = Color.White.copy(alpha = 0.08f),
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .clickable {
+                                                onSelectCity(city)
+                                                onDismiss()
+                                            }
+                                    ) {
+                                        Text(
+                                            text = city.name,
+                                            color = Color.White,
+                                            fontSize = 13.sp,
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CityItemRow(
+    city: CityLocation,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Color.White.copy(alpha = 0.06f),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(14.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = null,
+                tint = Color(0xFF38BDF8),
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column {
+                Text(
+                    text = city.name,
+                    color = Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (city.displayName.isNotEmpty()) {
+                    Text(
+                        text = city.displayName,
+                        color = Color.White.copy(alpha = 0.5f),
+                        fontSize = 12.sp
+                    )
                 }
             }
         }

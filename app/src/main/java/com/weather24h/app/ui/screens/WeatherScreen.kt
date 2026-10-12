@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -31,6 +30,12 @@ fun WeatherScreen(
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
     val autoRefreshMinutes by viewModel.autoRefreshMinutes.collectAsState()
+
+    val favoriteCities by viewModel.favoriteCities.collectAsState()
+    val defaultCity by viewModel.defaultCity.collectAsState()
+    val isStartWithGps by viewModel.isStartWithGps.collectAsState()
+    val isMorningNotif by viewModel.isMorningNotif.collectAsState()
+    val isSevereAlerts by viewModel.isSevereAlerts.collectAsState()
 
     var showSearchDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -149,11 +154,13 @@ fun WeatherScreen(
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // 1. Current Weather Hero Card
+                        // 1. Current Weather Hero Card (With Favorite Star ⭐)
                         item {
                             CurrentWeatherCard(
                                 weather = weather,
-                                onLocationClick = { showSearchDialog = true }
+                                onLocationClick = { showSearchDialog = true },
+                                isFavorite = viewModel.isFavoriteCity(weather.location),
+                                onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) }
                             )
                         }
 
@@ -191,7 +198,10 @@ fun WeatherScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "Cập nhật lúc ${weather.lastUpdated}",
+                                    text = if (weather.isOffline)
+                                        "Dữ liệu ngoại tuyến • Lưu lúc ${weather.lastUpdated}"
+                                    else
+                                        "Cập nhật lúc ${weather.lastUpdated}",
                                     color = Color.White.copy(alpha = 0.5f),
                                     fontSize = 12.sp
                                 )
@@ -214,7 +224,8 @@ fun WeatherScreen(
                 },
                 onUseGps = {
                     onRequestGps()
-                }
+                },
+                favoriteCities = favoriteCities
             )
         }
 
@@ -224,6 +235,11 @@ fun WeatherScreen(
                 isUsingCustomKey = viewModel.isUsingCustomKey(),
                 hasDefaultKey = viewModel.hasDefaultKey(),
                 currentAutoRefreshMinutes = autoRefreshMinutes,
+                defaultCity = defaultCity,
+                isStartWithGps = isStartWithGps,
+                isMorningNotif = isMorningNotif,
+                isSevereAlerts = isSevereAlerts,
+                favoriteCities = favoriteCities,
                 onDismiss = { showSettingsDialog = false },
                 onSaveCustomKey = { key ->
                     viewModel.saveCustomGeminiApiKey(key)
@@ -233,6 +249,27 @@ fun WeatherScreen(
                 },
                 onSelectAutoRefreshInterval = { minutes ->
                     viewModel.setAutoRefreshInterval(minutes)
+                },
+                onSetDefaultCity = { city ->
+                    viewModel.setDefaultCity(city)
+                },
+                onSetStartWithGps = { enabled ->
+                    viewModel.setStartWithGps(enabled)
+                },
+                onSetMorningNotif = { enabled ->
+                    viewModel.setMorningNotification(enabled)
+                },
+                onSetSevereAlerts = { enabled ->
+                    viewModel.setSevereAlerts(enabled)
+                },
+                onSendTestNotif = { isAlert ->
+                    viewModel.sendTestNotification(isAlert)
+                },
+                onClearCache = {
+                    viewModel.clearOfflineCache()
+                },
+                onRemoveFavorite = { city ->
+                    viewModel.toggleFavoriteCity(city)
                 }
             )
         }

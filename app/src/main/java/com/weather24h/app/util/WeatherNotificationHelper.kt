@@ -1,0 +1,184 @@
+package com.weather24h.app.util
+
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.app.NotificationCompat
+import com.weather24h.app.MainActivity
+import com.weather24h.app.data.model.OutfitRecommendation
+import com.weather24h.app.data.model.WeatherCondition
+import com.weather24h.app.data.model.WeatherData
+import kotlin.math.roundToInt
+
+object WeatherNotificationHelper {
+    private const val CHANNEL_MORNING_ID = "weather_morning_briefing"
+    private const val CHANNEL_ALERT_ID = "weather_severe_alerts"
+
+    fun initChannels(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+            // Kênh 1: Bản tin thời tiết buổi sáng
+            val morningChannel = NotificationChannel(
+                CHANNEL_MORNING_ID,
+                "Bản tin thời tiết buổi sáng",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Gửi tóm tắt thời tiết và lời khuyên trang phục mỗi buổi sáng"
+                enableLights(true)
+            }
+
+            // Kênh 2: Cảnh báo thời tiết đặc biệt (mưa lớn, sấm sét, UV cao)
+            val alertChannel = NotificationChannel(
+                CHANNEL_ALERT_ID,
+                "Cảnh báo thời tiết đặc biệt",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Cảnh báo thời tiết nguy hiểm: Dông sét, mưa lớn, tia cực tím cao"
+                enableVibration(true)
+                enableLights(true)
+            }
+
+            manager.createNotificationChannel(morningChannel)
+            manager.createNotificationChannel(alertChannel)
+        }
+    }
+
+    /**
+     * Gửi bản tin thời tiết buổi sáng kèm gợi ý trang phục AI
+     */
+    fun showMorningNotification(context: Context, weather: WeatherData, outfit: OutfitRecommendation?) {
+        initChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            1001,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode)
+        val temp = weather.current.temperature.roundToInt()
+        val cityName = weather.location.name
+
+        val outfitTip = outfit?.summary ?: "Trang phục phù hợp: ${condition.description.lowercase()} mát mẻ."
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_MORNING_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("🌤️ Thời tiết hôm nay tại $cityName ($temp°C)")
+            .setContentText("${condition.description} • $outfitTip")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("${condition.description}. Nhiệt độ $temp°C (Cảm giác như ${weather.current.feelsLike.roundToInt()}°C).\n\n👔 Lời khuyên mặc đồ:\n$outfitTip")
+            )
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        manager.notify(1001, notification)
+    }
+
+    /**
+     * Tự động kiểm tra và gửi cảnh báo khẩn nếu có sấm sét, mưa lớn hoặc UV nguy hại
+     */
+    fun checkAndSendSevereAlerts(context: Context, weather: WeatherData) {
+        initChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        val code = weather.current.weatherCode
+        val uv = weather.current.uvIndex
+        val cityName = weather.location.name
+
+        val intent = Intent(context, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            1002,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Cảnh báo dông sét (WMO 95, 96, 99)
+        if (code in listOf(95, 96, 99)) {
+            val alert = NotificationCompat.Builder(context, CHANNEL_ALERT_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("⚡ Cảnh báo Dông bão & Sấm chớp tại $cityName")
+                .setContentText("Khu vực đang có dông sét mạnh. Hạn chế ra ngoài và chú ý an toàn!")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+            manager.notify(2001, alert)
+            return
+        }
+
+        // Cảnh báo mưa rào to (WMO 65, 82)
+        if (code in listOf(65, 82)) {
+            val alert = NotificationCompat.Builder(context, CHANNEL_ALERT_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("🌧️ Cảnh báo Mưa to diện rộng tại $cityName")
+                .setContentText("Đang có mưa rào lớn. Đừng quên mang áo mưa hoặc ô gấp gọn khi ra ngoài!")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+            manager.notify(2002, alert)
+            return
+        }
+
+        // Cảnh báo tia UV nguy hại (UV >= 8)
+        if (uv >= 8.0) {
+            val alert = NotificationCompat.Builder(context, CHANNEL_ALERT_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("☀️ Cảnh báo Tia UV cực cao (Chỉ số: ${"%.1f".format(uv)})")
+                .setContentText("Bức xạ cực tím ở mức rất nguy hại. Hãy bôi kem chống nắng và che chắn kỹ!")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .build()
+            manager.notify(2003, alert)
+            return
+        }
+    }
+
+    /**
+     * Gửi thông báo thử nghiệm trực tiếp từ Cài đặt
+     */
+    fun sendTestNotification(context: Context, isAlert: Boolean = false) {
+        initChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        val intent = Intent(context, MainActivity::class.java)
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            9999,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val channelId = if (isAlert) CHANNEL_ALERT_ID else CHANNEL_MORNING_ID
+        val title = if (isAlert) "⚡ [Thử nghiệm] Cảnh báo Dông sét & Mưa lớn" else "🌤️ [Thử nghiệm] Bản tin thời tiết Weather 24h"
+        val message = if (isAlert)
+            "Hệ thống cảnh báo thời tiết nguy hiểm của Weather 24h đang hoạt động hoàn hảo!"
+        else
+            "Hà Nội 28°C • Trời nắng đẹp. Gợi ý Gemini: Áo sơ mi mỏng nhẹ + Kính râm thời trang."
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
+            .setPriority(if (isAlert) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        manager.notify(9999, notification)
+    }
+}
