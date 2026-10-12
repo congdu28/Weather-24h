@@ -26,7 +26,7 @@ class WeatherRepository(
      */
     suspend fun getWeatherData(location: CityLocation): WeatherData {
         return try {
-            val freshWeather = apiService.getFullWeather(location)
+            val freshWeather = apiService.getFullWeather(location, getForecastModel())
 
             // Lưu vào bộ nhớ đệm ngoại tuyến
             saveCachedWeather(freshWeather)
@@ -259,5 +259,46 @@ class WeatherRepository(
 
     fun setThemeMode(mode: com.weather24h.app.ui.theme.AppThemeMode) {
         prefs.edit().putString("app_theme_mode", mode.name).apply()
+    }
+
+    // ==========================================
+    // CÀI ĐẶT WIDGET (THEME SÁNG / TỐI & ĐỘ TRONG SUỐT)
+    // ==========================================
+    fun getWidgetThemeMode(): com.weather24h.app.ui.theme.AppThemeMode {
+        val str = prefs.getString("widget_theme_mode", com.weather24h.app.ui.theme.AppThemeMode.SYSTEM.name)
+        return try {
+            com.weather24h.app.ui.theme.AppThemeMode.valueOf(str ?: com.weather24h.app.ui.theme.AppThemeMode.SYSTEM.name)
+        } catch (_: Exception) {
+            com.weather24h.app.ui.theme.AppThemeMode.SYSTEM
+        }
+    }
+
+    fun setWidgetThemeMode(mode: com.weather24h.app.ui.theme.AppThemeMode) {
+        prefs.edit().putString("widget_theme_mode", mode.name).apply()
+    }
+
+    fun getWidgetOpacity(): Float {
+        // Mặc định độ đục nền là 0.85 (85%), giá trị từ 0.0f (trong suốt) đến 1.0f (đặc hoàn toàn)
+        return prefs.getFloat("widget_bg_opacity", 0.85f)
+    }
+
+    fun setWidgetOpacity(opacity: Float) {
+        prefs.edit().putFloat("widget_bg_opacity", opacity.coerceIn(0.0f, 1.0f)).apply()
+    }
+
+    // ==========================================
+    // CÀI ĐẶT MÔ HÌNH DỰ BÁO KHÍ TƯỢNG (FORECAST MODEL)
+    // ==========================================
+    fun getForecastModel(): com.weather24h.app.data.model.WeatherForecastModel {
+        val str = prefs.getString("weather_forecast_model", com.weather24h.app.data.model.WeatherForecastModel.BEST_MATCH.name)
+        return try {
+            com.weather24h.app.data.model.WeatherForecastModel.valueOf(str ?: com.weather24h.app.data.model.WeatherForecastModel.BEST_MATCH.name)
+        } catch (_: Exception) {
+            com.weather24h.app.data.model.WeatherForecastModel.BEST_MATCH
+        }
+    }
+
+    fun setForecastModel(model: com.weather24h.app.data.model.WeatherForecastModel) {
+        prefs.edit().putString("weather_forecast_model", model.name).apply()
     }
 }

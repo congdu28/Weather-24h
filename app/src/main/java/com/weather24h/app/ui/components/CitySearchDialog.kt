@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.weather24h.app.data.model.CityLocation
+import com.weather24h.app.ui.theme.LocalIsDarkTheme
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -40,10 +41,17 @@ fun CitySearchDialog(
 ) {
     var query by remember { mutableStateOf("") }
 
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = if (isDark) Color.White else Color(0xFF0F172A)
+    val subtextColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+    val dialogBg = if (isDark) Color(0xFF0F172A) else Color(0xFFF8FAFC)
+    val cardBg = if (isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFE2E8F0)
+    val chipBg = if (isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFF1F5F9)
+
     Dialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(26.dp),
-            color = Color(0xFF0F172A),
+            color = dialogBg,
             tonalElevation = 6.dp,
             modifier = Modifier
                 .fillMaxWidth()
@@ -62,12 +70,12 @@ fun CitySearchDialog(
                 ) {
                     Text(
                         text = "Chọn địa điểm",
-                        color = Color.White,
+                        color = contentColor,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
                     TextButton(onClick = onDismiss) {
-                        Text("Đóng", color = Color.White.copy(alpha = 0.7f))
+                        Text("Đóng", color = subtextColor)
                     }
                 }
 
@@ -83,12 +91,12 @@ fun CitySearchDialog(
                     placeholder = {
                         Text(
                             text = "Nhập tên quận, thành phố...",
-                            color = Color.White.copy(alpha = 0.45f),
+                            color = subtextColor.copy(alpha = 0.6f),
                             fontSize = 14.sp
                         )
                     },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Color.White.copy(alpha = 0.7f))
+                        Icon(Icons.Default.Search, contentDescription = null, tint = subtextColor)
                     },
                     trailingIcon = {
                         if (query.isNotEmpty()) {
@@ -96,19 +104,19 @@ fun CitySearchDialog(
                                 query = ""
                                 onSearch("")
                             }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.White.copy(alpha = 0.7f))
+                                Icon(Icons.Default.Clear, contentDescription = "Clear", tint = subtextColor)
                             }
                         }
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        focusedTextColor = contentColor,
+                        unfocusedTextColor = contentColor,
                         focusedBorderColor = Color(0xFF38BDF8),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                        focusedContainerColor = Color.White.copy(alpha = 0.06f),
-                        unfocusedContainerColor = Color.White.copy(alpha = 0.06f)
+                        unfocusedBorderColor = if (isDark) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.15f),
+                        focusedContainerColor = cardBg,
+                        unfocusedContainerColor = cardBg
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -118,7 +126,7 @@ fun CitySearchDialog(
                 // Use GPS Location Button
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFF0284C7).copy(alpha = 0.25f),
+                    color = Color(0xFF0284C7).copy(alpha = if (isDark) 0.25f else 0.12f),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
@@ -134,20 +142,20 @@ fun CitySearchDialog(
                         Icon(
                             imageVector = Icons.Default.MyLocation,
                             contentDescription = null,
-                            tint = Color(0xFF38BDF8),
+                            tint = Color(0xFF0284C7),
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
                                 text = "Sử dụng vị trí hiện tại (GPS)",
-                                color = Color.White,
+                                color = contentColor,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
                                 text = "Tự động nhận diện quận/huyện tiếng Việt",
-                                color = Color(0xFFBAE6FD),
+                                color = if (isDark) Color(0xFFBAE6FD) else Color(0xFF0369A1),
                                 fontSize = 11.5.sp
                             )
                         }
@@ -166,7 +174,7 @@ fun CitySearchDialog(
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(
                                 text = "Không tìm thấy địa điểm phù hợp",
-                                color = Color.White.copy(alpha = 0.6f),
+                                color = subtextColor,
                                 fontSize = 14.sp
                             )
                         }
@@ -179,6 +187,9 @@ fun CitySearchDialog(
                                 CityItemRow(
                                     city = city,
                                     isFavorite = isFav,
+                                    cardBg = cardBg,
+                                    contentColor = contentColor,
+                                    subtextColor = subtextColor,
                                     onToggleFavorite = { onToggleFavorite(city) },
                                     onClick = {
                                         onSelectCity(city)
@@ -207,7 +218,7 @@ fun CitySearchDialog(
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "THÀNH PHỐ YÊU THÍCH (${favoriteCities.size})",
-                                        color = Color.White.copy(alpha = 0.85f),
+                                        color = contentColor.copy(alpha = 0.85f),
                                         fontSize = 11.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 0.7.sp
@@ -222,7 +233,7 @@ fun CitySearchDialog(
                                     favoriteCities.forEach { city ->
                                         Surface(
                                             shape = RoundedCornerShape(12.dp),
-                                            color = Color(0xFFFFD166).copy(alpha = 0.15f),
+                                            color = Color(0xFFFFD166).copy(alpha = if (isDark) 0.15f else 0.12f),
                                             modifier = Modifier.clip(RoundedCornerShape(12.dp))
                                         ) {
                                             Row(
@@ -247,7 +258,7 @@ fun CitySearchDialog(
                                                     Spacer(modifier = Modifier.width(5.dp))
                                                     Text(
                                                         text = city.name,
-                                                        color = Color.White,
+                                                        color = contentColor,
                                                         fontSize = 13.sp,
                                                         fontWeight = FontWeight.SemiBold
                                                     )
@@ -260,7 +271,7 @@ fun CitySearchDialog(
                                                     Icon(
                                                         imageVector = Icons.Default.Close,
                                                         contentDescription = "Xóa khỏi yêu thích",
-                                                        tint = Color.White.copy(alpha = 0.65f),
+                                                        tint = subtextColor,
                                                         modifier = Modifier.size(14.dp)
                                                     )
                                                 }
@@ -275,7 +286,7 @@ fun CitySearchDialog(
                         item {
                             Text(
                                 text = "THÀNH PHỐ PHỔ BIẾN",
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = subtextColor,
                                 fontSize = 11.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 0.7.sp
@@ -290,7 +301,7 @@ fun CitySearchDialog(
                                     val isFav = favoriteCities.any { it.name.equals(city.name, ignoreCase = true) }
                                     Surface(
                                         shape = RoundedCornerShape(12.dp),
-                                        color = if (isFav) Color(0xFFFFD166).copy(alpha = 0.14f) else Color.White.copy(alpha = 0.08f),
+                                        color = if (isFav) Color(0xFFFFD166).copy(alpha = if (isDark) 0.14f else 0.12f) else chipBg,
                                         modifier = Modifier.clip(RoundedCornerShape(12.dp))
                                     ) {
                                         Row(
@@ -299,7 +310,7 @@ fun CitySearchDialog(
                                         ) {
                                             Text(
                                                 text = city.name,
-                                                color = Color.White,
+                                                color = contentColor,
                                                 fontSize = 13.sp,
                                                 modifier = Modifier
                                                     .clickable {
@@ -316,7 +327,7 @@ fun CitySearchDialog(
                                                 Icon(
                                                     imageVector = if (isFav) Icons.Default.Star else Icons.Default.StarBorder,
                                                     contentDescription = "Yêu thích",
-                                                    tint = if (isFav) Color(0xFFFFD166) else Color.White.copy(alpha = 0.45f),
+                                                    tint = if (isFav) Color(0xFFFFD166) else subtextColor,
                                                     modifier = Modifier.size(15.dp)
                                                 )
                                             }
@@ -336,12 +347,15 @@ fun CitySearchDialog(
 private fun CityItemRow(
     city: CityLocation,
     isFavorite: Boolean = false,
+    cardBg: Color,
+    contentColor: Color,
+    subtextColor: Color,
     onToggleFavorite: () -> Unit = {},
     onClick: () -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color.White.copy(alpha = 0.06f),
+        color = cardBg,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
@@ -369,14 +383,14 @@ private fun CityItemRow(
                 Column {
                     Text(
                         text = city.name,
-                        color = Color.White,
+                        color = contentColor,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     if (city.displayName.isNotEmpty()) {
                         Text(
                             text = city.displayName,
-                            color = Color.White.copy(alpha = 0.5f),
+                            color = subtextColor,
                             fontSize = 12.sp
                         )
                     }
@@ -390,7 +404,7 @@ private fun CityItemRow(
                 Icon(
                     imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                     contentDescription = if (isFavorite) "Bỏ yêu thích" else "Thêm yêu thích",
-                    tint = if (isFavorite) Color(0xFFFFD166) else Color.White.copy(alpha = 0.45f),
+                    tint = if (isFavorite) Color(0xFFFFD166) else subtextColor,
                     modifier = Modifier.size(20.dp)
                 )
             }

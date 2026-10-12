@@ -122,7 +122,7 @@ fun DailyForecastSection(
                     // Weather Icon & Rain %
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.width(52.dp)
+                        modifier = Modifier.width(56.dp)
                     ) {
                         Icon(
                             imageVector = icon,
@@ -130,13 +130,19 @@ fun DailyForecastSection(
                             tint = iconTint,
                             modifier = Modifier.size(20.dp)
                         )
-                        if (day.precipitationProbability > 20) {
-                            Spacer(modifier = Modifier.width(3.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        if (day.precipitationProbability > 0) {
                             Text(
                                 text = "${day.precipitationProbability}%",
-                                color = Color(0xFF48CAE4),
-                                fontSize = 10.sp,
+                                color = Color(0xFF0284C7),
+                                fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Text(
+                                text = "0%",
+                                color = subtextColor.copy(alpha = 0.45f),
+                                fontSize = 10.sp
                             )
                         }
                     }
@@ -455,15 +461,33 @@ fun DayForecastDetailDialog(
 
                                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                                if (item.precipitationProbability > 0) {
-                                                    Text(
-                                                        text = "${item.precipitationProbability}%",
-                                                        color = Color(0xFF0284C7),
-                                                        fontSize = 10.5.sp,
-                                                        fontWeight = FontWeight.Bold
-                                                    )
-                                                } else {
-                                                    Spacer(modifier = Modifier.height(14.dp))
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.Center,
+                                                    modifier = Modifier.height(16.dp)
+                                                ) {
+                                                    if (item.precipitationProbability > 0) {
+                                                        Icon(
+                                                            imageVector = Icons.Default.WaterDrop,
+                                                            contentDescription = null,
+                                                            tint = Color(0xFF0284C7),
+                                                            modifier = Modifier.size(9.dp)
+                                                        )
+                                                        Spacer(modifier = Modifier.width(1.5.dp))
+                                                        Text(
+                                                            text = "${item.precipitationProbability}%",
+                                                            color = Color(0xFF0284C7),
+                                                            fontSize = 10.5.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    } else {
+                                                        Text(
+                                                            text = "0%",
+                                                            color = subtextColor.copy(alpha = 0.45f),
+                                                            fontSize = 10.sp,
+                                                            fontWeight = FontWeight.Normal
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }

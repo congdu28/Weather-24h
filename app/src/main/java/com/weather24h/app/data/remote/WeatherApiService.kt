@@ -21,7 +21,10 @@ class WeatherApiService {
 
     private val gson = Gson()
 
-    suspend fun getFullWeather(location: CityLocation): WeatherData = withContext(Dispatchers.IO) {
+    suspend fun getFullWeather(
+        location: CityLocation,
+        model: WeatherForecastModel = WeatherForecastModel.BEST_MATCH
+    ): WeatherData = withContext(Dispatchers.IO) {
         try {
             val url = "https://api.open-meteo.com/v1/forecast?" +
                     "latitude=${location.latitude}&" +
@@ -29,7 +32,8 @@ class WeatherApiService {
                     "current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&" +
                     "hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,wind_speed_10m,is_day&" +
                     "daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max&" +
-                    "timezone=auto"
+                    "timezone=auto&" +
+                    "models=${model.apiValue}"
 
             val request = Request.Builder().url(url).build()
             val response = client.newCall(request).execute()
@@ -60,9 +64,9 @@ class WeatherApiService {
                 }
             } catch (_: Exception) {}
 
-            parseWeatherData(location, json, airQuality)
+            parseWeatherData(location, json, airQuality, model)
         } catch (e: Exception) {
-            getFallbackMockData(location)
+            getFallbackMockData(location, model)
         }
     }
 
@@ -206,7 +210,12 @@ class WeatherApiService {
         Pair("Vị trí của bạn", "GPS")
     }
 
-    private fun parseWeatherData(location: CityLocation, json: JsonObject, aqi: AirQuality?): WeatherData {
+    private fun parseWeatherData(
+        location: CityLocation,
+        json: JsonObject,
+        aqi: AirQuality?,
+        model: WeatherForecastModel = WeatherForecastModel.BEST_MATCH
+    ): WeatherData {
         val currentObj = json.getAsJsonObject("current")
         val hourlyObj = json.getAsJsonObject("hourly")
         val dailyObj = json.getAsJsonObject("daily")
@@ -361,7 +370,8 @@ class WeatherApiService {
             hourly24h = hourlyList,
             daily7Days = dailyList,
             airQuality = aqi,
-            lastUpdated = updatedStr
+            lastUpdated = updatedStr,
+            forecastModel = model
         )
     }
 
@@ -383,7 +393,10 @@ class WeatherApiService {
         }
     }
 
-    private fun getFallbackMockData(location: CityLocation): WeatherData {
+    private fun getFallbackMockData(
+        location: CityLocation,
+        model: WeatherForecastModel = WeatherForecastModel.BEST_MATCH
+    ): WeatherData {
         val now = LocalDateTime.now()
         val currentHour = now.hour
         val hourly = (0..23).map { offset ->
@@ -449,7 +462,8 @@ class WeatherApiService {
             hourly24h = hourly,
             daily7Days = daily,
             airQuality = AirQuality(22.0, 38.0, 42),
-            lastUpdated = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy").format(LocalDateTime.now())
+            lastUpdated = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy").format(LocalDateTime.now()),
+            forecastModel = model
         )
     }
 }

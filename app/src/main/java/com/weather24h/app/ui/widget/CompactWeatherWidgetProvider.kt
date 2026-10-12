@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.widget.RemoteViews
 import com.google.gson.Gson
 import com.weather24h.app.MainActivity
@@ -45,6 +46,37 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
         ) {
             try {
                 val views = RemoteViews(context.packageName, R.layout.weather_widget_compact)
+
+                // Cài đặt Theme & Độ trong suốt nền
+                val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+                val themeStr = prefs.getString("widget_theme_mode", "SYSTEM") ?: "SYSTEM"
+                val isDark = when (themeStr) {
+                    "LIGHT" -> false
+                    "DARK" -> true
+                    else -> {
+                        val nightFlags = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                        nightFlags == Configuration.UI_MODE_NIGHT_YES
+                    }
+                }
+                val bgOpacity = prefs.getFloat("widget_bg_opacity", 0.85f).coerceIn(0.0f, 1.0f)
+
+                // Áp dụng hình nền & độ trong suốt
+                views.setInt(
+                    R.id.compact_widget_bg_layer,
+                    "setBackgroundResource",
+                    if (isDark) R.drawable.widget_bg_dark else R.drawable.widget_bg_light
+                )
+                views.setFloat(R.id.compact_widget_bg_layer, "setAlpha", bgOpacity)
+
+                // Bảng màu chữ tương ứng với theme sáng / tối
+                val colorPrimary = if (isDark) 0xFFFFFFFF.toInt() else 0xFF0F172A.toInt()
+                val colorSecondary = if (isDark) 0xFFCBD5E1.toInt() else 0xFF475569.toInt()
+                val colorAccent = if (isDark) 0xFF38BDF8.toInt() else 0xFF0284C7.toInt()
+
+                views.setTextColor(R.id.compact_widget_temp, colorPrimary)
+                views.setTextColor(R.id.compact_widget_city, colorPrimary)
+                views.setTextColor(R.id.compact_widget_desc, colorSecondary)
+                views.setTextColor(R.id.compact_widget_sub, colorAccent)
 
                 val intent = Intent(context, MainActivity::class.java)
                 val pendingIntent = PendingIntent.getActivity(

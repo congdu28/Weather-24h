@@ -1,70 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/compact_widget_root"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/widget_bg"
-    android:gravity="center_vertical"
-    android:orientation="horizontal"
-    android:padding="12dp">
+    android:layout_height="match_parent">
 
-    <!-- Left: Weather Icon & Temp -->
-    <TextView
-        android:id="@+id/compact_widget_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="10dp"
-        android:text="☀️"
-        android:textSize="32sp" />
+    <!-- Background Layer (hỗ trợ điều chỉnh độ trong suốt setAlpha và theme Sáng/Tối) -->
+    <View
+        android:id="@+id/compact_widget_bg_layer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_bg_dark" />
 
-    <TextView
-        android:id="@+id/compact_widget_temp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="12dp"
-        android:text="28°"
-        android:textColor="#FFFFFF"
-        android:textSize="36sp"
-        android:textStyle="bold" />
-
-    <!-- Right: City & Details -->
+    <!-- Foreground Content Layer -->
     <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:id="@+id/compact_widget_content"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp">
 
+        <!-- Left: Weather Icon & Temp -->
         <TextView
-            android:id="@+id/compact_widget_city"
+            android:id="@+id/compact_widget_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="Hà Nội"
+            android:layout_marginEnd="10dp"
+            android:text="☀️"
+            android:textSize="32sp" />
+
+        <TextView
+            android:id="@+id/compact_widget_temp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:text="28°"
             android:textColor="#FFFFFF"
-            android:textSize="15sp"
+            android:textSize="36sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/compact_widget_desc"
-            android:layout_width="wrap_content"
+        <!-- Right: City & Details -->
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:text="Trời nắng • Cảm giác 30°"
-            android:textColor="#CBD5E1"
-            android:textSize="11sp" />
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/compact_widget_sub"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="C:32° T:24° • Mưa: 10%"
-            android:textColor="#38BDF8"
-            android:textSize="10.5sp"
-            android:textStyle="bold" />
+            <TextView
+                android:id="@+id/compact_widget_city"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Hà Nội"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/compact_widget_desc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Trời nắng • Cảm giác 30°"
+                android:textColor="#CBD5E1"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/compact_widget_sub"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="C:32° T:24° • Mưa: 10%"
+                android:textColor="#38BDF8"
+                android:textSize="10.5sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
     </LinearLayout>
 
-</LinearLayout>
+</FrameLayout>

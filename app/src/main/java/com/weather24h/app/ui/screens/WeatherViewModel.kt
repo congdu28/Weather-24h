@@ -85,9 +85,39 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _ambientGlowIntensity = MutableStateFlow(repository.getAmbientGlowIntensity())
     val ambientGlowIntensity: StateFlow<Float> = _ambientGlowIntensity.asStateFlow()
 
+    // Cài đặt Widget (Theme sáng/tối & Độ trong suốt)
+    private val _widgetThemeMode = MutableStateFlow(repository.getWidgetThemeMode())
+    val widgetThemeMode: StateFlow<com.weather24h.app.ui.theme.AppThemeMode> = _widgetThemeMode.asStateFlow()
+
+    private val _widgetOpacity = MutableStateFlow(repository.getWidgetOpacity())
+    val widgetOpacity: StateFlow<Float> = _widgetOpacity.asStateFlow()
+
+    // Cài đặt mô hình dự báo thời tiết (ECMWF, GFS, ICON, JMA, v.v.)
+    private val _forecastModel = MutableStateFlow(repository.getForecastModel())
+    val forecastModel: StateFlow<com.weather24h.app.data.model.WeatherForecastModel> = _forecastModel.asStateFlow()
+
     fun setThemeMode(mode: com.weather24h.app.ui.theme.AppThemeMode) {
         _themeMode.value = mode
         repository.setThemeMode(mode)
+    }
+
+    fun setForecastModel(model: com.weather24h.app.data.model.WeatherForecastModel) {
+        _forecastModel.value = model
+        repository.setForecastModel(model)
+        refreshWeather()
+    }
+
+    fun setWidgetThemeMode(mode: com.weather24h.app.ui.theme.AppThemeMode) {
+        _widgetThemeMode.value = mode
+        repository.setWidgetThemeMode(mode)
+        com.weather24h.app.ui.widget.WeatherWidgetProvider.updateAllWidgets(getApplication())
+    }
+
+    fun setWidgetOpacity(opacity: Float) {
+        val clamped = opacity.coerceIn(0.0f, 1.0f)
+        _widgetOpacity.value = clamped
+        repository.setWidgetOpacity(clamped)
+        com.weather24h.app.ui.widget.WeatherWidgetProvider.updateAllWidgets(getApplication())
     }
 
     fun setBgDimmingLevel(level: Float) {

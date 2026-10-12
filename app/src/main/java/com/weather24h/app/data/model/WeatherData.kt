@@ -71,6 +71,7 @@ data class WeatherData(
     val daily7Days: List<DailyForecast>,
     val airQuality: AirQuality?,
     val lastUpdated: String,
+    val forecastModel: WeatherForecastModel = WeatherForecastModel.BEST_MATCH,
     val isOffline: Boolean = false
 ) {
     val maxTemp24h: Double

@@ -45,6 +45,9 @@ fun WeatherScreen(
     val bgDimmingLevel by viewModel.bgDimmingLevel.collectAsState()
     val ambientGlowStyle by viewModel.ambientGlowStyle.collectAsState()
     val ambientGlowIntensity by viewModel.ambientGlowIntensity.collectAsState()
+    val widgetThemeMode by viewModel.widgetThemeMode.collectAsState()
+    val widgetOpacity by viewModel.widgetOpacity.collectAsState()
+    val forecastModel by viewModel.forecastModel.collectAsState()
 
     var showSearchDialog by remember { mutableStateOf(false) }
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -239,10 +242,10 @@ fun WeatherScreen(
                             ) {
                                 Text(
                                     text = if (weather.isOffline)
-                                        "Dữ liệu ngoại tuyến • Lưu lúc ${weather.lastUpdated}"
+                                        "Dữ liệu ngoại tuyến • ${weather.forecastModel.title} • Lưu lúc ${weather.lastUpdated}"
                                     else
-                                        "Cập nhật lúc ${weather.lastUpdated}",
-                                    color = if (isDarkTheme) Color.White.copy(alpha = 0.5f) else Color(0xFF475569),
+                                        "Nguồn: ${weather.forecastModel.title} • Cập nhật lúc ${weather.lastUpdated}",
+                                    color = if (isDarkTheme) Color.White.copy(alpha = 0.55f) else Color(0xFF475569),
                                     fontSize = 12.sp
                                 )
                             }
@@ -287,12 +290,18 @@ fun WeatherScreen(
                 bgDimmingLevel = bgDimmingLevel,
                 ambientGlowStyle = ambientGlowStyle,
                 ambientGlowIntensity = ambientGlowIntensity,
+                widgetThemeMode = widgetThemeMode,
+                widgetOpacity = widgetOpacity,
+                forecastModel = forecastModel,
                 favoriteCities = favoriteCities,
                 onDismiss = { showSettingsDialog = false },
                 onSelectThemeMode = { viewModel.setThemeMode(it) },
                 onSetBgDimmingLevel = { viewModel.setBgDimmingLevel(it) },
                 onSelectAmbientGlowStyle = { viewModel.setAmbientGlowStyle(it) },
                 onSetAmbientGlowIntensity = { viewModel.setAmbientGlowIntensity(it) },
+                onSelectWidgetThemeMode = { viewModel.setWidgetThemeMode(it) },
+                onSetWidgetOpacity = { viewModel.setWidgetOpacity(it) },
+                onSelectForecastModel = { viewModel.setForecastModel(it) },
                 onSelectPeriodicNotifHours = { viewModel.setPeriodicNotifHours(it) },
                 onSendCurrentWeatherNotif = { viewModel.sendCurrentWeatherNotification() },
                 onSaveCustomKey = { key ->

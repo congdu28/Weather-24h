@@ -8,10 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.WbSunny
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.WaterDrop
-import androidx.compose.material.icons.filled.Thunderstorm
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,8 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.HourlyForecast
-import com.weather24h.app.data.model.WeatherType
 import com.weather24h.app.data.model.WeatherCondition
+import com.weather24h.app.data.model.WeatherType
 import com.weather24h.app.ui.theme.LocalCardBorder
 import com.weather24h.app.ui.theme.LocalCardGlassBg
 import com.weather24h.app.ui.theme.LocalContentTextColor
@@ -53,25 +50,45 @@ fun HourlyForecastSection(
             .padding(vertical = 18.dp)
     ) {
         Column {
-            // Header Title
+            // Header Title & Chú thích rõ ràng cho người dùng về % (Xác suất mưa)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Schedule,
-                    contentDescription = null,
-                    tint = contentColor.copy(alpha = 0.8f),
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "DỰ BÁO 24 GIỜ TỚI",
-                    color = contentColor.copy(alpha = 0.85f),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = contentColor.copy(alpha = 0.8f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "DỰ BÁO 24 GIỜ TỚI",
+                        color = contentColor.copy(alpha = 0.85f),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.WaterDrop,
+                        contentDescription = null,
+                        tint = Color(0xFF0284C7),
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "Xác suất mưa",
+                        color = subtextColor,
+                        fontSize = 11.sp
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -111,15 +128,34 @@ fun HourlyForecastSection(
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            if (item.precipitationProbability > 0) {
-                                Text(
-                                    text = "${item.precipitationProbability}%",
-                                    color = Color(0xFF0284C7),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            } else {
-                                Spacer(modifier = Modifier.height(15.dp))
+                            // Hiển thị đầy đủ % xác suất mưa cho TẤT CẢ các khung giờ
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier.height(16.dp)
+                            ) {
+                                if (item.precipitationProbability > 0) {
+                                    Icon(
+                                        imageVector = Icons.Default.WaterDrop,
+                                        contentDescription = null,
+                                        tint = Color(0xFF0284C7),
+                                        modifier = Modifier.size(9.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(1.5.dp))
+                                    Text(
+                                        text = "${item.precipitationProbability}%",
+                                        color = Color(0xFF0284C7),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                } else {
+                                    Text(
+                                        text = "0%",
+                                        color = subtextColor.copy(alpha = 0.45f),
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.Normal
+                                    )
+                                }
                             }
                         }
                     }

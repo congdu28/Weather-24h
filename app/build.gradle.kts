@@ -17,11 +17,11 @@ val defaultGeminiKey: String = localProps.getProperty("GEMINI_API_KEY")
 
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.10"
+    ?: "1.0.11"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 110
+    ?: 111
 
 android {
     namespace = "com.weather24h.app"
