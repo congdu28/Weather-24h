@@ -23,6 +23,9 @@ data class WeatherCondition(
     val description: String
         get() = descriptionVi
 
+    val text: String
+        get() = descriptionVi
+
     companion object {
         fun fromWmoCode(code: Int): WeatherCondition {
             // Mã trạng thái quyết định biểu tượng; xác suất mưa là dữ liệu độc lập.

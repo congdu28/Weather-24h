@@ -438,7 +438,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                         currentMap[key] = CityWeatherSummary(
                             cityName = city.name,
                             tempC = weather.current.temperature.toInt(),
-                            conditionText = weather.current.condition.text,
+                            conditionText = weather.current.condition.description,
                             weatherType = weather.current.condition.type,
                             isDay = weather.current.isDay,
                             updatedAt = now

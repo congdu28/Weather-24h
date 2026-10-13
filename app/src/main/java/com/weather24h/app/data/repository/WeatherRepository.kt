@@ -302,7 +302,7 @@ class WeatherRepository(
             currentMap[city.name.lowercase()] = CityWeatherSummary(
                 cityName = city.name,
                 tempC = weather.current.temperature.toInt(),
-                conditionText = weather.current.condition.text,
+                conditionText = weather.current.condition.description,
                 weatherType = weather.current.condition.type,
                 isDay = weather.current.isDay,
                 updatedAt = System.currentTimeMillis()
