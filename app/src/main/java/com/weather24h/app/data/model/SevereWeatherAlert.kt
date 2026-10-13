@@ -27,7 +27,7 @@ object SevereWeatherDetector {
         val thunderHour = hourly.take(8).firstOrNull { it.weatherCode in listOf(95, 96, 99) }
         val isCurrentThunder = current.weatherCode in listOf(95, 96, 99)
         if (isCurrentThunder || thunderHour != null) {
-            val timeText = if (isCurrentThunder) "Đang diễn ra" else "Dự báo khoảng ${thunderHour?.hourLabel ?: "sắp tới"}"
+            val timeText = if (isCurrentThunder) "Đang diễn ra" else "Khoảng ${thunderHour?.hourLabel ?: "sắp tới"}"
             alerts.add(
                 SevereWeatherAlert(
                     id = "alert_thunder",
@@ -51,7 +51,7 @@ object SevereWeatherDetector {
         }
         val isCurrentHeavyRain = current.precipitation >= 5.0 || current.weatherCode in listOf(65, 82)
         if ((isCurrentHeavyRain || heavyRainHour != null) && alerts.none { it.id == "alert_thunder" }) {
-            val timeText = if (isCurrentHeavyRain) "Đang có mưa lớn" else "Dự báo mưa to lúc ${heavyRainHour?.hourLabel ?: "sắp tới"} (xác suất ${heavyRainHour?.precipitationProbability ?: 75}%)"
+            val timeText = if (isCurrentHeavyRain) "Đang mưa lớn" else "Khoảng ${heavyRainHour?.hourLabel ?: "sắp tới"} (${heavyRainHour?.precipitationProbability ?: 75}%)"
             alerts.add(
                 SevereWeatherAlert(
                     id = "alert_heavy_rain",
@@ -80,7 +80,7 @@ object SevereWeatherDetector {
                     headline = "Chỉ số UV đạt đỉnh ${kotlin.math.round(maxUv * 10) / 10.0}, bức xạ mặt trời có thể gây cháy nắng và tổn thương mắt nhanh chóng.",
                     severity = if (isExtreme) AlertSeverity.DANGER else AlertSeverity.WARNING,
                     iconEmoji = "☀️",
-                    timeInfo = "Đỉnh điểm từ 10:30 đến 14:30",
+                    timeInfo = "10:30 - 14:30",
                     safetyTips = listOf(
                         "Bôi kem chống nắng phổ rộng SPF 50+ trước khi ra ngoài 20 phút.",
                         "Mặc áo chống nắng sợi dày, đội mũ rộng vành và đeo kính râm chống tia UV.",
@@ -100,7 +100,7 @@ object SevereWeatherDetector {
                     headline = "Nhiệt độ cảm giác thật lên đến ${current.feelsLike.toInt()}°C. Nguy cơ say nắng, kiệt sức vì nhiệt cao.",
                     severity = AlertSeverity.WARNING,
                     iconEmoji = "🌡️",
-                    timeInfo = "Thời điểm ban ngày",
+                    timeInfo = "Trưa & chiều",
                     safetyTips = listOf(
                         "Uống nhiều nước từng ngụm nhỏ, bổ sung oresol hoặc nước dừa / điện giải.",
                         "Hạn chế hoạt động thể lực nặng ngoài trời vào khung giờ nắng gắt.",
@@ -120,7 +120,7 @@ object SevereWeatherDetector {
                     headline = "Nhiệt độ thấp nhất hạ xuống ${minTemp.toInt()}°C. Trời rét buốt về đêm và sáng sớm.",
                     severity = AlertSeverity.INFO,
                     iconEmoji = "🧣",
-                    timeInfo = "Đêm và sáng sớm",
+                    timeInfo = "Đêm & sáng sớm",
                     safetyTips = listOf(
                         "Mặc ấm nhiều lớp, đặc biệt giữ ấm phần cổ, ngực, bàn tay và bàn chân.",
                         "Tránh tắm muộn bằng nước lạnh, cẩn thận nguy cơ đột quỵ do lạnh.",

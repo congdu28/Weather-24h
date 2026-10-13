@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,8 +29,8 @@ import com.weather24h.app.ui.theme.LocalSubtextColor
 
 /**
  * Thanh cảnh báo thời tiết cực đoan / nguy hiểm thiết kế siêu gọn (Compact Alert Banner).
- * Chiều cao tự co giãn (wrapContentHeight), không chiếm dụng diện tích màn hình.
- * Có thể thu nhỏ / mở rộng chi tiết hoặc đóng tạm thời.
+ * Chiều cao chuẩn mực 52dp khi thu gọn, tuyệt đối không xô lệch, không tràn dòng dọc.
+ * Nhấn vào để mở rộng xem chi tiết và khuyến cáo an toàn.
  */
 @Composable
 fun SevereWeatherAlertCard(
@@ -67,9 +66,9 @@ fun SevereWeatherAlertCard(
     val bannerBorder = primaryColor.copy(alpha = if (isDark) 0.55f else 0.65f)
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         color = bannerBg,
-        border = BorderStroke(1.2.dp, bannerBorder),
+        border = BorderStroke(1.dp, bannerBorder),
         modifier = modifier
             .fillMaxWidth()
             .wrapContentHeight()
@@ -77,10 +76,9 @@ fun SevereWeatherAlertCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(horizontal = 12.dp, vertical = 9.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            // Hàng tóm tắt gọn gàng (Single-line Compact Header)
+            // Hàng tóm tắt siêu gọn (Header Row)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -91,30 +89,37 @@ fun SevereWeatherAlertCard(
                 Box(
                     modifier = Modifier
                         .size(30.dp)
-                        .background(primaryColor.copy(alpha = 0.22f), CircleShape),
+                        .background(primaryColor.copy(alpha = 0.20f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = topAlert.iconEmoji, fontSize = 15.sp)
+                    Text(text = topAlert.iconEmoji, fontSize = 14.sp)
                 }
 
                 Spacer(modifier = Modifier.width(9.dp))
 
-                // Tiêu đề & Giờ dự báo tóm tắt
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Text(
-                            text = topAlert.title,
-                            color = primaryColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
+                // Cột nội dung chính gồm 2 dòng chuẩn mực
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    // Dòng 1: Tiêu đề cảnh báo (Bold, 1 dòng duy nhất, không bị chèn ép)
+                    Text(
+                        text = topAlert.title,
+                        color = primaryColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
 
-                        if (topAlert.timeInfo.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    // Dòng 2: Badge thời gian + Tóm tắt ngắn
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (topAlert.timeInfo.isNotBlank()) {
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
                                 color = primaryColor.copy(alpha = 0.22f)
@@ -124,20 +129,26 @@ fun SevereWeatherAlertCard(
                                     color = if (isDark) Color.White.copy(alpha = 0.95f) else Color(0xFF1E293B),
                                     fontSize = 9.5.sp,
                                     fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .widthIn(max = 120.dp)
+                                        .padding(horizontal = 5.dp, vertical = 1.dp)
                                 )
                             }
+                            Spacer(modifier = Modifier.width(6.dp))
                         }
-                    }
 
-                    Text(
-                        text = topAlert.headline,
-                        color = contentColor.copy(alpha = 0.88f),
-                        fontSize = 11.sp,
-                        maxLines = if (isExpanded) Int.MAX_VALUE else 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 15.sp
-                    )
+                        Text(
+                            text = topAlert.headline,
+                            color = contentColor.copy(alpha = 0.85f),
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(4.dp))
@@ -155,7 +166,7 @@ fun SevereWeatherAlertCard(
                     )
                 }
 
-                // Nút Đóng tạm thời cảnh báo
+                // Nút Đóng cảnh báo tạm thời
                 IconButton(
                     onClick = { isDismissed = true },
                     modifier = Modifier.size(26.dp)
@@ -183,6 +194,15 @@ fun SevereWeatherAlertCard(
                     HorizontalDivider(
                         color = primaryColor.copy(alpha = 0.25f),
                         thickness = 0.8.dp,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
+                    // Hiển thị đầy đủ nội dung tóm tắt khi mở rộng
+                    Text(
+                        text = topAlert.headline,
+                        color = contentColor.copy(alpha = 0.95f),
+                        fontSize = 11.5.sp,
+                        lineHeight = 16.sp,
                         modifier = Modifier.padding(bottom = 6.dp)
                     )
 
