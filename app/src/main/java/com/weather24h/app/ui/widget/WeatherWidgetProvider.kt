@@ -254,9 +254,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 )
 
                 if (weather != null) {
-                    val currentRainProb = weather.hourly24h.firstOrNull()?.precipitationProbability ?: 0
-                    val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode, currentRainProb, weather.current.isDay)
-                    val emoji = getWeatherEmoji(weather.current.weatherCode, weather.current.isDay, currentRainProb)
+                    val condition = weather.current.condition
+                    val emoji = getWeatherEmoji(condition, weather.current.isDay)
 
                     views.setTextViewText(R.id.widget_city_name, weather.location.name)
                     views.setTextViewText(R.id.widget_temp, "${weather.current.temperature.roundToInt()}°")
@@ -276,11 +275,11 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     for (i in 0 until 6) {
                         if (i < hourlyList.size) {
                             val h = hourlyList[i]
-                            val timeLabel = if (i == 0 || h.hourLabel == "Hiện tại") "Bây giờ" else h.hourLabel
+                            val timeLabel = h.hourLabel
                             views.setTextViewText(hourTimeIds[i], timeLabel)
-                            views.setTextViewText(hourIconIds[i], getWeatherEmoji(h.weatherCode, h.isDay, h.precipitationProbability))
+                            views.setTextViewText(hourIconIds[i], getWeatherEmoji(h.condition, h.isDay))
                             views.setTextViewText(hourTempIds[i], "${h.temperature.roundToInt()}°")
-                            views.setTextViewText(hourRainIds[i], "${h.precipitationProbability}%")
+                            views.setTextViewText(hourRainIds[i], h.rainProbabilityText)
                         }
                     }
 
@@ -301,8 +300,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun getWeatherEmoji(code: Int, isDay: Boolean = true, rainProb: Int = 0): String {
-            val condition = WeatherCondition.fromWmoCode(code, rainProb, isDay)
+        private fun getWeatherEmoji(condition: WeatherCondition, isDay: Boolean = true): String {
             return when (condition.type) {
                 WeatherType.CLEAR -> if (isDay) "☀️" else "🌙"
                 WeatherType.PARTLY_CLOUDY -> if (isDay) "🌤️" else "☁️"
@@ -318,6 +316,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         private fun getSavedWeather(context: Context): WeatherData? {
             return try {
                 val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+                if (prefs.getInt("cached_weather_schema", 0) != 3) return null
                 val json = prefs.getString("cached_weather_json", null) ?: return null
                 Gson().fromJson(json, WeatherData::class.java)
             } catch (e: Exception) {

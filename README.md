@@ -11,6 +11,13 @@
 5. Gợi ý trang phục được tải sau thời tiết: ưu tiên Gemini khi có API key và phản hồi hợp lệ, sau đó dùng bộ quy tắc nội bộ. App cũng có tìm kiếm thành phố, GPS, danh sách yêu thích, giao diện và cài đặt widget.
 6. `PeriodicWeatherWorker` đồng bộ thời tiết cho widget và thông báo bằng WorkManager khi các tùy chọn tương ứng được bật. Thời gian tự làm mới khi đang mở app được quản lý riêng trong `WeatherViewModel`.
 
+## Quy tắc hiển thị mưa
+
+- Trạng thái hiện tại giữ mô tả của nguồn; mã WeatherAPI chỉ mưa/dông quanh khu vực được ghi rõ, không khẳng định đang mưa tại vị trí người dùng.
+- Xác suất mưa và lượng mưa là hai chỉ số riêng. App không đổi biểu tượng trời quang thành mưa dựa trên xác suất, không tự suy ra phần trăm từ mm. Giá trị xác suất thiếu dùng `-1` và hiển thị `—`.
+- Gợi ý mưa lớn dựa trên mã cường độ hoặc lượng mưa theo giờ từ 5 mm; đây là quy tắc gợi ý tại tọa độ, không phải cảnh báo diện rộng của cơ quan khí tượng.
+- Workflow chạy `testDebugUnitTest` trước khi tạo APK. Test tái hiện trường hợp mã `1063`, xác suất cao với mưa nhẹ, dữ liệu thiếu và độ ẩm 77%.
+
 ## Cấu trúc chính
 
 | Đường dẫn | Vai trò |

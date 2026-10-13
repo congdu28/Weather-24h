@@ -131,14 +131,14 @@ class WeatherRepository(
             prefs.edit()
                 .putString("cached_weather_json", json)
                 .putString("last_cached_time", weather.lastUpdated)
-                .putInt("cached_weather_schema", 2)
+                .putInt("cached_weather_schema", 3)
                 .apply()
         } catch (_: Exception) {}
     }
 
     fun getCachedWeather(location: CityLocation? = null): WeatherData? {
         return try {
-            if (prefs.getInt("cached_weather_schema", 0) != 2) return null
+            if (prefs.getInt("cached_weather_schema", 0) != 3) return null
             val json = prefs.getString("cached_weather_json", null) ?: return null
             val cached = gson.fromJson(json, WeatherData::class.java) ?: return null
             if (location != null && (

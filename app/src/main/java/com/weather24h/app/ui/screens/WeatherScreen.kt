@@ -86,7 +86,7 @@ fun WeatherScreen(
     }
 
     val weatherType = when (val state = uiState) {
-        is WeatherUiState.Success -> WeatherCondition.fromWmoCode(state.weather.current.weatherCode).type
+        is WeatherUiState.Success -> state.weather.current.condition.type
         else -> WeatherType.CLEAR
     }
     val isDay = when (val state = uiState) {

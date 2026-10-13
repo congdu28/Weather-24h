@@ -22,11 +22,11 @@ val defaultWeatherApiKey: String = localProps.getProperty("WEATHER_API_KEY")?.ta
 
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.23"
+    ?: "1.0.24"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 123
+    ?: 124
 
 android {
     namespace = "com.weather24h.app"
@@ -110,6 +110,7 @@ android {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     // AndroidX & Activity / Fragment Compose
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.fragment:fragment-ktx:1.6.2")

@@ -104,8 +104,8 @@ object LifestyleCalculator {
             rainProbNext12h >= 60 || current.precipitation > 0 -> Quadruple(
                 "Tập trong nhà",
                 0xFFEF4444L,
-                "Có mưa hoặc đường trơn",
-                "Trời có mưa ẩm, đường trơn trượt nguy hiểm. Nên chuyển sang tập gym, yoga hoặc chạy máy trong nhà."
+                "Cân nhắc mưa trong 12 giờ tới",
+                "Nguồn dữ liệu báo có mưa hoặc xác suất mưa đạt $rainProbNext12h% ở một khung giờ trong 12 giờ tới. Kiểm tra dự báo đúng giờ tập; nếu đang mưa, ưu tiên tập trong nhà."
             )
             pm25 >= 55.4 -> Quadruple(
                 "Hạn chế chạy",
@@ -152,7 +152,7 @@ object LifestyleCalculator {
                 "Độ ẩm $humidity%, sàn dễ ướt",
                 "Hiện tượng nồm ẩm đặc trưng đang diễn ra. Độ ẩm $humidity% kết hợp nhiệt độ sàn lạnh dễ gây đọng nước sàn nhà, mốc tường và vi khuẩn phát triển. Nên đóng kín cửa và bật chế độ Dry điều hòa."
             )
-            humidity >= 78 -> Quadruple(
+            humidity >= 75 -> Quadruple(
                 "Ẩm ướt nhẹ",
                 0xFFF59E0BL,
                 "Độ ẩm không khí $humidity%",

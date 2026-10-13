@@ -102,8 +102,8 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.compact_widget_root, pendingIntent)
 
                 if (weather != null) {
-                    val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode)
-                    val emoji = getWeatherEmoji(weather.current.weatherCode, weather.current.isDay)
+                    val condition = weather.current.condition
+                    val emoji = getWeatherEmoji(condition, weather.current.isDay)
 
                     views.setTextViewText(R.id.compact_widget_icon, emoji)
                     views.setTextViewText(R.id.compact_widget_temp, "${weather.current.temperature.roundToInt()}°")
@@ -128,8 +128,7 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
             } catch (e: Exception) {}
         }
 
-        private fun getWeatherEmoji(code: Int, isDay: Boolean = true): String {
-            val condition = WeatherCondition.fromWmoCode(code)
+        private fun getWeatherEmoji(condition: WeatherCondition, isDay: Boolean = true): String {
             return when (condition.type) {
                 WeatherType.CLEAR -> if (isDay) "☀️" else "🌙"
                 WeatherType.PARTLY_CLOUDY -> if (isDay) "🌤️" else "☁️"
@@ -145,6 +144,7 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
         private fun getSavedWeather(context: Context): WeatherData? {
             return try {
                 val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+                if (prefs.getInt("cached_weather_schema", 0) != 3) return null
                 val json = prefs.getString("cached_weather_json", null) ?: return null
                 Gson().fromJson(json, WeatherData::class.java)
             } catch (e: Exception) {

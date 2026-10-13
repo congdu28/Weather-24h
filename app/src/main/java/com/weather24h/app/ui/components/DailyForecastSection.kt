@@ -94,7 +94,7 @@ fun DailyForecastSection(
 
             // 7 Days List
             dailyList.forEachIndexed { index, day ->
-                val condition = WeatherCondition.fromWmoCode(day.weatherCode, day.precipitationProbability, isDay = true)
+                val condition = WeatherCondition.fromWmoCode(day.weatherCode)
                 val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
                 val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
 
@@ -133,14 +133,14 @@ fun DailyForecastSection(
                         Spacer(modifier = Modifier.width(4.dp))
                         if (day.precipitationProbability > 0) {
                             Text(
-                                text = "${day.precipitationProbability}%",
+                                text = day.rainProbabilityText,
                                 color = Color(0xFF0284C7),
                                 fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         } else {
                             Text(
-                                text = "0%",
+                                text = day.rainProbabilityText,
                                 color = subtextColor.copy(alpha = 0.45f),
                                 fontSize = 10.sp
                             )
@@ -238,7 +238,7 @@ fun DayForecastDetailDialog(
     day: DailyForecast,
     onDismiss: () -> Unit
 ) {
-    val condition = WeatherCondition.fromWmoCode(day.weatherCode, day.precipitationProbability, isDay = true)
+    val condition = WeatherCondition.fromWmoCode(day.weatherCode)
     val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
     val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
     val isDark = LocalIsDarkTheme.current
@@ -460,7 +460,7 @@ fun DayForecastDetailDialog(
 
                                                 Spacer(modifier = Modifier.height(6.dp))
 
-                                                val c = WeatherCondition.fromWmoCode(item.weatherCode, item.precipitationProbability, item.isDay)
+                                                val c = item.condition
                                                 val ic = WeatherCondition.getWeatherIcon(c.type, item.isDay)
                                                 val icTint = WeatherCondition.getWeatherIconTint(c.type, item.isDay)
 
@@ -487,14 +487,14 @@ fun DayForecastDetailDialog(
                                                         )
                                                         Spacer(modifier = Modifier.width(1.5.dp))
                                                         Text(
-                                                            text = "${item.precipitationProbability}%",
+                                                            text = item.rainProbabilityText,
                                                             color = Color(0xFF0284C7),
                                                             fontSize = 10.5.sp,
                                                             fontWeight = FontWeight.Bold
                                                         )
                                                     } else {
                                                         Text(
-                                                            text = "0%",
+                                                            text = item.rainProbabilityText,
                                                             color = subtextColor.copy(alpha = 0.45f),
                                                             fontSize = 10.sp,
                                                             fontWeight = FontWeight.Normal
@@ -564,8 +564,8 @@ fun DayForecastDetailDialog(
                                     icon = Icons.Default.WaterDrop,
                                     iconTint = Color(0xFF0284C7),
                                     title = "XÁC SUẤT MƯA",
-                                    value = "${day.precipitationProbability}%",
-                                    desc = if (day.precipitationProbability >= 40) "Nguy cơ mưa cao" else "Ít khả năng mưa",
+                                    value = day.rainProbabilityText,
+                                    desc = when { day.precipitationProbability < 0 -> "Nguồn chưa cung cấp"; day.precipitationProbability >= 40 -> "Có khả năng mưa"; else -> "Ít khả năng mưa" },
                                     contentColor = contentColor,
                                     subtextColor = subtextColor,
                                     modifier = Modifier.weight(1f)
@@ -654,7 +654,9 @@ fun DayForecastDetailDialog(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             // Mẹo 2: Mưa / Ô dù
-                            val rainTip = if (day.precipitationProbability >= 40) {
+                            val rainTip = if (day.precipitationProbability < 0) {
+                                "Nguồn chưa cung cấp xác suất mưa. Kiểm tra trạng thái và lượng mưa dự báo trước khi ra ngoài."
+                            } else if (day.precipitationProbability >= 40) {
                                 "Xác suất mưa ${day.precipitationProbability}%. Đừng quên bỏ sẵn ô (dù) hoặc áo mưa vào cốp xe để không bị ướt bất chợt."
                             } else {
                                 "Xác suất mưa thấp (${day.precipitationProbability}%). Thời tiết thuận lợi cho các hoạt động ngoài trời, dã ngoại hoặc thể thao."

@@ -85,7 +85,7 @@ class GeminiStylistService(context: Context) {
     }
 
     private fun fetchFromGemini(apiKey: String, weather: WeatherData): OutfitRecommendation? {
-        val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode).descriptionVi
+        val condition = weather.current.condition.descriptionVi
         val maxRain = weather.hourly24h.maxOfOrNull { it.precipitationProbability } ?: 0
 
         val prompt = """

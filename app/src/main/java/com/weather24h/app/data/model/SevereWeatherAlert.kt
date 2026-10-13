@@ -25,7 +25,7 @@ object SevereWeatherDetector {
 
         // 1. CẢNH BÁO DÔNG SÉT / MƯA DÔNG NGUY HIỂM (WMO 95, 96, 99)
         val thunderHour = hourly.take(8).firstOrNull { it.weatherCode in listOf(95, 96, 99) }
-        val isCurrentThunder = current.weatherCode in listOf(95, 96, 99)
+        val isCurrentThunder = current.condition.type == WeatherType.THUNDERSTORM
         if (isCurrentThunder || thunderHour != null) {
             val timeText = if (isCurrentThunder) "Đang diễn ra" else "Khoảng ${thunderHour?.hourLabel ?: "sắp tới"}"
             alerts.add(
@@ -47,16 +47,16 @@ object SevereWeatherDetector {
 
         // 2. CẢNH BÁO MƯA TO / MƯA XỐI XẢ
         val heavyRainHour = hourly.take(8).firstOrNull {
-            it.precipitationProbability >= 70 || it.weatherCode in listOf(65, 82)
+            (it.precipitationMm ?: 0.0) >= 5.0 || it.weatherCode in listOf(65, 82)
         }
         val isCurrentHeavyRain = current.precipitation >= 5.0 || current.weatherCode in listOf(65, 82)
         if ((isCurrentHeavyRain || heavyRainHour != null) && alerts.none { it.id == "alert_thunder" }) {
-            val timeText = if (isCurrentHeavyRain) "Đang mưa lớn" else "Khoảng ${heavyRainHour?.hourLabel ?: "sắp tới"} (${heavyRainHour?.precipitationProbability ?: 75}%)"
+            val timeText = if (isCurrentHeavyRain) "Theo dữ liệu hiện tại" else "Dự báo khoảng ${heavyRainHour?.hourLabel ?: "sắp tới"}"
             alerts.add(
                 SevereWeatherAlert(
                     id = "alert_heavy_rain",
-                    title = "CẢNH BÁO MƯA LỚN DIỆN RỘNG",
-                    headline = "Mưa to kéo dài có thể gây trơn trượt và ngập úng các tuyến đường trũng thấp.",
+                    title = "DỰ BÁO MƯA LỚN TẠI KHU VỰC",
+                    headline = "Nguồn dự báo cho thấy lượng mưa lớn tại tọa độ đã chọn. Chú ý đường trơn và những điểm trũng thấp.",
                     severity = AlertSeverity.WARNING,
                     iconEmoji = "🌧️",
                     timeInfo = timeText,
@@ -65,6 +65,22 @@ object SevereWeatherDetector {
                         "Giảm tốc độ, giữ khoảng cách an toàn khi lái xe trong trời mưa.",
                         "Tránh đi vào những đoạn đường có vũng nước ngập sâu hoặc nắp cống."
                     )
+                )
+            )
+        }
+
+        // Xác suất cao cho biết khả năng xảy ra mưa, không nói lên cường độ hay diện tích mưa.
+        val likelyRainHour = hourly.take(8).firstOrNull { it.precipitationProbability >= 70 }
+        if (likelyRainHour != null && alerts.none { it.id in listOf("alert_thunder", "alert_heavy_rain") }) {
+            alerts.add(
+                SevereWeatherAlert(
+                    id = "alert_rain_chance",
+                    title = "KHẢ NĂNG CÓ MƯA",
+                    headline = "Xác suất mưa ${likelyRainHour.precipitationProbability}% trong khung giờ dự báo. Chỉ số này không có nghĩa là đang mưa hoặc sẽ mưa lớn.",
+                    severity = AlertSeverity.INFO,
+                    iconEmoji = "☂️",
+                    timeInfo = "Khoảng ${likelyRainHour.hourLabel}",
+                    safetyTips = listOf("Mang theo ô hoặc áo mưa nếu ra ngoài.", "Kiểm tra lại dự báo gần thời điểm di chuyển.")
                 )
             )
         }

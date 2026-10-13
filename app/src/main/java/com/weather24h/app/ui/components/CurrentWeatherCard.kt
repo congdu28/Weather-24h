@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.WeatherCondition
@@ -40,7 +41,7 @@ fun CurrentWeatherCard(
     onToggleFavorite: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode)
+    val condition = weather.current.condition
 
     val isDark = com.weather24h.app.ui.theme.LocalIsDarkTheme.current
     val cardBg = com.weather24h.app.ui.theme.LocalCardGlassBg.current
@@ -181,18 +182,16 @@ fun CurrentWeatherCard(
             Spacer(modifier = Modifier.height(4.dp))
 
             // Weather Description & Day/Night Indicator Tag
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = condition.description,
                     color = textColor,
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 val tagBg = if (isDark) {
                     if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.22f)
@@ -277,6 +276,13 @@ fun CurrentWeatherCard(
                     softWrap = false
                 )
             }
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Nguồn: ${weather.providerName}\nDữ liệu lúc ${weather.lastUpdated}",
+                color = subtextColor,
+                fontSize = 10.5.sp,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

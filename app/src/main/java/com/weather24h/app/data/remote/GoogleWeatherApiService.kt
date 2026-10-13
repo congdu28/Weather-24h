@@ -166,7 +166,7 @@ class GoogleWeatherApiService {
                 val hType = item.getAsJsonObject("weatherCondition")?.get("type")?.asString
                 val hWmo = mapGoogleConditionToWmo(hType)
                 val hProbObj = item.getAsJsonObject("precipitation")?.getAsJsonObject("probability")
-                val hProb = hProbObj?.get("percent")?.asInt ?: hProbObj?.get("percentage")?.asInt ?: 0
+                val hProb = hProbObj?.get("percent")?.asInt ?: hProbObj?.get("percentage")?.asInt ?: -1
                 val hHumid = item.get("relativeHumidity")?.asInt ?: 50
                 val hWind = item.getAsJsonObject("wind")?.getAsJsonObject("speed")?.get("value")?.asDouble ?: 0.0
                 val hIsDay = item.get("isDaytime")?.asBoolean ?: true
@@ -180,7 +180,8 @@ class GoogleWeatherApiService {
                         precipitationProbability = hProb,
                         humidity = hHumid,
                         windSpeed = hWind,
-                        isDay = hIsDay
+                        isDay = hIsDay,
+                        precipitationMm = item.getAsJsonObject("precipitation")?.getAsJsonObject("qpf")?.get("quantity")?.takeUnless { it.isJsonNull }?.asDouble
                     )
                 )
             }
@@ -212,7 +213,7 @@ class GoogleWeatherApiService {
                 val dType = dayPart?.getAsJsonObject("weatherCondition")?.get("type")?.asString
                 val dWmo = mapGoogleConditionToWmo(dType)
                 val dProbObj = dayPart?.getAsJsonObject("precipitation")?.getAsJsonObject("probability")
-                val dProb = dProbObj?.get("percent")?.asInt ?: dProbObj?.get("percentage")?.asInt ?: 0
+                val dProb = dProbObj?.get("percent")?.asInt ?: dProbObj?.get("percentage")?.asInt ?: -1
                 val dUv = dayPart?.get("uvIndex")?.asDouble ?: 5.0
 
                 // Parse sunrise / sunset

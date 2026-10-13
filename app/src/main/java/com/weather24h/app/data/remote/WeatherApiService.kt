@@ -329,7 +329,7 @@ class WeatherApiService {
         return Pair(primaryName, secondaryLocation)
     }
 
-    private fun parseWeatherData(
+    internal fun parseWeatherData(
         location: CityLocation,
         json: JsonObject,
         aqi: AirQuality?,
@@ -373,16 +373,8 @@ class WeatherApiService {
             } else {
                 -1
             }
-            if (prob >= 0) {
-                prob
-            } else {
-                val p = if (hourlyPrecips != null && idx < hourlyPrecips.size() && !hourlyPrecips.get(idx).isJsonNull) {
-                    hourlyPrecips.get(idx).asDouble
-                } else {
-                    0.0
-                }
-                if (p >= 1.0) 80 else if (p >= 0.1) 50 else 0
-            }
+            // Lượng mưa không thể quy đổi thành xác suất. -1 biểu thị nguồn không cung cấp.
+            if (prob in 0..100) prob else -1
         }
 
         // Tìm vị trí giờ hiện tại trong mảng Open-Meteo
@@ -418,10 +410,7 @@ class WeatherApiService {
             if (i >= hourlyTemps.size() || hourlyTemps.get(i).isJsonNull) continue
             val tStr = hourlyTimes.get(i).asString
             val rawHour = if (tStr.contains("T")) tStr.substringAfter("T") else tStr
-            val isFirstHour = (i == startIndex)
-            val isDayHour = if (isFirstHour) {
-                current.isDay
-            } else if (hourlyIsDays != null && i < hourlyIsDays.size()) {
+            val isDayHour = if (hourlyIsDays != null && i < hourlyIsDays.size()) {
                 hourlyIsDays.get(i).asInt == 1
             } else {
                 val hourNum = rawHour.substringBefore(":").toIntOrNull() ?: 12
@@ -432,13 +421,14 @@ class WeatherApiService {
             hourlyList.add(
                 HourlyForecast(
                     timeString = tStr,
-                    hourLabel = if (isFirstHour) "Hiện tại" else rawHour,
-                    temperature = if (isFirstHour) current.temperature else hourlyTemps.get(i).asDouble,
-                    weatherCode = if (isFirstHour) current.weatherCode else (hourlyCodes?.get(i)?.asInt ?: current.weatherCode),
+                    hourLabel = rawHour,
+                    temperature = hourlyTemps.get(i).asDouble,
+                    weatherCode = hourlyCodes?.get(i)?.asInt ?: current.weatherCode,
                     precipitationProbability = rainProb,
                     humidity = hourlyHumids?.get(i)?.asInt ?: current.humidity,
                     windSpeed = hourlyWinds?.get(i)?.asDouble ?: current.windSpeed,
-                    isDay = isDayHour
+                    isDay = isDayHour,
+                    precipitationMm = hourlyPrecips?.takeIf { i < it.size() }?.get(i)?.takeUnless { it.isJsonNull }?.asDouble
                 )
             )
         }
@@ -453,18 +443,13 @@ class WeatherApiService {
         val dailySunsets = dailyObj?.getAsJsonArray("sunset")
         val dailyUvs = dailyObj?.getAsJsonArray("uv_index_max")
         val dailyRains = dailyObj?.getAsJsonArray("precipitation_probability_max")
-        val dailyPrecipSums = dailyObj?.getAsJsonArray("precipitation_sum")
+
 
         val getDailyRainProb = { idx: Int ->
             if (dailyRains != null && idx < dailyRains.size() && !dailyRains.get(idx).isJsonNull) {
-                dailyRains.get(idx).asInt
+                dailyRains.get(idx).asInt.takeIf { it in 0..100 } ?: -1
             } else {
-                val pSum = if (dailyPrecipSums != null && idx < dailyPrecipSums.size() && !dailyPrecipSums.get(idx).isJsonNull) {
-                    dailyPrecipSums.get(idx).asDouble
-                } else {
-                    0.0
-                }
-                if (pSum >= 2.0) 85 else if (pSum >= 0.5) 50 else if (pSum > 0.0) 25 else 0
+                -1
             }
         }
 
@@ -501,7 +486,8 @@ class WeatherApiService {
                             precipitationProbability = getHourlyRainProb(j),
                             humidity = hourlyHumids?.get(j)?.asInt ?: 70,
                             windSpeed = hourlyWinds?.get(j)?.asDouble ?: 10.0,
-                            isDay = isDayHour
+                            isDay = isDayHour,
+                            precipitationMm = hourlyPrecips?.takeIf { j < it.size() }?.get(j)?.takeUnless { it.isJsonNull }?.asDouble
                         )
                     )
                 }
@@ -526,7 +512,9 @@ class WeatherApiService {
         }
         if (dailyList.isEmpty()) throw IllegalStateException("Open-Meteo trả dự báo ngày rỗng")
 
-        val updatedStr = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy").format(LocalDateTime.now())
+        val updatedStr = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy").format(
+            LocalDateTime.parse(currentObj.get("time").asString)
+        )
 
         return WeatherData(
             location = location,

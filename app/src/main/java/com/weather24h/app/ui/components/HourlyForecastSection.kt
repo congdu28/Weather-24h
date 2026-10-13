@@ -91,6 +91,13 @@ fun HourlyForecastSection(
                 }
             }
 
+            Text(
+                text = "Xác suất theo giờ, không phải cường độ mưa. —: chưa có dữ liệu.",
+                color = subtextColor,
+                fontSize = 10.sp,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+            )
+
             Spacer(modifier = Modifier.height(14.dp))
 
             // Horizontal Scroll Content
@@ -115,7 +122,7 @@ fun HourlyForecastSection(
 
                             Spacer(modifier = Modifier.height(6.dp))
 
-                            val condition = WeatherCondition.fromWmoCode(item.weatherCode, item.precipitationProbability, item.isDay)
+                            val condition = item.condition
                             val icon = WeatherCondition.getWeatherIcon(condition.type, item.isDay)
                             val iconTint = WeatherCondition.getWeatherIconTint(condition.type, item.isDay)
 
@@ -143,14 +150,14 @@ fun HourlyForecastSection(
                                     )
                                     Spacer(modifier = Modifier.width(1.5.dp))
                                     Text(
-                                        text = "${item.precipitationProbability}%",
+                                        text = item.rainProbabilityText,
                                         color = Color(0xFF0284C7),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold
                                     )
                                 } else {
                                     Text(
-                                        text = "0%",
+                                        text = item.rainProbabilityText,
                                         color = subtextColor.copy(alpha = 0.45f),
                                         fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Normal

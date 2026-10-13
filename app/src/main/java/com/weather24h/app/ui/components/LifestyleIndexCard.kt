@@ -3,6 +3,8 @@ package com.weather24h.app.ui.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +25,10 @@ import com.weather24h.app.data.model.LifestyleCalculator
 import com.weather24h.app.data.model.LifestyleItem
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.ui.theme.LocalCardOpacity
+import com.weather24h.app.ui.theme.LocalIsDarkTheme
+import com.weather24h.app.ui.theme.LocalContentTextColor
+import com.weather24h.app.ui.theme.LocalSubtextColor
+import com.weather24h.app.ui.theme.LocalCardBorder
 
 @Composable
 fun LifestyleIndexCard(
@@ -32,11 +38,15 @@ fun LifestyleIndexCard(
     val items = remember(weather) { LifestyleCalculator.calculate(weather) }
     var selectedItem by remember { mutableStateOf<LifestyleItem?>(null) }
     val cardOpacity = LocalCardOpacity.current
+    val isDark = LocalIsDarkTheme.current
+    val textColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
+    val accentColor = if (isDark) Color(0xFF86EFAC) else Color(0xFF166534)
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF0F172A).copy(alpha = 0.55f * cardOpacity),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.15f * cardOpacity)),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = cardOpacity.coerceAtLeast(0.92f)),
+        border = BorderStroke(1.dp, LocalCardBorder.current),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
@@ -50,7 +60,7 @@ fun LifestyleIndexCard(
                 Box(
                     modifier = Modifier
                         .size(32.dp)
-                        .background(Color(0xFF34D399).copy(alpha = 0.2f), CircleShape),
+                        .background(accentColor.copy(alpha = 0.12f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = "🧘", fontSize = 16.sp)
@@ -58,17 +68,17 @@ fun LifestyleIndexCard(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "CHỈ SỐ SỨC KHỎE & ĐỜI SỐNG",
-                        color = Color(0xFF34D399),
+                        color = accentColor,
                         fontSize = 12.5.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp
                     )
                     Text(
                         text = "Gợi ý sinh hoạt & hoạt động ngoài trời",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = subtextColor,
                         fontSize = 11.sp
                     )
                 }
@@ -80,14 +90,14 @@ fun LifestyleIndexCard(
             val chunked = items.chunked(2)
             chunked.forEachIndexed { index, rowItems ->
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     rowItems.forEach { item ->
                         LifestyleGridTile(
                             item = item,
                             onClick = { selectedItem = item },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f).fillMaxHeight()
                         )
                     }
                     if (rowItems.size == 1) {
@@ -106,36 +116,36 @@ fun LifestyleIndexCard(
         Dialog(onDismissRequest = { selectedItem = null }) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = Color(0xFF1E293B),
-                border = BorderStroke(1.dp, Color(item.badgeColor).copy(alpha = 0.5f)),
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, LocalCardBorder.current),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                             Text(text = item.iconEmoji, fontSize = 28.sp)
                             Spacer(modifier = Modifier.width(10.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = item.name,
-                                    color = Color.White,
+                                    color = textColor,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
-                                    color = Color(item.badgeColor).copy(alpha = 0.22f)
+                                    color = lifestyleBadgeColor(item.badgeColor, isDark).copy(alpha = 0.12f)
                                 ) {
                                     Text(
                                         text = item.status,
-                                        color = Color(item.badgeColor),
+                                        color = lifestyleBadgeColor(item.badgeColor, isDark),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -148,7 +158,7 @@ fun LifestyleIndexCard(
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Đóng",
-                                tint = Color.White.copy(alpha = 0.7f),
+                                tint = subtextColor,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -158,7 +168,7 @@ fun LifestyleIndexCard(
 
                     Text(
                         text = "Phân tích & Lời khuyên:",
-                        color = Color.White.copy(alpha = 0.85f),
+                        color = textColor,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -167,7 +177,7 @@ fun LifestyleIndexCard(
 
                     Text(
                         text = item.detailedAdvice,
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = subtextColor,
                         fontSize = 13.sp,
                         lineHeight = 19.sp
                     )
@@ -176,7 +186,7 @@ fun LifestyleIndexCard(
 
                     Button(
                         onClick = { selectedItem = null },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(item.badgeColor)),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF166534)),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -199,10 +209,12 @@ private fun LifestyleGridTile(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDark = LocalIsDarkTheme.current
+    val badgeColor = lifestyleBadgeColor(item.badgeColor, isDark)
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = Color.White.copy(alpha = 0.06f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)),
+        color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+        border = BorderStroke(1.dp, LocalCardBorder.current),
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .clickable { onClick() }
@@ -218,11 +230,12 @@ private fun LifestyleGridTile(
 
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = Color(item.badgeColor).copy(alpha = 0.22f)
+                    color = badgeColor.copy(alpha = 0.12f),
+                    modifier = Modifier.weight(1f).padding(start = 6.dp)
                 ) {
                     Text(
                         text = item.status,
-                        color = Color(item.badgeColor),
+                        color = badgeColor,
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -235,10 +248,10 @@ private fun LifestyleGridTile(
             // Title
             Text(
                 text = item.name,
-                color = Color.White,
+                color = LocalContentTextColor.current,
                 fontSize = 12.5.sp,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1
+                maxLines = 2
             )
 
             Spacer(modifier = Modifier.height(2.dp))
@@ -246,11 +259,19 @@ private fun LifestyleGridTile(
             // Short tip
             Text(
                 text = item.shortTip,
-                color = Color.White.copy(alpha = 0.65f),
+                color = LocalSubtextColor.current,
                 fontSize = 10.5.sp,
                 lineHeight = 14.sp,
-                maxLines = 2
+                maxLines = 3
             )
         }
     }
+}
+
+private fun lifestyleBadgeColor(color: Long, isDark: Boolean): Color = when (color) {
+    0xFFEF4444L -> if (isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C)
+    0xFFF59E0BL -> if (isDark) Color(0xFFFCD34D) else Color(0xFF92400E)
+    0xFF22C55EL -> if (isDark) Color(0xFF86EFAC) else Color(0xFF166534)
+    0xFFA855F7L -> if (isDark) Color(0xFFD8B4FE) else Color(0xFF6B21A8)
+    else -> if (isDark) Color(0xFF7DD3FC) else Color(0xFF075985)
 }

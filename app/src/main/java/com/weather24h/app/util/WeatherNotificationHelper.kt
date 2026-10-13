@@ -78,7 +78,7 @@ object WeatherNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode)
+        val condition = weather.current.condition
         val temp = weather.current.temperature.roundToInt()
         val cityName = weather.location.name
 
@@ -189,7 +189,7 @@ object WeatherNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val condition = WeatherCondition.fromWmoCode(weather.current.weatherCode)
+        val condition = weather.current.condition
         val temp = weather.current.temperature.roundToInt()
         val feelsLike = weather.current.feelsLike.roundToInt()
         val cityName = weather.location.name

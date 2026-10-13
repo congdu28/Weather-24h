@@ -15,8 +15,12 @@ data class CurrentWeather(
     val visibilityKm: Double,
     val precipitation: Double,
     val isDay: Boolean,
-    val time: String
+    val time: String,
+    val sourceCondition: WeatherCondition? = null
 ) {
+    val condition: WeatherCondition
+        get() = sourceCondition ?: WeatherCondition.fromWmoCode(weatherCode)
+
     val windDirectionText: String
         get() {
             val directions = listOf("Bắc", "Đông Bắc", "Đông", "Đông Nam", "Nam", "Tây Nam", "Tây", "Tây Bắc")
@@ -33,8 +37,15 @@ data class HourlyForecast(
     val precipitationProbability: Int,
     val humidity: Int,
     val windSpeed: Double,
-    val isDay: Boolean = true
-)
+    val isDay: Boolean = true,
+    val precipitationMm: Double? = null,
+    val sourceCondition: WeatherCondition? = null
+) {
+    val condition: WeatherCondition
+        get() = sourceCondition ?: WeatherCondition.fromWmoCode(weatherCode)
+    val rainProbabilityText: String
+        get() = if (precipitationProbability in 0..100) "$precipitationProbability%" else "—"
+}
 
 data class DailyForecast(
     val dateString: String,
@@ -48,7 +59,10 @@ data class DailyForecast(
     val uvIndexMax: Double,
     val hourly24h: List<HourlyForecast> = emptyList(),
     val sourceName: String? = null
-)
+) {
+    val rainProbabilityText: String
+        get() = if (precipitationProbability in 0..100) "$precipitationProbability%" else "—"
+}
 
 data class AirQuality(
     val pm25: Double,

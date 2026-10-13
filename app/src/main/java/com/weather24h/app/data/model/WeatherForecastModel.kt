@@ -11,8 +11,8 @@ enum class WeatherForecastModel(
     BEST_MATCH(
         apiValue = "best_match",
         title = "Tự động tối ưu (Best Match)",
-        provider = "Open-Meteo Hybrid Multi-Model",
-        description = "Tự động ghép nối các mô hình có độ sai số thấp nhất theo từng tọa độ địa lý.",
+        provider = "Open-Meteo",
+        description = "Open-Meteo tự chọn mô hình có độ phân giải phù hợp và vùng phủ tại tọa độ yêu cầu.",
         badge = "Khuyên dùng",
         badgeColor = 0xFF10B981
     ),
@@ -20,8 +20,8 @@ enum class WeatherForecastModel(
         apiValue = "ecmwf_ifs025",
         title = "ECMWF IFS (Châu Âu)",
         provider = "Trung tâm Dự báo Thời tiết Hạn vừa Châu Âu",
-        description = "Mô hình được đánh giá có độ chính xác cao nhất thế giới hiện nay, chuẩn vàng quốc tế.",
-        badge = "Chuẩn vàng thế giới",
+        description = "Mô hình toàn cầu ECMWF IFS, độ phân giải 0,25°. Có thể dùng để đối chiếu dự báo; độ chính xác mưa phụ thuộc vị trí và thời hạn.",
+        badge = "Mô hình toàn cầu",
         badgeColor = 0xFF38BDF8
     ),
     GFS(
@@ -36,16 +36,16 @@ enum class WeatherForecastModel(
         apiValue = "icon_seamless",
         title = "DWD ICON (Đức)",
         provider = "Cục Khí tượng Quốc gia Đức (DWD)",
-        description = "Mô hình toán phi thủy tĩnh độ phân giải cao, dự báo mưa và biến động gió cực kỳ chi tiết.",
-        badge = "Độ chính xác cao",
+        description = "Mô hình ICON toàn cầu. Các mô hình khu vực độ phân giải cao của Đức không phủ Việt Nam.",
+        badge = "Mô hình toàn cầu",
         badgeColor = 0xFFF59E0B
     ),
     JMA(
         apiValue = "jma_seamless",
         title = "JMA GSM (Nhật Bản)",
         provider = "Cục Khí tượng Nhật Bản (JMA)",
-        description = "Tối ưu xuất sắc cho khí hậu nhiệt đới, gió mùa và diễn biến áp thấp/bão tại Đông Nam Á & Châu Á.",
-        badge = "Chuyên gia Châu Á",
+        description = "JMA GSM là mô hình toàn cầu của Nhật Bản. Mô hình khu vực MSM chỉ phủ Nhật Bản; cần đánh giá riêng tại Việt Nam.",
+        badge = "JMA toàn cầu",
         badgeColor = 0xFFEC4899
     ),
     METEO_FRANCE(

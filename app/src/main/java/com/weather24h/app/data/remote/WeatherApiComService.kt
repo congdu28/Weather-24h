@@ -72,7 +72,7 @@ class WeatherApiComService {
         parseWeatherApiData(location, json, openMeteoData)
     }
 
-    private fun parseWeatherApiData(
+    internal fun parseWeatherApiData(
         location: CityLocation,
         json: JsonObject,
         openMeteoSupplement: WeatherData?
@@ -116,7 +116,8 @@ class WeatherApiComService {
             visibilityKm = visKm,
             precipitation = precipMm,
             isDay = isDay,
-            time = timeNow
+            time = timeNow,
+            sourceCondition = sourceCondition(condCode, condObj?.get("text")?.asString)
         )
 
         // 2. Air Quality (AQI)
@@ -152,7 +153,8 @@ class WeatherApiComService {
                     val hTemp = hObj.get("temp_c")?.asDouble ?: continue
                     val hCode = hObj.getAsJsonObject("condition")?.get("code")?.asInt ?: continue
                     val hWmo = mapWeatherApiCodeToWmo(hCode)
-                    val hRainProb = hObj.get("chance_of_rain")?.asInt ?: 0
+                    val hRainProb = hObj.get("chance_of_rain")?.takeUnless { it.isJsonNull }?.asInt
+                        ?.takeIf { it in 0..100 } ?: -1
                     val hHumid = hObj.get("humidity")?.asInt ?: 60
                     val hWind = hObj.get("wind_kph")?.asDouble ?: 10.0
                     val hIsDay = (hObj.get("is_day")?.asInt ?: 1) == 1
@@ -166,7 +168,9 @@ class WeatherApiComService {
                             precipitationProbability = hRainProb,
                             humidity = hHumid,
                             windSpeed = hWind,
-                            isDay = hIsDay
+                            isDay = hIsDay,
+                            precipitationMm = hObj.get("precip_mm")?.takeUnless { it.isJsonNull }?.asDouble,
+                            sourceCondition = sourceCondition(hCode, hObj.getAsJsonObject("condition")?.get("text")?.asString)
                         )
                     )
                 }
@@ -206,7 +210,8 @@ class WeatherApiComService {
                 val minT = dayInfo.get("mintemp_c")?.asDouble ?: continue
                 val dCode = dayInfo.getAsJsonObject("condition")?.get("code")?.asInt ?: continue
                 val dWmo = mapWeatherApiCodeToWmo(dCode)
-                val dProb = dayInfo?.get("daily_chance_of_rain")?.asInt ?: 0
+                val dProb = dayInfo.get("daily_chance_of_rain")?.takeUnless { it.isJsonNull }?.asInt
+                    ?.takeIf { it in 0..100 } ?: -1
                 val dUv = dayInfo?.get("uv")?.asDouble ?: 5.0
 
                 val sunrise = astro?.get("sunrise")?.asString?.let { formatAstroTime(it) } ?: "05:45"
@@ -261,6 +266,18 @@ class WeatherApiComService {
         )
     }
 
+    private fun sourceCondition(code: Int, text: String?): WeatherCondition {
+        val nearbyDescription = when (code) {
+            1063 -> "Có thể mưa rải rác quanh khu vực"
+            1066 -> "Có thể có tuyết quanh khu vực"
+            1069 -> "Có thể có mưa tuyết quanh khu vực"
+            1072 -> "Có thể mưa phùn lạnh quanh khu vực"
+            1087 -> "Có thể có dông quanh khu vực"
+            else -> null
+        }
+        return WeatherCondition.fromSource(mapWeatherApiCodeToWmo(code), nearbyDescription ?: text, nearbyDescription != null)
+    }
+
     private fun mapWeatherApiCodeToWmo(code: Int): Int {
         return when (code) {
             1000 -> 0 // Sunny / Clear
@@ -271,7 +288,8 @@ class WeatherApiComService {
             1186, 1189 -> 63 // Moderate rain
             1192, 1195 -> 65 // Heavy rain
             1240 -> 80 // Light rain shower
-            1243, 1246 -> 81 // Heavy rain shower
+            1243 -> 81 // Moderate/heavy shower
+            1246 -> 82 // Torrential shower
             1087, 1273, 1276 -> 95 // Thunderstorm
             1279, 1282 -> 99 // Thunderstorm with hail/snow
             1150, 1153 -> 51 // Drizzle
