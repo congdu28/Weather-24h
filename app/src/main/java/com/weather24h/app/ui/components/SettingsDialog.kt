@@ -914,7 +914,7 @@ fun SettingsDialog(
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
                                     ToggleRowItem(
                                         title = "Luôn khởi động bằng vị trí GPS",
-                                        subtitle = "Tự động nhận diện quận/huyện hiện tại bằng GPS khi mở app",
+                                        subtitle = "Tự động nhận diện phường/xã hiện tại khi mở app",
                                         isChecked = isStartWithGps,
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,

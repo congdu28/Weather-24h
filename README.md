@@ -4,7 +4,7 @@
 
 ## Logic hiện tại
 
-1. `MainActivity` khởi tạo giao diện, xin quyền thông báo và chỉ lấy GPS lúc mở app nếu người dùng bật tùy chọn khởi động bằng GPS.
+1. `MainActivity` khởi tạo giao diện; bản cài mới mặc định xin vị trí hiện tại và ưu tiên một phép đo GPS mới, chính xác cao. App chỉ dùng tọa độ gần nhất khi phép đo mới thất bại và dữ liệu cũ chưa quá 30 phút. Nếu người dùng từ chối quyền, app mới tải thành phố dự phòng đã lưu.
 2. `WeatherViewModel` đọc thành phố dùng gần nhất (hoặc thành phố mặc định), tải thời tiết và phát trạng thái `Loading` / `Success` / `Error` qua `StateFlow`. Đổi thành phố hoặc làm mới sẽ hủy tác vụ tải cũ. Kéo để làm mới giữ dữ liệu cũ trên màn hình trong lúc tải.
 3. Từ v1.0.26, `WeatherRepository` mặc định **Open-Meteo → Best Match** theo tọa độ, lấy dữ liệu hiện tại và 7 ngày dự báo, không cần API key. Khi nâng cấp, cấu hình này được áp dụng một lần; lựa chọn thủ công sau đó được giữ nguyên. WeatherAPI.com vẫn là nguồn tùy chọn: cung cấp hiện tại và 3 ngày đầu, Open-Meteo bổ sung các ngày còn lại.
 4. Sau khi tải, repository lưu dữ liệu bằng `SharedPreferences`, cập nhật widget và kiểm tra cảnh báo nếu đã bật. Nếu cả hai nguồn lỗi, app chỉ dùng cache của cùng vị trí và đánh dấu `isOffline`; nếu không có cache phù hợp, app báo lỗi. Dữ liệu mẫu cũ không còn được dùng.

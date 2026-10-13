@@ -258,9 +258,19 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         // Lên lịch đồng bộ định kỳ Widget (1h/lần) & Thông báo (nếu bật)
         PeriodicWeatherWorker.schedule(application, _periodicNotifHours.value)
 
-        // Load thành phố mặc định/gần nhất ban đầu
-        loadWeather(currentCity)
+        // Khi ưu tiên GPS, MainActivity sẽ tải đúng vị trí sau khi quyền được xử lý.
+        // Chỉ tải thành phố đã lưu ngay nếu người dùng đã tắt khởi động bằng GPS.
+        if (!_isStartWithGps.value) {
+            loadWeather(currentCity)
+        }
         startAutoRefreshTimer(_autoRefreshMinutes.value)
+    }
+
+    /** Dùng thành phố đã lưu nếu lần định vị đầu tiên bị từ chối hoặc thất bại. */
+    fun loadInitialFallbackWeather() {
+        if (_uiState.value is WeatherUiState.Loading && loadWeatherJob?.isActive != true) {
+            loadWeather(currentCity)
+        }
     }
 
     /**

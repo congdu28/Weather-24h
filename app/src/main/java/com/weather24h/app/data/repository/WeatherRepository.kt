@@ -173,7 +173,8 @@ class WeatherRepository(
     // THÀNH PHỐ MẶC ĐỊNH & KHỞI ĐỘNG
     // ==========================================
     fun isStartWithGps(): Boolean {
-        return prefs.getBoolean("start_with_gps", false) // Mặc định mở theo thành phố mặc định
+        // Bản cài mới ưu tiên vị trí hiện tại; lựa chọn tắt của người dùng vẫn được giữ lại.
+        return prefs.getBoolean("start_with_gps", true)
     }
 
     fun setStartWithGps(enabled: Boolean) {

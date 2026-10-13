@@ -289,15 +289,15 @@ class WeatherApiService {
                 lower.contains("cần thơ")
     }
 
-    private fun formatHierarchyLocation(
+    internal fun formatHierarchyLocation(
         ward: String?,
         district: String?,
         province: String?,
         country: String = "Việt Nam"
     ): Pair<String, String> {
-        val cleanWard = ward?.trim()?.takeIf { it.isNotBlank() }
-        val cleanDistrict = district?.trim()?.takeIf { it.isNotBlank() }
-        val cleanProvince = province?.trim()?.takeIf { it.isNotBlank() }
+        val cleanWard = compactVietnameseAdministrativeName(ward)
+        val cleanDistrict = compactVietnameseAdministrativeName(district)
+        val cleanProvince = compactVietnameseAdministrativeName(province)
         val cleanCountry = country.trim().ifBlank { "Việt Nam" }
 
         // Ưu tiên hiển thị hành chính Việt Nam: Cấp Phường/Xã -> Cấp Quận/Huyện -> Cấp Tỉnh/TP
@@ -328,6 +328,14 @@ class WeatherApiService {
         }
 
         return Pair(primaryName, secondaryLocation)
+    }
+
+    private fun compactVietnameseAdministrativeName(value: String?): String? {
+        val name = value?.trim()?.takeIf { it.isNotBlank() } ?: return null
+        return name.replace(
+            Regex("^(phường|xã|thị trấn|quận|huyện|thị xã|thành phố|tỉnh)\\s+", RegexOption.IGNORE_CASE),
+            ""
+        ).trim().ifBlank { name }
     }
 
     internal fun parseWeatherData(
