@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.weather24h.app.data.model.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -54,19 +55,22 @@ class WeatherApiService {
                 if (aqiBody != null) {
                     val aqiJson = gson.fromJson(aqiBody, JsonObject::class.java)
                     val currentAqi = aqiJson.getAsJsonObject("current")
-                    if (currentAqi != null) {
+                    if (currentAqi?.get("pm2_5") != null && currentAqi.get("pm10") != null && currentAqi.get("european_aqi") != null) {
                         airQuality = AirQuality(
-                            pm25 = currentAqi.get("pm2_5")?.asDouble ?: 18.0,
-                            pm10 = currentAqi.get("pm10")?.asDouble ?: 30.0,
-                            aqiIndex = currentAqi.get("european_aqi")?.asInt ?: 35
+                            pm25 = currentAqi.get("pm2_5").asDouble,
+                            pm10 = currentAqi.get("pm10").asDouble,
+                            aqiIndex = currentAqi.get("european_aqi").asInt,
+                            aqiScale = "European AQI"
                         )
                     }
                 }
             } catch (_: Exception) {}
 
             parseWeatherData(location, json, airQuality, model)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            getFallbackMockData(location, model)
+            throw IllegalStateException("Không thể tải dữ liệu Open-Meteo", e)
         }
     }
 
@@ -353,6 +357,9 @@ class WeatherApiService {
         // Parse Hourly 24h chuẩn xác theo giờ hiện tại
         val hourlyTimes = hourlyObj?.getAsJsonArray("time") ?: com.google.gson.JsonArray()
         val hourlyTemps = hourlyObj?.getAsJsonArray("temperature_2m")
+        if (hourlyTimes.size() == 0 || hourlyTemps == null) {
+            throw IllegalStateException("Open-Meteo thiếu dự báo theo giờ")
+        }
         val hourlyCodes = hourlyObj?.getAsJsonArray("weather_code")
         val hourlyRains = hourlyObj?.getAsJsonArray("precipitation_probability")
         val hourlyPrecips = hourlyObj?.getAsJsonArray("precipitation")
@@ -408,6 +415,7 @@ class WeatherApiService {
         val hourlyList = mutableListOf<HourlyForecast>()
         val count = minOf(startIndex + 24, hourlyTimes.size())
         for (i in startIndex until count) {
+            if (i >= hourlyTemps.size() || hourlyTemps.get(i).isJsonNull) continue
             val tStr = hourlyTimes.get(i).asString
             val rawHour = if (tStr.contains("T")) tStr.substringAfter("T") else tStr
             val isFirstHour = (i == startIndex)
@@ -425,7 +433,7 @@ class WeatherApiService {
                 HourlyForecast(
                     timeString = tStr,
                     hourLabel = if (isFirstHour) "Hiện tại" else rawHour,
-                    temperature = if (isFirstHour) current.temperature else (hourlyTemps?.get(i)?.asDouble ?: current.temperature),
+                    temperature = if (isFirstHour) current.temperature else hourlyTemps.get(i).asDouble,
                     weatherCode = if (isFirstHour) current.weatherCode else (hourlyCodes?.get(i)?.asInt ?: current.weatherCode),
                     precipitationProbability = rainProb,
                     humidity = hourlyHumids?.get(i)?.asInt ?: current.humidity,
@@ -434,6 +442,7 @@ class WeatherApiService {
                 )
             )
         }
+        if (hourlyList.isEmpty()) throw IllegalStateException("Open-Meteo trả dự báo giờ rỗng")
 
         // Parse Daily 7-day
         val dailyTimes = dailyObj?.getAsJsonArray("time") ?: com.google.gson.JsonArray()
@@ -462,6 +471,9 @@ class WeatherApiService {
         val dailyList = mutableListOf<DailyForecast>()
         val dCount = minOf(7, dailyTimes.size())
         for (i in 0 until dCount) {
+            if (dailyMaxs == null || dailyMins == null || i >= dailyMaxs.size() ||
+                i >= dailyMins.size() || dailyMaxs.get(i).isJsonNull || dailyMins.get(i).isJsonNull
+            ) continue
             val dateStr = dailyTimes.get(i).asString
             val dayOfWeek = if (i == 0) "Hôm nay" else parseDayOfWeek(dateStr)
             val sunriseStr = dailySunrises?.get(i)?.asString?.substringAfter("T") ?: "06:00"
@@ -500,17 +512,19 @@ class WeatherApiService {
                 DailyForecast(
                     dateString = dateStr,
                     dayOfWeek = dayOfWeek,
-                    maxTemp = dailyMaxs?.get(i)?.asDouble ?: 30.0,
-                    minTemp = dailyMins?.get(i)?.asDouble ?: 22.0,
+                    maxTemp = dailyMaxs.get(i).asDouble,
+                    minTemp = dailyMins.get(i).asDouble,
                     weatherCode = dailyCodes?.get(i)?.asInt ?: 1,
                     precipitationProbability = dailyRainProb,
                     sunrise = sunriseStr,
                     sunset = sunsetStr,
                     uvIndexMax = dailyUvs?.get(i)?.asDouble ?: 5.0,
-                    hourly24h = dayHourly
+                    hourly24h = dayHourly,
+                    sourceName = "Open-Meteo"
                 )
             )
         }
+        if (dailyList.isEmpty()) throw IllegalStateException("Open-Meteo trả dự báo ngày rỗng")
 
         val updatedStr = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy").format(LocalDateTime.now())
 
@@ -544,79 +558,5 @@ class WeatherApiService {
         }
     }
 
-    private fun getFallbackMockData(
-        location: CityLocation,
-        model: WeatherForecastModel = WeatherForecastModel.BEST_MATCH
-    ): WeatherData {
-        val now = LocalDateTime.now()
-        val currentHour = now.hour
-        val hourly = (0..23).map { offset ->
-            val hourVal = (currentHour + offset) % 24
-            val hourStr = String.format("%02d:00", hourVal)
-            HourlyForecast(
-                timeString = "${now.toLocalDate()}T$hourStr",
-                hourLabel = if (offset == 0) "Hiện tại" else hourStr,
-                temperature = 28.0 + (offset % 5) - 2.0,
-                weatherCode = if (hourVal in 14..16) 61 else 1,
-                precipitationProbability = if (hourVal in 14..16) 60 else 10,
-                humidity = 70,
-                windSpeed = 12.0,
-                isDay = hourVal in 6..18
-            )
-        }
-
-        val days = listOf("Hôm nay", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật")
-        val daily = days.mapIndexed { index, name ->
-            val dayHours = (0..23).map { h ->
-                val hStr = String.format("%02d:00", h)
-                HourlyForecast(
-                    timeString = "2026-10-${12 + index}T$hStr",
-                    hourLabel = hStr,
-                    temperature = 24.0 + (h % 7),
-                    weatherCode = 1,
-                    precipitationProbability = 10,
-                    humidity = 65,
-                    windSpeed = 10.0,
-                    isDay = h in 6..18
-                )
-            }
-            DailyForecast(
-                dateString = "2026-10-${12 + index}",
-                dayOfWeek = name,
-                maxTemp = 32.0 - (index % 3),
-                minTemp = 24.0 + (index % 2),
-                weatherCode = if (index == 2) 61 else 1,
-                precipitationProbability = if (index == 2) 65 else 15,
-                sunrise = "05:45",
-                sunset = "18:15",
-                uvIndexMax = 7.2,
-                hourly24h = dayHours
-            )
-        }
-
-        return WeatherData(
-            location = location,
-            current = CurrentWeather(
-                temperature = 29.5,
-                feelsLike = 31.0,
-                weatherCode = 1,
-                humidity = 72,
-                windSpeed = 14.0,
-                windDirection = 135,
-                uvIndex = 6.5,
-                surfacePressure = 1012.0,
-                visibilityKm = 10.0,
-                precipitation = 0.0,
-                isDay = true,
-                time = "12:00"
-            ),
-            hourly24h = hourly,
-            daily7Days = daily,
-            airQuality = AirQuality(22.0, 38.0, 42),
-            lastUpdated = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy").format(LocalDateTime.now()),
-            forecastModel = model,
-            providerName = "Open-Meteo (${model.title})"
-        )
-    }
 }
 

@@ -96,7 +96,6 @@ jobs:
         run: ./gradlew assembleRelease -PversionName="${{ steps.versioning.outputs.version_name }}" -PversionCode="${{ steps.versioning.outputs.version_code }}" --stacktrace
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GOOGLE_WEATHER_API_KEY: ${{ secrets.GOOGLE_WEATHER_API_KEY }}
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
 
 

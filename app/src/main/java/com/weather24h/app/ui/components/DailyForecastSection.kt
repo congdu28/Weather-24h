@@ -75,7 +75,7 @@ fun DailyForecastSection(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "DỰ BÁO 7 NGÀY TỚI",
+                        text = "DỰ BÁO ${dailyList.size} NGÀY TỚI",
                         color = contentColor.copy(alpha = 0.85f),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -207,6 +207,13 @@ fun DailyForecastSection(
                     )
                 }
 
+                Text(
+                    text = "Nguồn: ${day.sourceName ?: "Chưa xác định"}",
+                    color = subtextColor,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
+                )
+
                 if (index < dailyList.size - 1) {
                     Divider(
                         color = if (isDark) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.08f),
@@ -299,6 +306,11 @@ fun DayForecastDetailDialog(
                                 text = "Ngày ${day.dateString}",
                                 color = subtextColor,
                                 fontSize = 12.5.sp
+                            )
+                            Text(
+                                text = "Nguồn: ${day.sourceName ?: "Chưa xác định"}",
+                                color = subtextColor,
+                                fontSize = 11.sp
                             )
                         }
                     }

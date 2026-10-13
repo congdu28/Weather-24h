@@ -46,13 +46,15 @@ data class DailyForecast(
     val sunrise: String,
     val sunset: String,
     val uvIndexMax: Double,
-    val hourly24h: List<HourlyForecast> = emptyList()
+    val hourly24h: List<HourlyForecast> = emptyList(),
+    val sourceName: String? = null
 )
 
 data class AirQuality(
     val pm25: Double,
     val pm10: Double,
-    val aqiIndex: Int
+    val aqiIndex: Int,
+    val aqiScale: String? = null
 ) {
     val statusText: String
         get() = when {
@@ -73,7 +75,7 @@ data class WeatherData(
     val lastUpdated: String,
     val forecastModel: WeatherForecastModel = WeatherForecastModel.BEST_MATCH,
     val isOffline: Boolean = false,
-    val providerName: String = "Google Weather (WeatherNext AI)"
+    val providerName: String = "Không rõ nguồn"
 ) {
     val maxTemp24h: Double
         get() = hourly24h.maxOfOrNull { it.temperature } ?: current.temperature

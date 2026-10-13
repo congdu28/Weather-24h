@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.AirQuality
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.ui.theme.LocalCardOpacity
+import com.weather24h.app.ui.theme.LocalCardGlassBg
 import com.weather24h.app.ui.theme.LocalContentTextColor
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
 import com.weather24h.app.ui.theme.LocalSubtextColor
@@ -34,38 +35,23 @@ data class AirQualityLevelInfo(
     val outdoorAdvice: String
 )
 
-fun getAirQualityLevelInfo(pm25: Double): AirQualityLevelInfo {
-    return when {
-        pm25 <= 12.0 -> AirQualityLevelInfo(
-            label = "Tuyệt vời",
-            color = Color(0xFF10B981),
-            advice = "Chất lượng không khí lý tưởng, rất trong lành.",
-            outdoorAdvice = "Rất an toàn để tập thể thao và hoạt động ngoài trời."
-        )
-        pm25 <= 35.4 -> AirQualityLevelInfo(
-            label = "Tốt",
-            color = Color(0xFF06D6A0),
-            advice = "Không khí đạt chuẩn, mức độ ô nhiễm rất thấp.",
-            outdoorAdvice = "Thích hợp cho mọi hoạt động vui chơi, thể dục ngoài trời."
-        )
-        pm25 <= 55.4 -> AirQualityLevelInfo(
-            label = "Trung bình",
-            color = Color(0xFFFBBF24),
-            advice = "Chất lượng không khí ở mức chấp nhận được.",
-            outdoorAdvice = "Nhóm người nhạy cảm (người già, trẻ nhỏ) nên giảm bớt vận động mạnh ngoài trời."
-        )
-        pm25 <= 150.4 -> AirQualityLevelInfo(
-            label = "Kém",
-            color = Color(0xFFF97316),
-            advice = "Nồng độ bụi mịn PM2.5 cao, nhóm nhạy cảm dễ bị kích ứng hô hấp.",
-            outdoorAdvice = "Nhóm nhạy cảm (người già, trẻ nhỏ, người hen suyễn) nên đeo khẩu trang chống bụi N95/KF94 khi ra đường và đóng bớt cửa sổ thông gió."
-        )
-        else -> AirQualityLevelInfo(
-            label = "Nguy hại",
-            color = Color(0xFFEF4444),
-            advice = "Cảnh báo ô nhiễm không khí nguy hại cho mọi đối tượng.",
-            outdoorAdvice = "Khuyến cáo ở trong nhà, đóng kín cửa sổ, bật máy lọc không khí và đeo khẩu trang N95 đạt chuẩn nếu bắt buộc phải ra ngoài."
-        )
+fun getAirQualityLevelInfo(aqi: AirQuality): AirQualityLevelInfo {
+    val usEpa = aqi.aqiScale?.startsWith("US EPA") == true
+    val band = if (usEpa) aqi.aqiIndex.coerceIn(1, 6) else when {
+        aqi.aqiIndex <= 20 -> 1
+        aqi.aqiIndex <= 40 -> 2
+        aqi.aqiIndex <= 60 -> 3
+        aqi.aqiIndex <= 80 -> 4
+        aqi.aqiIndex <= 100 -> 5
+        else -> 6
+    }
+    return when (band) {
+        1 -> AirQualityLevelInfo("Tốt", Color(0xFF10B981), "Chất lượng không khí tốt.", "Có thể sinh hoạt ngoài trời như thường lệ.")
+        2 -> AirQualityLevelInfo(if (usEpa) "Trung bình" else "Khá", Color(0xFF84CC16), "Chất lượng không khí ở mức khá hoặc trung bình.", "Người nhạy cảm nên theo dõi cảm giác khi hoạt động ngoài trời.")
+        3 -> AirQualityLevelInfo(if (usEpa) "Cần lưu ý" else "Trung bình", Color(0xFFFBBF24), "Chất lượng không khí cần được chú ý.", "Người nhạy cảm nên cân nhắc giảm vận động mạnh ngoài trời.")
+        4 -> AirQualityLevelInfo("Kém", Color(0xFFF97316), "Chất lượng không khí kém.", "Nên giảm thời gian hoạt động ngoài trời, nhất là với nhóm nhạy cảm.")
+        5 -> AirQualityLevelInfo("Rất kém", Color(0xFFEF476F), "Chất lượng không khí rất kém.", "Nên hạn chế hoạt động ngoài trời.")
+        else -> AirQualityLevelInfo(if (usEpa) "Nguy hại" else "Cực kỳ kém", Color(0xFFB91C1C), "Chất lượng không khí ở mức xấu nhất của thang đo.", "Nên tránh hoạt động ngoài trời khi có thể.")
     }
 }
 
@@ -74,10 +60,24 @@ fun AirQualityCard(
     weather: WeatherData,
     modifier: Modifier = Modifier
 ) {
-    val aqi = weather.airQuality ?: AirQuality(pm25 = 16.0, pm10 = 26.0, aqiIndex = 32)
+    val aqi = weather.airQuality
+    if (aqi == null) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = LocalCardGlassBg.current,
+            modifier = modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Chưa có dữ liệu chất lượng không khí",
+                color = LocalSubtextColor.current,
+                modifier = Modifier.padding(18.dp)
+            )
+        }
+        return
+    }
     val pm25 = aqi.pm25
     val pm10 = aqi.pm10
-    val level = getAirQualityLevelInfo(pm25)
+    val level = getAirQualityLevelInfo(aqi)
 
     val isDark = LocalIsDarkTheme.current
     val cardOpacity = LocalCardOpacity.current
@@ -126,7 +126,7 @@ fun AirQualityCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "Chỉ số AQI Châu Âu & Bụi mịn PM2.5/PM10",
+                            text = "${aqi.aqiScale ?: "AQI"} • Bụi mịn PM2.5/PM10",
                             color = subtextColor,
                             fontSize = 10.5.sp,
                             maxLines = 1,
@@ -199,7 +199,7 @@ fun AirQualityCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "AQI: ",
+                            text = "${aqi.aqiScale ?: "AQI"}: ",
                             fontSize = 11.5.sp,
                             fontWeight = FontWeight.Medium,
                             color = subtextColor
@@ -265,10 +265,10 @@ fun AirQualityCard(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = "0", fontSize = 9.sp, color = subtextColor)
-                    Text(text = "12 (Tốt)", fontSize = 9.sp, color = subtextColor)
-                    Text(text = "35 (TB)", fontSize = 9.sp, color = subtextColor)
-                    Text(text = "55 (Kém)", fontSize = 9.sp, color = subtextColor)
-                    Text(text = "150+ (Hại)", fontSize = 9.sp, color = subtextColor)
+                    Text(text = "25", fontSize = 9.sp, color = subtextColor)
+                    Text(text = "50", fontSize = 9.sp, color = subtextColor)
+                    Text(text = "100", fontSize = 9.sp, color = subtextColor)
+                    Text(text = "150+ µg/m³", fontSize = 9.sp, color = subtextColor)
                 }
             }
 
@@ -342,6 +342,12 @@ fun AirQualityCard(
                     }
                 }
             }
+            Text(
+                text = if (aqi.aqiScale == "European AQI") "Nguồn AQI: CAMS qua Open-Meteo" else "Nguồn AQI: WeatherAPI.com",
+                color = subtextColor,
+                fontSize = 10.sp,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
     }
 }

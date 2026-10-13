@@ -5,21 +5,18 @@ import com.google.gson.JsonObject
 import com.weather24h.app.data.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.net.URLEncoder
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-/**
- * Service tương tác với WeatherAPI.com
- * Dữ liệu thu thập từ các trạm quan trắc mặt đất (Ground Meteorological Stations) & Radar tại Việt Nam.
- * Độ chính xác thực tế cao nhất, nhiệt độ cảm nhận (Feels like) và lượng mưa sát 99% thực tế.
- */
+/** Dữ liệu hiện tại và ba ngày dự báo từ WeatherAPI.com. */
 class WeatherApiComService {
     private val client = OkHttpClient.Builder()
         .connectTimeout(12, TimeUnit.SECONDS)
@@ -42,6 +39,8 @@ class WeatherApiComService {
         val openMeteoDeferred = async {
             try {
                 fallbackOpenMeteo()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 null
             }
@@ -55,7 +54,6 @@ class WeatherApiComService {
                 "q=$lat,$lon&" +
                 "days=3&" +
                 "aqi=yes&" +
-                "alerts=yes&" +
                 "lang=vi"
 
         val request = Request.Builder().url(url).build()
@@ -79,12 +77,19 @@ class WeatherApiComService {
         json: JsonObject,
         openMeteoSupplement: WeatherData?
     ): WeatherData {
+        val locationObj = json.getAsJsonObject("location")
+            ?: throw IllegalStateException("WeatherAPI thiếu thông tin địa điểm")
+        val localTime = locationObj.get("localtime")?.asString
+            ?: throw IllegalStateException("WeatherAPI thiếu giờ địa phương")
+        val nowLdt = LocalDateTime.parse(localTime.replace(" ", "T"))
         val currentObj = json.getAsJsonObject("current") ?: throw IllegalStateException("Missing current object")
-        val forecastObj = json.getAsJsonObject("forecast")
-        val forecastDaysArr = forecastObj?.getAsJsonArray("forecastday")
+        val forecastDaysArr = json.getAsJsonObject("forecast")?.getAsJsonArray("forecastday")
+            ?: throw IllegalStateException("WeatherAPI thiếu dữ liệu dự báo")
+        if (forecastDaysArr.size() == 0) throw IllegalStateException("WeatherAPI trả về dự báo rỗng")
 
         // 1. Current Weather
-        val temp = currentObj.get("temp_c")?.asDouble ?: 28.0
+        val temp = currentObj.get("temp_c")?.asDouble
+            ?: throw IllegalStateException("WeatherAPI thiếu nhiệt độ hiện tại")
         val feelsLike = currentObj.get("feelslike_c")?.asDouble ?: temp
         val condObj = currentObj.getAsJsonObject("condition")
         val condCode = condObj?.get("code")?.asInt ?: 1000
@@ -97,7 +102,7 @@ class WeatherApiComService {
         val visKm = currentObj.get("vis_km")?.asDouble ?: 10.0
         val precipMm = currentObj.get("precip_mm")?.asDouble ?: 0.0
         val isDay = (currentObj.get("is_day")?.asInt ?: 1) == 1
-        val timeNow = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
+        val timeNow = nowLdt.format(DateTimeFormatter.ofPattern("HH:mm"))
 
         val currentWeather = CurrentWeather(
             temperature = temp,
@@ -118,29 +123,17 @@ class WeatherApiComService {
         var airQuality: AirQuality? = null
         val aqiObj = currentObj.getAsJsonObject("air_quality")
         if (aqiObj != null) {
-            val pm25 = aqiObj.get("pm2_5")?.asDouble ?: 20.0
-            val pm10 = aqiObj.get("pm10")?.asDouble ?: 35.0
-            val epaIndex = aqiObj.get("us-epa-index")?.asInt ?: 2
-            val calculatedAqi = when (epaIndex) {
-                1 -> 25
-                2 -> 65
-                3 -> 115
-                4 -> 165
-                5 -> 220
-                6 -> 320
-                else -> (pm25 * 2.5).toInt().coerceIn(10, 500)
+            val pm25 = aqiObj.get("pm2_5")?.asDouble
+            val pm10 = aqiObj.get("pm10")?.asDouble
+            val epaIndex = aqiObj.get("us-epa-index")?.asInt
+            if (pm25 != null && pm10 != null && epaIndex != null && epaIndex in 1..6) {
+                airQuality = AirQuality(pm25, pm10, epaIndex, "US EPA (1–6)")
             }
-            airQuality = AirQuality(
-                pm25 = pm25,
-                pm10 = pm10,
-                aqiIndex = calculatedAqi
-            )
         }
 
         // 3. Hourly Forecasts (từ 3 ngày của WeatherAPI)
         val allHourlyList = mutableListOf<HourlyForecast>()
-        val today = LocalDate.now()
-        val nowLdt = LocalDateTime.now()
+        val today = nowLdt.toLocalDate()
 
         if (forecastDaysArr != null) {
             for (dayElem in forecastDaysArr) {
@@ -152,12 +145,12 @@ class WeatherApiComService {
                     val hourLdt = try {
                         LocalDateTime.parse(timeStr.replace(" ", "T"))
                     } catch (e: Exception) {
-                        nowLdt
+                        continue
                     }
 
                     val hourLabel = hourLdt.format(DateTimeFormatter.ofPattern("HH:00"))
-                    val hTemp = hObj.get("temp_c")?.asDouble ?: 25.0
-                    val hCode = hObj.getAsJsonObject("condition")?.get("code")?.asInt ?: 1000
+                    val hTemp = hObj.get("temp_c")?.asDouble ?: continue
+                    val hCode = hObj.getAsJsonObject("condition")?.get("code")?.asInt ?: continue
                     val hWmo = mapWeatherApiCodeToWmo(hCode)
                     val hRainProb = hObj.get("chance_of_rain")?.asInt ?: 0
                     val hHumid = hObj.get("humidity")?.asInt ?: 60
@@ -181,16 +174,16 @@ class WeatherApiComService {
         }
 
         // Lấy 24 giờ tới tính từ giờ hiện tại
-        val currentHourInt = nowLdt.hour
         val futureHours = allHourlyList.filter {
             try {
                 val ldt = LocalDateTime.parse(it.timeString)
-                ldt.isAfter(nowLdt.minusHours(1))
+                !ldt.isBefore(nowLdt.truncatedTo(ChronoUnit.HOURS))
             } catch (e: Exception) {
-                true
+                false
             }
         }
-        val first24h = (if (futureHours.isNotEmpty()) futureHours else allHourlyList).take(24)
+        val first24h = futureHours.take(24)
+        if (first24h.isEmpty()) throw IllegalStateException("WeatherAPI thiếu dự báo theo giờ")
 
         // 4. Daily 7 Days Forecast
         val dailyList = mutableListOf<DailyForecast>()
@@ -199,19 +192,19 @@ class WeatherApiComService {
         if (forecastDaysArr != null) {
             for (dayElem in forecastDaysArr) {
                 val dayObj = dayElem.asJsonObject
-                val dateStr = dayObj.get("date")?.asString ?: ""
+                val dateStr = dayObj.get("date")?.asString ?: continue
                 val dateObj = try {
                     LocalDate.parse(dateStr)
                 } catch (e: Exception) {
-                    today
+                    continue
                 }
 
-                val dayInfo = dayObj.getAsJsonObject("day")
+                val dayInfo = dayObj.getAsJsonObject("day") ?: continue
                 val astro = dayObj.getAsJsonObject("astro")
 
-                val maxT = dayInfo?.get("maxtemp_c")?.asDouble ?: 30.0
-                val minT = dayInfo?.get("mintemp_c")?.asDouble ?: 23.0
-                val dCode = dayInfo?.getAsJsonObject("condition")?.get("code")?.asInt ?: 1000
+                val maxT = dayInfo.get("maxtemp_c")?.asDouble ?: continue
+                val minT = dayInfo.get("mintemp_c")?.asDouble ?: continue
+                val dCode = dayInfo.getAsJsonObject("condition")?.get("code")?.asInt ?: continue
                 val dWmo = mapWeatherApiCodeToWmo(dCode)
                 val dProb = dayInfo?.get("daily_chance_of_rain")?.asInt ?: 0
                 val dUv = dayInfo?.get("uv")?.asDouble ?: 5.0
@@ -233,7 +226,8 @@ class WeatherApiComService {
                         sunrise = sunrise,
                         sunset = sunset,
                         uvIndexMax = dUv,
-                        hourly24h = dayHourly
+                        hourly24h = dayHourly,
+                        sourceName = "WeatherAPI.com"
                     )
                 )
             }
@@ -242,50 +236,28 @@ class WeatherApiComService {
         // Bổ sung ngày 4-7 từ Open-Meteo nếu có để đảm bảo đủ 7 ngày hoàn chỉnh
         if (openMeteoSupplement != null && openMeteoSupplement.daily7Days.isNotEmpty()) {
             val existingDates = dailyList.map { it.dateString }.toSet()
-            val remainingDays = openMeteoSupplement.daily7Days.filter { it.dateString !in existingDates }
+            val remainingDays = openMeteoSupplement.daily7Days.filter {
+                it.dateString !in existingDates && it.dateString >= today.toString()
+            }
             dailyList.addAll(remainingDays)
         }
+        if (dailyList.isEmpty()) throw IllegalStateException("Không có ngày dự báo hợp lệ")
 
-        // Tự động bảo đảm luôn đủ 7 ngày liên tục kể cả khi dịch vụ phụ gặp sự cố mạng
-        if (dailyList.isNotEmpty() && dailyList.size < 7) {
-            val lastDay = dailyList.last()
-            val lastDate = try {
-                LocalDate.parse(lastDay.dateString)
-            } catch (e: Exception) {
-                today.plusDays(dailyList.size.toLong() - 1)
-            }
-            val needed = 7 - dailyList.size
-            for (i in 1..needed) {
-                val nextDate = lastDate.plusDays(i.toLong())
-                dailyList.add(
-                    DailyForecast(
-                        dateString = nextDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
-                        dayOfWeek = getVietnameseDayOfWeek(nextDate),
-                        maxTemp = lastDay.maxTemp,
-                        minTemp = lastDay.minTemp,
-                        weatherCode = lastDay.weatherCode,
-                        precipitationProbability = lastDay.precipitationProbability,
-                        sunrise = lastDay.sunrise,
-                        sunset = lastDay.sunset,
-                        uvIndexMax = lastDay.uvIndexMax,
-                        hourly24h = lastDay.hourly24h
-                    )
-                )
-            }
-        }
-
-        val lastUpdated = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy"))
+        val observedAt = currentObj.get("last_updated")?.asString?.let {
+            runCatching { LocalDateTime.parse(it.replace(" ", "T")) }.getOrNull()
+        } ?: nowLdt
+        val lastUpdated = observedAt.format(DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy"))
 
         return WeatherData(
             location = location,
             current = currentWeather,
             hourly24h = first24h,
-            daily7Days = dailyList.take(7),
+            daily7Days = dailyList.distinctBy { it.dateString }.sortedBy { it.dateString }.take(7),
             airQuality = airQuality,
             lastUpdated = lastUpdated,
             forecastModel = WeatherForecastModel.BEST_MATCH,
             isOffline = false,
-            providerName = "WeatherAPI (Trạm quan trắc thực tế)"
+            providerName = "WeatherAPI.com"
         )
     }
 
@@ -349,19 +321,33 @@ class WeatherApiComService {
             return@withContext Result.failure(IllegalArgumentException("Vui lòng nhập API Key"))
         }
         try {
-            val testUrl = "https://api.weatherapi.com/v1/current.json?key=$trimmed&q=Hanoi&lang=vi"
+            val testUrl = "https://api.weatherapi.com/v1/forecast.json?" +
+                "key=$trimmed&q=21.0285,105.8542&days=3&aqi=yes&lang=vi"
             val req = Request.Builder().url(testUrl).build()
-            val resp = client.newCall(req).execute()
-            if (resp.isSuccessful) {
-                Result.success("Kết nối thành công! WeatherAPI đã sẵn sàng hoạt động với trạm quan trắc thực tế.")
-            } else {
-                val code = resp.code
-                val errBody = resp.body?.string() ?: ""
-                val msg = when (code) {
-                    401, 403 -> "API Key không hợp lệ hoặc đã hết hạn (HTTP $code)"
-                    else -> "Lỗi phản hồi từ WeatherAPI (HTTP $code): $errBody"
+            client.newCall(req).execute().use { resp ->
+                val body = resp.body?.string().orEmpty()
+                if (resp.isSuccessful) {
+                    val json = gson.fromJson(body, JsonObject::class.java)
+                    val days = json.getAsJsonObject("forecast")?.getAsJsonArray("forecastday")
+                    if (json.getAsJsonObject("current") == null || days == null || days.size() < 3) {
+                        Result.failure(Exception("WeatherAPI chưa trả đủ 3 ngày dự báo cho cấu hình hiện tại"))
+                    } else {
+                        Result.success("Key dùng được với forecast.json; đã nhận ${days.size()} ngày dự báo.")
+                    }
+                } else {
+                    val errorCode = runCatching {
+                        gson.fromJson(body, JsonObject::class.java)
+                            .getAsJsonObject("error")?.get("code")?.asInt
+                    }.getOrNull()
+                    val msg = when (errorCode) {
+                        1002, 2006, 2008 -> "API key thiếu, không hợp lệ hoặc đã bị vô hiệu hóa."
+                        2007 -> "API key đã vượt hạn mức gọi trong tháng."
+                        2009 -> "Gói API hiện tại không có quyền dùng tài nguyên này."
+                        1006 -> "Không tìm thấy địa điểm thử nghiệm."
+                        else -> "WeatherAPI trả lỗi HTTP ${resp.code}${errorCode?.let { " (mã $it)" } ?: ""}."
+                    }
+                    Result.failure(Exception(msg))
                 }
-                Result.failure(Exception(msg))
             }
         } catch (e: Exception) {
             Result.failure(Exception("Không thể kết nối tới máy chủ WeatherAPI: ${e.localizedMessage ?: e.message}"))

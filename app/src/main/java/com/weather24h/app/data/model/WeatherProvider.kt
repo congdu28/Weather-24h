@@ -8,8 +8,8 @@ enum class WeatherProvider(
 ) {
     WEATHER_API(
         id = "weather_api",
-        title = "WeatherAPI (Trạm quan trắc thực tế)",
-        subtitle = "Dữ liệu đo đạc trực tiếp từ trạm khí tượng mặt đất & radar tại Việt Nam, chuẩn xác 99%",
+        title = "WeatherAPI.com",
+        subtitle = "Thời tiết hiện tại và 3 ngày dự báo; Open-Meteo bổ sung khi cần",
         badge = "Khuyên dùng • Mặc định"
     ),
     GOOGLE(

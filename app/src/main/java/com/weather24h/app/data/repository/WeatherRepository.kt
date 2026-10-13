@@ -14,6 +14,7 @@ import com.weather24h.app.data.remote.WeatherApiComService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.ui.widget.WeatherWidgetProvider
 import com.weather24h.app.util.WeatherNotificationHelper
+import kotlinx.coroutines.CancellationException
 
 class WeatherRepository(
     private val context: Context,
@@ -25,25 +26,29 @@ class WeatherRepository(
     private val googleApiService = GoogleWeatherApiService()
     private val weatherApiComService = WeatherApiComService()
 
-    /**
-     * Lấy dữ liệu thời tiết (Hỗ trợ đa nguồn: Google Weather làm nguồn chính + Open-Meteo dự phòng)
-     * Khi có mạng: Tải mới, lưu cache, cập nhật Widget và kiểm tra cảnh báo.
-     * Khi mất mạng: Tự động trả về dữ liệu cache gần nhất với cờ isOffline = true.
-     */
+    /** Tải nguồn đã chọn, sau đó dùng Open-Meteo hoặc cache cùng vị trí khi cần. */
     suspend fun getWeatherData(location: CityLocation): WeatherData {
         return try {
             val provider = getWeatherProvider()
             val freshWeather = when (provider) {
                 WeatherProvider.WEATHER_API -> {
                     val effectiveKey = getEffectiveWeatherApiKey()
-                    try {
+                    if (effectiveKey.isBlank()) {
+                        apiService.getFullWeather(location, getForecastModel()).copy(
+                            providerName = "Open-Meteo (chưa cấu hình WeatherAPI.com)"
+                        )
+                    } else try {
                         weatherApiComService.getFullWeather(location, effectiveKey) {
                             try {
                                 apiService.getFullWeather(location, getForecastModel())
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 null
                             }
                         }
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         // Tự động chuyển dự phòng sang Open-Meteo khi WeatherAPI gặp sự cố mạng
                         apiService.getFullWeather(location, getForecastModel()).copy(
@@ -56,6 +61,8 @@ class WeatherRepository(
                     if (effectiveKey.isNotBlank()) {
                         try {
                             googleApiService.getFullWeather(location, effectiveKey)
+                        } catch (e: CancellationException) {
+                            throw e
                         } catch (e: Exception) {
                             // Tự động chuyển dự phòng sang Open-Meteo khi Google API gặp sự cố hoặc vượt hạn mức
                             apiService.getFullWeather(location, getForecastModel()).copy(
@@ -86,9 +93,11 @@ class WeatherRepository(
             }
 
             freshWeather
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             // Khi mất mạng hoặc lỗi kết nối, ưu tiên lấy dữ liệu đã cache
-            val cached = getCachedWeather()
+            val cached = getCachedWeather(location)
             if (cached != null) {
                 cached.copy(isOffline = true)
             } else {
@@ -122,14 +131,20 @@ class WeatherRepository(
             prefs.edit()
                 .putString("cached_weather_json", json)
                 .putString("last_cached_time", weather.lastUpdated)
+                .putInt("cached_weather_schema", 2)
                 .apply()
         } catch (_: Exception) {}
     }
 
-    fun getCachedWeather(): WeatherData? {
+    fun getCachedWeather(location: CityLocation? = null): WeatherData? {
         return try {
+            if (prefs.getInt("cached_weather_schema", 0) != 2) return null
             val json = prefs.getString("cached_weather_json", null) ?: return null
-            gson.fromJson(json, WeatherData::class.java)
+            val cached = gson.fromJson(json, WeatherData::class.java) ?: return null
+            if (location != null && (
+                    kotlin.math.abs(cached.location.latitude - location.latitude) > 0.01 ||
+                    kotlin.math.abs(cached.location.longitude - location.longitude) > 0.01
+                )) null else cached
         } catch (_: Exception) {
             null
         }
@@ -139,6 +154,7 @@ class WeatherRepository(
         prefs.edit()
             .remove("cached_weather_json")
             .remove("last_cached_time")
+            .remove("cached_weather_schema")
             .apply()
     }
 
@@ -402,7 +418,10 @@ class WeatherRepository(
     // ==========================================
     fun getWeatherProvider(): WeatherProvider {
         val id = prefs.getString("weather_data_provider", WeatherProvider.WEATHER_API.id)
-        return WeatherProvider.fromId(id)
+        // Người dùng từng chọn Google sẽ tự chuyển về nguồn chính hiện tại.
+        return WeatherProvider.fromId(id).let {
+            if (it == WeatherProvider.GOOGLE) WeatherProvider.WEATHER_API else it
+        }
     }
 
     fun setWeatherProvider(provider: WeatherProvider) {
@@ -423,7 +442,7 @@ class WeatherRepository(
     fun getEffectiveWeatherApiKey(): String {
         val custom = getCustomWeatherApiKey()
         if (!custom.isNullOrBlank()) return custom
-        return BuildConfig.DEFAULT_WEATHER_API_KEY.ifBlank { "7e2bdcc3e4c7454293c173038252711" }
+        return BuildConfig.DEFAULT_WEATHER_API_KEY
     }
 
     fun hasWeatherApiKey(): Boolean = getEffectiveWeatherApiKey().isNotBlank()
