@@ -11,7 +11,8 @@ class OpenMeteoRainTest {
             {
               "current": {"temperature_2m":29, "apparent_temperature":33, "weather_code":61,
                 "relative_humidity_2m":77, "wind_speed_10m":12, "wind_direction_10m":90,
-                "surface_pressure":1010, "precipitation":0, "is_day":1, "time":"2026-10-13T13:15"},
+                "surface_pressure":1010, "precipitation":0, "is_day":1, "time":"2026-10-13T13:15",
+                "uv_index":0.4, "visibility":16560},
               "hourly": {"time":["2026-10-13T13:00"], "temperature_2m":[29],
                 "weather_code":[61], "precipitation":[6], "relative_humidity_2m":[77],
                 "wind_speed_10m":[12], "is_day":[1]},
@@ -25,5 +26,7 @@ class OpenMeteoRainTest {
         assertEquals(6.0, weather.hourly24h.single().precipitationMm!!, 0.001)
         assertEquals("—", weather.daily7Days.single().rainProbabilityText)
         assertEquals("—", weather.daily7Days.single().hourly24h.single().rainProbabilityText)
+        assertEquals(0.4, weather.current.uvIndex, 0.001)
+        assertEquals(16.56, weather.current.visibilityKm, 0.001)
     }
 }

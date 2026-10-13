@@ -26,6 +26,17 @@ class WeatherRepository(
     private val googleApiService = GoogleWeatherApiService()
     private val weatherApiComService = WeatherApiComService()
 
+    init {
+        // Áp dụng mặc định mới một lần khi nâng cấp; giữ lựa chọn thủ công ở các lần mở sau.
+        if (!prefs.getBoolean("open_meteo_default_applied_v26", false)) {
+            prefs.edit()
+                .putString("weather_data_provider", WeatherProvider.OPEN_METEO.id)
+                .putString("weather_forecast_model", com.weather24h.app.data.model.WeatherForecastModel.BEST_MATCH.name)
+                .putBoolean("open_meteo_default_applied_v26", true)
+                .apply()
+        }
+    }
+
     /** Tải nguồn đã chọn, sau đó dùng Open-Meteo hoặc cache cùng vị trí khi cần. */
     suspend fun getWeatherData(location: CityLocation): WeatherData {
         return try {
@@ -417,10 +428,10 @@ class WeatherRepository(
     // QUẢN LÝ NGUỒN DỮ LIỆU THỜI TIẾT (PROVIDER)
     // ==========================================
     fun getWeatherProvider(): WeatherProvider {
-        val id = prefs.getString("weather_data_provider", WeatherProvider.WEATHER_API.id)
+        val id = prefs.getString("weather_data_provider", WeatherProvider.OPEN_METEO.id)
         // Người dùng từng chọn Google sẽ tự chuyển về nguồn chính hiện tại.
         return WeatherProvider.fromId(id).let {
-            if (it == WeatherProvider.GOOGLE) WeatherProvider.WEATHER_API else it
+            if (it == WeatherProvider.GOOGLE) WeatherProvider.OPEN_METEO else it
         }
     }
 

@@ -65,7 +65,7 @@ private enum class SettingsSubScreen {
 @Composable
 fun SettingsDialog(
     currentThemeMode: com.weather24h.app.ui.theme.AppThemeMode,
-    currentWeatherProvider: WeatherProvider = WeatherProvider.WEATHER_API,
+    currentWeatherProvider: WeatherProvider = WeatherProvider.OPEN_METEO,
     customWeatherApiKey: String? = null,
     isUsingCustomWeatherApiKey: Boolean = false,
     hasEffectiveWeatherApiKey: Boolean = true,
@@ -1074,9 +1074,9 @@ fun SettingsDialog(
 
                                         KeyModeSelectCard(
                                             title = "WeatherAPI.com",
-                                            badge = "Khuyên dùng • Mặc định",
+                                            badge = "Nguồn tùy chọn",
                                             badgeColor = Color(0xFF10B981),
-                                            description = "Nguồn thời tiết chính. Gói miễn phí hỗ trợ 3 ngày dự báo; những ngày tiếp theo lấy từ Open-Meteo nếu có dữ liệu.",
+                                            description = "Nguồn có API key. Gói miễn phí hỗ trợ 3 ngày dự báo; Open-Meteo bổ sung những ngày tiếp theo nếu có dữ liệu.",
                                             isSelected = currentWeatherProvider == WeatherProvider.WEATHER_API,
                                             isDark = isDark,
                                             contentColor = contentColor,
@@ -1089,9 +1089,9 @@ fun SettingsDialog(
 
                                         KeyModeSelectCard(
                                             title = "Open-Meteo (Đa mô hình khí tượng)",
-                                            badge = "Đa mô hình • Miễn phí",
+                                            badge = "Khuyên dùng • Mặc định",
                                             badgeColor = Color(0xFFA855F7),
-                                            description = "Mạng lưới khí tượng mở toàn cầu, miễn phí 100% không yêu cầu API Key. Cho phép tự do chọn siêu máy tính (ECMWF Châu Âu, GFS Mỹ, ICON Đức, JMA Nhật Bản).",
+                                            description = "Không cần API key. Best Match tự chọn mô hình theo tọa độ và vùng phủ; mặc định toàn cầu dùng ECMWF IFS HRES 9 km khi không có mô hình khu vực chi tiết hơn.",
                                             isSelected = currentWeatherProvider == WeatherProvider.OPEN_METEO,
                                             isDark = isDark,
                                             contentColor = contentColor,

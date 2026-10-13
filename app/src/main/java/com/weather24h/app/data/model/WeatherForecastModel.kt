@@ -18,7 +18,7 @@ enum class WeatherForecastModel(
     ),
     ECMWF(
         apiValue = "ecmwf_ifs025",
-        title = "ECMWF IFS (Châu Âu)",
+        title = "ECMWF IFS 0,25° (đối chiếu)",
         provider = "Trung tâm Dự báo Thời tiết Hạn vừa Châu Âu",
         description = "Mô hình toàn cầu ECMWF IFS, độ phân giải 0,25°. Có thể dùng để đối chiếu dự báo; độ chính xác mưa phụ thuộc vị trí và thời hạn.",
         badge = "Mô hình toàn cầu",
@@ -44,7 +44,7 @@ enum class WeatherForecastModel(
         apiValue = "jma_seamless",
         title = "JMA GSM (Nhật Bản)",
         provider = "Cục Khí tượng Nhật Bản (JMA)",
-        description = "JMA GSM là mô hình toàn cầu của Nhật Bản. Mô hình khu vực MSM chỉ phủ Nhật Bản; cần đánh giá riêng tại Việt Nam.",
+        description = "JMA GSM toàn cầu có độ phân giải khoảng 55 km. Mô hình MSM chi tiết hơn phủ Nhật Bản và Hàn Quốc; không phủ Việt Nam.",
         badge = "JMA toàn cầu",
         badgeColor = 0xFFEC4899
     ),

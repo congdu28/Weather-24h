@@ -6,11 +6,11 @@
 
 1. `MainActivity` khởi tạo giao diện, xin quyền thông báo và chỉ lấy GPS lúc mở app nếu người dùng bật tùy chọn khởi động bằng GPS.
 2. `WeatherViewModel` đọc thành phố dùng gần nhất (hoặc thành phố mặc định), tải thời tiết và phát trạng thái `Loading` / `Success` / `Error` qua `StateFlow`. Đổi thành phố hoặc làm mới sẽ hủy tác vụ tải cũ. Kéo để làm mới giữ dữ liệu cũ trên màn hình trong lúc tải.
-3. `WeatherRepository` ưu tiên **WeatherAPI.com** cho thời tiết hiện tại và 3 ngày đầu; Open-Meteo bổ sung các ngày tiếp theo nếu có dữ liệu. Có thể chọn Open-Meteo làm nguồn chính. Khi WeatherAPI.com lỗi hoặc chưa có key, app thử Open-Meteo. Giao diện ghi rõ nguồn của từng ngày và chỉ hiện những ngày thực sự nhận được.
+3. Từ v1.0.26, `WeatherRepository` mặc định **Open-Meteo → Best Match** theo tọa độ, lấy dữ liệu hiện tại và 7 ngày dự báo, không cần API key. Khi nâng cấp, cấu hình này được áp dụng một lần; lựa chọn thủ công sau đó được giữ nguyên. WeatherAPI.com vẫn là nguồn tùy chọn: cung cấp hiện tại và 3 ngày đầu, Open-Meteo bổ sung các ngày còn lại.
 4. Sau khi tải, repository lưu dữ liệu bằng `SharedPreferences`, cập nhật widget và kiểm tra cảnh báo nếu đã bật. Nếu cả hai nguồn lỗi, app chỉ dùng cache của cùng vị trí và đánh dấu `isOffline`; nếu không có cache phù hợp, app báo lỗi. Dữ liệu mẫu cũ không còn được dùng.
 5. Gợi ý trang phục được tải sau thời tiết: ưu tiên Gemini khi có API key và phản hồi hợp lệ, sau đó dùng bộ quy tắc nội bộ. App cũng có tìm kiếm thành phố, GPS, danh sách yêu thích, giao diện và cài đặt widget.
 6. `PeriodicWeatherWorker` đồng bộ thời tiết cho widget và thông báo bằng WorkManager khi các tùy chọn tương ứng được bật. Thời gian tự làm mới khi đang mở app được quản lý riêng trong `WeatherViewModel`.
-7. Thẻ sức khỏe dùng `LocalCardGlassBg` và `LocalCardOpacity` chung, không đặt mức trong suốt tối thiểu riêng. Nguồn và giờ cập nhật hiển thị bằng chữ nhỏ ở góc dưới bên phải thẻ thời tiết hiện tại.
+7. Thẻ sức khỏe dùng `LocalCardGlassBg` và `LocalCardOpacity` chung, không đặt mức trong suốt tối thiểu riêng. Giờ cập nhật nằm giữa thẻ thời tiết hiện tại; nguồn hiển thị bằng chữ nhỏ ở cuối trang. UV hiện tại và tầm nhìn được đọc từ phản hồi Open-Meteo khi có dữ liệu.
 
 ## Quy tắc hiển thị mưa
 
@@ -37,7 +37,7 @@
 - Mở thư mục bằng Android Studio với JDK 17 và Android SDK 34. App hỗ trợ Android 8.0 trở lên (`minSdk 26`).
 - Đồng bộ Gradle rồi chạy module `app` trên máy ảo hoặc thiết bị Android.
 - Build APK trên Windows: `./gradlew.bat assembleDebug`. APK nằm trong `app/build/outputs/apk/debug/`.
-- Cấu hình `WEATHER_API_KEY` trong `local.properties`, biến môi trường hoặc Gradle property, hoặc nhập key cá nhân trong cài đặt app. Nếu chưa có key, app dùng Open-Meteo. `GEMINI_API_KEY` dành cho gợi ý trang phục AI. Không đưa key cá nhân vào commit.
+- Mặc định Open-Meteo không cần key. Nếu chọn WeatherAPI.com, cấu hình `WEATHER_API_KEY` trong `local.properties`, biến môi trường hoặc Gradle property, hoặc nhập key cá nhân trong cài đặt app. `GEMINI_API_KEY` dành cho gợi ý trang phục AI. Không đưa key cá nhân vào commit.
 
 ## Phát hành
 

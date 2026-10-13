@@ -280,11 +280,11 @@ fun CurrentWeatherCard(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "${weather.providerName} • ${if (weather.isOffline) "Đã lưu" else "Cập nhật"} ${weather.lastUpdated}",
+                text = "${if (weather.isOffline) "Đã lưu" else "Cập nhật"} ${weather.lastUpdated}",
                 color = subtextColor,
                 fontSize = 9.sp,
                 lineHeight = 12.sp,
-                textAlign = TextAlign.End,
+                textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
         }

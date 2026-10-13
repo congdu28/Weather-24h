@@ -430,6 +430,16 @@ fun WeatherScreen(
                                 WeatherMetricsGrid(weather = weather)
                             }
 
+                            item {
+                                Text(
+                                    text = "Nguồn: ${weather.providerName}${if (weather.isOffline) " • Dữ liệu ngoại tuyến" else ""}",
+                                    color = com.weather24h.app.ui.theme.LocalSubtextColor.current,
+                                    fontSize = 9.sp,
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                                )
+                            }
+
                         }
                     }
                 }

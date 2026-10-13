@@ -10,7 +10,7 @@ enum class WeatherProvider(
         id = "weather_api",
         title = "WeatherAPI.com",
         subtitle = "Thời tiết hiện tại và 3 ngày dự báo; Open-Meteo bổ sung khi cần",
-        badge = "Khuyên dùng • Mặc định"
+        badge = "Nguồn tùy chọn"
     ),
     GOOGLE(
         id = "google",
@@ -21,13 +21,13 @@ enum class WeatherProvider(
     OPEN_METEO(
         id = "open_meteo",
         title = "Open-Meteo",
-        subtitle = "Dữ liệu khí tượng mở toàn cầu, đa siêu máy tính (ECMWF, JMA Nhật Bản,...)",
-        badge = "Đa mô hình • Miễn phí"
+        subtitle = "Chọn mô hình theo tọa độ • Không cần API key",
+        badge = "Khuyên dùng • Mặc định"
     );
 
     companion object {
         fun fromId(id: String?): WeatherProvider {
-            return values().firstOrNull { it.id.equals(id, ignoreCase = true) } ?: WEATHER_API
+            return values().firstOrNull { it.id.equals(id, ignoreCase = true) } ?: OPEN_METEO
         }
     }
 }
