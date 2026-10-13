@@ -12,6 +12,7 @@
 6. `PeriodicWeatherWorker` đồng bộ thời tiết cho widget và thông báo bằng WorkManager khi các tùy chọn tương ứng được bật. Thời gian tự làm mới khi đang mở app được quản lý riêng trong `WeatherViewModel`.
 7. Thẻ sức khỏe dùng `LocalCardGlassBg` và `LocalCardOpacity` chung, không đặt mức trong suốt tối thiểu riêng. Giờ cập nhật nằm giữa thẻ thời tiết hiện tại; nguồn hiển thị bằng chữ nhỏ ở cuối trang. UV hiện tại và tầm nhìn được đọc từ phản hồi Open-Meteo khi có dữ liệu.
 8. Từ v1.0.28, app nâng cấp động cơ nền động thời tiết thời gian thực (Living Dynamic Weather Atmosphere): bọt nước bắn và gợn sóng khi mưa, dông sét đa xung phân nhánh, chùm tia nắng God Rays và hạt bụi nắng lơ lửng, cực quang và sao đêm 4 cánh; bổ sung biểu đồ kép tương tác 24h (Nhiệt độ + Cột lượng mưa + Tương tác chọn giờ); mở rộng tùy biến Widget với 4 phong cách thị giác (Kính mờ, Tối giản, Đổi màu theo thời tiết, Đen OLED) cùng khung xem trước trực tiếp (Live Widget Preview) trong Cài đặt.
+9. Từ v1.0.29, app giải quyết triệt để sự cố WebGL trên bản đồ Windy: cấu hình WebChromeClient chặn hoàn toàn JavaScript `alert()` làm gián đoạn người dùng; tự động chuyển đổi dự phòng thông minh (auto-fallback) sang bản đồ trạm radar 2D RainViewer; tối ưu tăng tốc phần cứng `hardwareAccelerated="true"` và nhúng Windy v2; đồng thời nâng cấp toàn diện mục Địa điểm yêu thích thành danh sách thẻ chuyên nghiệp với nhiệt độ thời gian thực, huy hiệu "Đang xem" và thanh chọn nhanh 1 chạm (FavoriteCitiesQuickBar) trên màn hình chính.
 
 ## Quy tắc hiển thị mưa
 

@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.weather24h.app.BuildConfig
 import com.weather24h.app.data.model.CityLocation
+import com.weather24h.app.data.model.CityWeatherSummary
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.model.WeatherProvider
@@ -95,6 +96,7 @@ class WeatherRepository(
 
             // Lưu vào bộ nhớ đệm ngoại tuyến
             saveCachedWeather(freshWeather)
+            saveFavoriteSummary(location, freshWeather)
 
             // Cập nhật Widget màn hình chính
             WeatherWidgetProvider.updateAllWidgets(context, freshWeather)
@@ -263,6 +265,16 @@ class WeatherRepository(
         return isNowFavorite
     }
 
+    fun removeFavoriteCity(city: CityLocation) {
+        val current = (cachedFavorites ?: getFavoriteCities().toMutableList()).toMutableList()
+        val index = current.indexOfFirst { it.name.equals(city.name, ignoreCase = true) }
+        if (index >= 0) {
+            current.removeAt(index)
+            cachedFavorites = current
+            saveFavoriteCities(current)
+        }
+    }
+
     fun isFavoriteCity(city: CityLocation): Boolean {
         val list = cachedFavorites ?: getFavoriteCities()
         return list.any { it.name.equals(city.name, ignoreCase = true) }
@@ -272,6 +284,39 @@ class WeatherRepository(
         cachedFavorites = ArrayList(list)
         val json = gson.toJson(list)
         prefs.edit().putString("favorite_cities_json", json).apply()
+    }
+
+    fun getFavoriteSummaries(): Map<String, CityWeatherSummary> {
+        val json = prefs.getString("favorite_summaries_json", null) ?: return emptyMap()
+        return try {
+            val type = object : TypeToken<Map<String, CityWeatherSummary>>() {}.type
+            gson.fromJson(json, type) ?: emptyMap()
+        } catch (_: Exception) {
+            emptyMap()
+        }
+    }
+
+    fun saveFavoriteSummary(city: CityLocation, weather: WeatherData) {
+        try {
+            val currentMap = getFavoriteSummaries().toMutableMap()
+            currentMap[city.name.lowercase()] = CityWeatherSummary(
+                cityName = city.name,
+                tempC = weather.current.temperature.toInt(),
+                conditionText = weather.current.condition.text,
+                weatherType = weather.current.condition.type,
+                isDay = weather.current.isDay,
+                updatedAt = System.currentTimeMillis()
+            )
+            val json = gson.toJson(currentMap)
+            prefs.edit().putString("favorite_summaries_json", json).apply()
+        } catch (_: Exception) {}
+    }
+
+    fun saveFavoriteSummaries(summaries: Map<String, CityWeatherSummary>) {
+        try {
+            val json = gson.toJson(summaries)
+            prefs.edit().putString("favorite_summaries_json", json).apply()
+        } catch (_: Exception) {}
     }
 
     // ==========================================

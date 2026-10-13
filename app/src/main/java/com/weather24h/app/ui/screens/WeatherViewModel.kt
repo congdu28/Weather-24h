@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.weather24h.app.data.model.CityLocation
+import com.weather24h.app.data.model.CityWeatherSummary
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.model.WeatherProvider
@@ -14,6 +15,7 @@ import com.weather24h.app.data.repository.WeatherRepository
 import com.weather24h.app.ui.theme.AmbientGlowStyle
 import com.weather24h.app.util.PeriodicWeatherWorker
 import com.weather24h.app.util.WeatherNotificationHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
@@ -34,10 +36,12 @@ sealed interface WeatherUiState {
 }
 
 class WeatherViewModel(application: Application) : AndroidViewModel(application) {
+    private val apiService = WeatherApiService()
+    private val stylistService = GeminiStylistService(application)
     private val repository = WeatherRepository(
         context = application,
-        apiService = WeatherApiService(),
-        stylistService = GeminiStylistService(application)
+        apiService = apiService,
+        stylistService = stylistService
     )
 
     private val _uiState = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading)
@@ -59,6 +63,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     // Danh sách thành phố yêu thích
     private val _favoriteCities = MutableStateFlow<List<CityLocation>>(repository.getFavoriteCities())
     val favoriteCities: StateFlow<List<CityLocation>> = _favoriteCities.asStateFlow()
+
+    // Tóm tắt thời tiết của các thành phố yêu thích (Nhiệt độ, icon, tình trạng)
+    private val _favoriteSummaries = MutableStateFlow<Map<String, CityWeatherSummary>>(repository.getFavoriteSummaries())
+    val favoriteSummaries: StateFlow<Map<String, CityWeatherSummary>> = _favoriteSummaries.asStateFlow()
 
     // Cài đặt thành phố mặc định & khởi động
     private val _defaultCity = MutableStateFlow(repository.getDefaultCity())
@@ -274,6 +282,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             loadWeather(currentCity)
         }
         startAutoRefreshTimer(_autoRefreshMinutes.value)
+        refreshFavoriteSummaries()
     }
 
     /** Dùng thành phố đã lưu nếu lần định vị đầu tiên bị từ chối hoặc thất bại. */
@@ -306,6 +315,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                     outfit = null,
                     isOutfitLoading = true
                 )
+                _favoriteSummaries.value = repository.getFavoriteSummaries()
 
                 // Cập nhật thông báo thời tiết trên status bar nếu đang bật định kỳ
                 if (_periodicNotifHours.value > 0) {
@@ -398,6 +408,50 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     fun toggleFavoriteCity(city: CityLocation) {
         repository.toggleFavoriteCity(city)
         _favoriteCities.value = repository.getFavoriteCities()
+        _favoriteSummaries.value = repository.getFavoriteSummaries()
+        refreshFavoriteSummaries()
+    }
+
+    fun removeFavoriteCity(city: CityLocation) {
+        repository.removeFavoriteCity(city)
+        _favoriteCities.value = repository.getFavoriteCities()
+        _favoriteSummaries.value = repository.getFavoriteSummaries()
+    }
+
+    fun getCurrentSelectedCity(): CityLocation = currentCity
+
+    fun refreshFavoriteSummaries() {
+        val favs = repository.getFavoriteCities()
+        if (favs.isEmpty()) return
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentMap = repository.getFavoriteSummaries().toMutableMap()
+            var hasChanges = false
+            for (city in favs) {
+                val key = city.name.lowercase()
+                val existing = currentMap[key]
+                val now = System.currentTimeMillis()
+                // Cập nhật nếu chưa có thông tin hoặc dữ liệu đã cũ hơn 20 phút
+                if (existing == null || now - existing.updatedAt > 20 * 60 * 1000L) {
+                    try {
+                        val weather = apiService.getFullWeather(city, repository.getForecastModel())
+                        currentMap[key] = CityWeatherSummary(
+                            cityName = city.name,
+                            tempC = weather.current.temperature.toInt(),
+                            conditionText = weather.current.condition.text,
+                            weatherType = weather.current.condition.type,
+                            isDay = weather.current.isDay,
+                            updatedAt = now
+                        )
+                        hasChanges = true
+                    } catch (_: Exception) {}
+                }
+            }
+            if (hasChanges) {
+                repository.saveFavoriteSummaries(currentMap)
+                _favoriteSummaries.value = currentMap
+            }
+        }
     }
 
     fun isFavoriteCity(city: CityLocation): Boolean {

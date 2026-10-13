@@ -52,6 +52,7 @@ fun WeatherScreen(
     val autoRefreshMinutes by viewModel.autoRefreshMinutes.collectAsState()
 
     val favoriteCities by viewModel.favoriteCities.collectAsState()
+    val favoriteSummaries by viewModel.favoriteSummaries.collectAsState()
     val defaultCity by viewModel.defaultCity.collectAsState()
     val isStartWithGps by viewModel.isStartWithGps.collectAsState()
     val isMorningNotif by viewModel.isMorningNotif.collectAsState()
@@ -371,6 +372,21 @@ fun WeatherScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
+                            // 0. Thanh chuyển đổi nhanh Địa điểm Yêu thích & GPS
+                            if (favoriteCities.isNotEmpty()) {
+                                item {
+                                    FavoriteCitiesQuickBar(
+                                        currentCityName = weather.location.name,
+                                        isCurrentGps = weather.location.isCurrentLocation,
+                                        favoriteCities = favoriteCities,
+                                        favoriteSummaries = favoriteSummaries,
+                                        onSelectCity = { city -> viewModel.loadWeather(city) },
+                                        onSelectGps = { onRequestGps(false) },
+                                        onOpenSearch = { showSearchDialog = true }
+                                    )
+                                }
+                            }
+
                             // 1. Current Weather Hero Card (With Favorite Star ⭐)
                             item {
                                 val isFav = remember(favoriteCities, weather.location.name) {
@@ -449,6 +465,7 @@ fun WeatherScreen(
 
         // Dialogs
         if (showSearchDialog) {
+            val currentCityName = (uiState as? WeatherUiState.Success)?.weather?.location?.name ?: ""
             CitySearchDialog(
                 onDismiss = { showSearchDialog = false },
                 onSearch = { viewModel.searchCities(it) },
@@ -461,6 +478,8 @@ fun WeatherScreen(
                     onRequestGps(false)
                 },
                 favoriteCities = favoriteCities,
+                currentCityName = currentCityName,
+                favoriteSummaries = favoriteSummaries,
                 onToggleFavorite = { city ->
                     viewModel.toggleFavoriteCity(city)
                 }

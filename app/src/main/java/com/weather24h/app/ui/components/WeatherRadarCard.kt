@@ -3,10 +3,19 @@ package com.weather24h.app.ui.components
 import android.annotation.SuppressLint
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.ConsoleMessage
+import android.webkit.JsPromptResult
+import android.webkit.JsResult
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +43,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.ui.theme.LocalCardOpacity
-import com.weather24h.app.ui.theme.LocalContentTextColor
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
 import com.weather24h.app.ui.theme.LocalSubtextColor
 import java.util.Locale
@@ -45,10 +54,13 @@ fun WeatherRadarCard(
     modifier: Modifier = Modifier
 ) {
     var showFullscreenDialog by remember { mutableStateOf(false) }
-    // Nguồn Radar: "windy" (Mượt nhất dùng WebGL GPU) hoặc "rainviewer" (Trạm mặt đất)
+    // Nguồn Radar: "windy" (Mượt nhất dùng WebGL GPU) hoặc "rainviewer" (Trạm mặt đất 2D tương thích cao)
     var selectedEngine by remember { mutableStateOf("windy") }
     // Lớp hiển thị: "radar" (Mưa), "satellite" (Mây), "wind" (Gió - hỗ trợ trên Windy)
     var selectedLayer by remember { mutableStateOf("radar") }
+    // Trạng thái sự cố WebGL trên thiết bị để hiển thị thông báo và tự động chuyển sang RainViewer
+    var hasWebGLError by remember { mutableStateOf(false) }
+    var reloadKey by remember { mutableIntStateOf(0) }
 
     val isDark = LocalIsDarkTheme.current
     val cardOpacity = LocalCardOpacity.current
@@ -57,6 +69,15 @@ fun WeatherRadarCard(
     val lat = weather.location.latitude
     val lon = weather.location.longitude
     val accentColor = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
+
+    // Xử lý khi WebGL của Windy bị lỗi trên một số GPU/thiết bị
+    val onRadarFailure: (String) -> Unit = { _ ->
+        hasWebGLError = true
+        if (selectedEngine == "windy") {
+            selectedEngine = "rainviewer"
+            if (selectedLayer == "wind") selectedLayer = "radar"
+        }
+    }
 
     // Hàm tạo URL bản đồ động theo Engine và Layer
     fun buildMapUrl(engine: String, layer: String, isFullscreen: Boolean): String {
@@ -68,7 +89,9 @@ fun WeatherRadarCard(
                 else -> "radar"
             }
             val product = if (layer == "wind") "ecmwf" else windyOverlay
-            "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=km%2Fh&zoom=$zoom&overlay=$windyOverlay&product=$product&level=surface&lat=$lat&lon=$lon"
+            // Dùng embed2.html với message=false và radarRange=-1 để tối ưu hoá nhúng Windy v2,
+            // hạn chế tối đa các thông báo nổi popup không cần thiết từ script bên ngoài.
+            "https://embed.windy.com/embed2.html?lat=$lat&lon=$lon&zoom=$zoom&level=surface&overlay=$windyOverlay&product=$product&menu=&message=false&marker=&calendar=now&pressure=&type=map&location=coordinates&metricRain=mm&metricTemp=%C2%B0C&metricWind=km%2Fh&radarRange=-1"
         } else {
             val zoom = if (isFullscreen) 9 else 8
             val rvLayer = if (layer == "satellite") "satellite" else "radar"
@@ -119,7 +142,7 @@ fun WeatherRadarCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = if (selectedEngine == "windy") "Windy WebGL • Siêu mượt & Sắc nét" else "RainViewer • Trạm Radar thực tế",
+                            text = if (selectedEngine == "windy") "Windy WebGL • Trực quan & Sắc nét" else "RainViewer • Trạm Radar 2D Ổn định",
                             color = subtextColor,
                             fontSize = 10.5.sp,
                             maxLines = 1,
@@ -128,36 +151,64 @@ fun WeatherRadarCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(6.dp))
 
-                // Nút Phóng to toàn màn hình
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = if (isDark) Color(0xFF38BDF8).copy(alpha = 0.18f) else Color(0xFFE0F2FE),
-                    border = BorderStroke(
-                        1.dp,
-                        if (isDark) Color(0xFF38BDF8).copy(alpha = 0.45f) else Color(0xFF0284C7).copy(alpha = 0.4f)
-                    ),
-                    modifier = Modifier.clickable { showFullscreenDialog = true }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    // Nút làm mới radar
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFF1F5F9),
+                        border = BorderStroke(
+                            1.dp,
+                            if (isDark) Color.White.copy(alpha = 0.12f) else Color(0xFFCBD5E1)
+                        ),
+                        modifier = Modifier.clickable { reloadKey++ }
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Fullscreen,
-                            contentDescription = "Toàn màn hình",
-                            tint = accentColor,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = "Phóng to",
-                            color = accentColor,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1
-                        )
+                        Box(
+                            modifier = Modifier.padding(6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Làm mới Radar",
+                                tint = accentColor,
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
+                    }
+
+                    // Nút Phóng to toàn màn hình
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = if (isDark) Color(0xFF38BDF8).copy(alpha = 0.18f) else Color(0xFFE0F2FE),
+                        border = BorderStroke(
+                            1.dp,
+                            if (isDark) Color(0xFF38BDF8).copy(alpha = 0.45f) else Color(0xFF0284C7).copy(alpha = 0.4f)
+                        ),
+                        modifier = Modifier.clickable { showFullscreenDialog = true }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Fullscreen,
+                                contentDescription = "Toàn màn hình",
+                                tint = accentColor,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "Phóng to",
+                                color = accentColor,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }
@@ -173,11 +224,14 @@ fun WeatherRadarCard(
                     title = "⚡ Windy (Mượt nhất)",
                     isSelected = selectedEngine == "windy",
                     isDark = isDark,
-                    onClick = { selectedEngine = "windy" },
+                    onClick = {
+                        hasWebGLError = false
+                        selectedEngine = "windy"
+                    },
                     modifier = Modifier.weight(1f)
                 )
                 LayerPill(
-                    title = "📡 RainViewer",
+                    title = "📡 RainViewer (Tương thích 100%)",
                     isSelected = selectedEngine == "rainviewer",
                     isDark = isDark,
                     onClick = {
@@ -189,6 +243,54 @@ fun WeatherRadarCard(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Thông báo cảnh báo WebGL thông minh (nếu máy có GPU không hỗ trợ WebGL đầy đủ)
+            AnimatedVisibility(
+                visible = hasWebGLError,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFF59E0B).copy(alpha = if (isDark) 0.18f else 0.12f),
+                    border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.4f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.WarningAmber,
+                            contentDescription = null,
+                            tint = Color(0xFFF59E0B),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "WebGL chưa sẵn sàng trên máy này. Đã tự động chuyển sang bản đồ RainViewer ổn định.",
+                            color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E),
+                            fontSize = 10.5.sp,
+                            lineHeight = 14.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Thử lại",
+                            color = Color(0xFF38BDF8),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable {
+                                hasWebGLError = false
+                                selectedEngine = "windy"
+                                reloadKey++
+                            }
+                        )
+                    }
+                }
+            }
 
             // Hàng 2: Bộ chọn Lớp (Mưa / Mây / Gió)
             Row(
@@ -243,30 +345,15 @@ fun WeatherRadarCard(
                     }
                 } else {
                     val previewUrl = buildMapUrl(selectedEngine, selectedLayer, isFullscreen = false)
-                    key(selectedEngine, selectedLayer, lat, lon) {
+                    key(selectedEngine, selectedLayer, lat, lon, reloadKey) {
                         AndroidView(
                             factory = { ctx ->
                                 WebView(ctx).apply {
-                                    layoutParams = ViewGroup.LayoutParams(
-                                        ViewGroup.LayoutParams.MATCH_PARENT,
-                                        ViewGroup.LayoutParams.MATCH_PARENT
+                                    configureRadarWebView(
+                                        webView = this,
+                                        url = previewUrl,
+                                        onFallbackNeeded = onRadarFailure
                                     )
-                                    // Bật tăng tốc phần cứng GPU để không tụt FPS
-                                    setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                                    isVerticalScrollBarEnabled = false
-                                    isHorizontalScrollBarEnabled = false
-                                    overScrollMode = View.OVER_SCROLL_NEVER
-
-                                    settings.apply {
-                                        javaScriptEnabled = true
-                                        domStorageEnabled = true
-                                        cacheMode = WebSettings.LOAD_DEFAULT
-                                        useWideViewPort = true
-                                        loadWithOverviewMode = true
-                                    }
-                                    webViewClient = WebViewClient()
-                                    webChromeClient = WebChromeClient()
-                                    loadUrl(previewUrl)
                                 }
                             },
                             modifier = Modifier.fillMaxSize()
@@ -368,12 +455,15 @@ fun WeatherRadarCard(
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        // Bộ chọn Nguồn & Lớp thu nhỏ trong thanh công cụ Fullscreen
+                        // Bộ chọn Nguồn thu nhỏ trong thanh công cụ Fullscreen
                         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Surface(
                                 shape = RoundedCornerShape(7.dp),
                                 color = if (selectedEngine == "windy") Color(0xFF38BDF8) else Color.White.copy(alpha = 0.12f),
-                                modifier = Modifier.clickable { selectedEngine = "windy" }
+                                modifier = Modifier.clickable {
+                                    hasWebGLError = false
+                                    selectedEngine = "windy"
+                                }
                             ) {
                                 Text(
                                     text = "Windy",
@@ -459,25 +549,15 @@ fun WeatherRadarCard(
                     // Bản đồ tương tác toàn màn hình (Cho phép xoay, kéo, zoom, xem loop)
                     Box(modifier = Modifier.weight(1f)) {
                         val fullUrl = buildMapUrl(selectedEngine, selectedLayer, isFullscreen = true)
-                        key(selectedEngine, selectedLayer, lat, lon) {
+                        key(selectedEngine, selectedLayer, lat, lon, reloadKey) {
                             AndroidView(
                                 factory = { ctx ->
                                     WebView(ctx).apply {
-                                        layoutParams = ViewGroup.LayoutParams(
-                                            ViewGroup.LayoutParams.MATCH_PARENT,
-                                            ViewGroup.LayoutParams.MATCH_PARENT
+                                        configureRadarWebView(
+                                            webView = this,
+                                            url = fullUrl,
+                                            onFallbackNeeded = onRadarFailure
                                         )
-                                        setLayerType(View.LAYER_TYPE_HARDWARE, null)
-                                        settings.apply {
-                                            javaScriptEnabled = true
-                                            domStorageEnabled = true
-                                            cacheMode = WebSettings.LOAD_DEFAULT
-                                            useWideViewPort = true
-                                            loadWithOverviewMode = true
-                                        }
-                                        webViewClient = WebViewClient()
-                                        webChromeClient = WebChromeClient()
-                                        loadUrl(fullUrl)
                                     }
                                 },
                                 modifier = Modifier.fillMaxSize()
@@ -498,6 +578,118 @@ fun WeatherRadarCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * Cấu hình WebView chuyên biệt cho Radar WebGL và bản đồ khí tượng:
+ * - Kích hoạt tăng tốc phần cứng GPU để đạt 60-120fps.
+ * - Chặn đứng các hộp thoại alert() native của JavaScript từ iframe Windy làm gián đoạn người dùng.
+ * - Tự động phát hiện lỗi WebGL/GPU để chuyển đổi dự phòng mượt mà sang RainViewer.
+ */
+private fun configureRadarWebView(
+    webView: WebView,
+    url: String,
+    onFallbackNeeded: (String) -> Unit
+) {
+    webView.apply {
+        layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+        )
+        // Kích hoạt phần cứng GPU
+        setLayerType(View.LAYER_TYPE_HARDWARE, null)
+        isVerticalScrollBarEnabled = false
+        isHorizontalScrollBarEnabled = false
+        overScrollMode = View.OVER_SCROLL_NEVER
+
+        settings.apply {
+            javaScriptEnabled = true
+            domStorageEnabled = true
+            databaseEnabled = true
+            allowFileAccess = true
+            allowContentAccess = true
+            mediaPlaybackRequiresUserGesture = false
+            setSupportMultipleWindows(false)
+            javaScriptCanOpenWindowsAutomatically = false
+            cacheMode = WebSettings.LOAD_DEFAULT
+            useWideViewPort = true
+            loadWithOverviewMode = true
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        }
+
+        webViewClient = object : WebViewClient() {
+            override fun onRenderProcessGone(
+                view: WebView?,
+                detail: RenderProcessGoneDetail?
+            ): Boolean {
+                onFallbackNeeded("Tiến trình kết xuất đồ họa WebView gặp sự cố.")
+                return true // Ngăn ngừa sập ứng dụng chính
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                error: WebResourceError?
+            ) {
+                super.onReceivedError(view, request, error)
+            }
+        }
+
+        webChromeClient = object : WebChromeClient() {
+            // Chặn đứng hoàn toàn hộp thoại window.alert() của Windy khi gặp sự cố WebGL
+            override fun onJsAlert(
+                view: WebView?,
+                url: String?,
+                message: String?,
+                result: JsResult?
+            ): Boolean {
+                result?.confirm() // Giải phóng ngay lập tức luồng JS để không bị đơ
+                val msg = message.orEmpty()
+                if (msg.contains("radar failed", ignoreCase = true) ||
+                    msg.contains("webgl", ignoreCase = true) ||
+                    msg.contains("hardware", ignoreCase = true) ||
+                    msg.contains("graphics", ignoreCase = true)) {
+                    onFallbackNeeded("Radar Windy không hỗ trợ WebGL trên thiết bị này.")
+                }
+                return true // Chặn không hiển thị Android modal alert dialog!
+            }
+
+            override fun onJsConfirm(
+                view: WebView?,
+                url: String?,
+                message: String?,
+                result: JsResult?
+            ): Boolean {
+                result?.confirm()
+                return true
+            }
+
+            override fun onJsPrompt(
+                view: WebView?,
+                url: String?,
+                message: String?,
+                defaultValue: String?,
+                result: JsPromptResult?
+            ): Boolean {
+                result?.confirm()
+                return true
+            }
+
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                val msg = consoleMessage?.message().orEmpty()
+                if (msg.contains("webgl", ignoreCase = true) &&
+                    (msg.contains("failed", ignoreCase = true) ||
+                     msg.contains("context lost", ignoreCase = true) ||
+                     msg.contains("not supported", ignoreCase = true) ||
+                     msg.contains("error", ignoreCase = true))) {
+                    onFallbackNeeded("WebGL error: $msg")
+                }
+                return true
+            }
+        }
+
+        loadUrl(url)
     }
 }
 
