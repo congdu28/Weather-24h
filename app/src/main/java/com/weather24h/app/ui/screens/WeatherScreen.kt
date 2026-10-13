@@ -63,6 +63,7 @@ fun WeatherScreen(
     val ambientGlowIntensity by viewModel.ambientGlowIntensity.collectAsState()
     val widgetThemeMode by viewModel.widgetThemeMode.collectAsState()
     val widgetOpacity by viewModel.widgetOpacity.collectAsState()
+    val widgetStyle by viewModel.widgetStyle.collectAsState()
     val isWidgetAutoRefresh by viewModel.isWidgetAutoRefresh.collectAsState()
     val forecastModel by viewModel.forecastModel.collectAsState()
     val weatherProvider by viewModel.weatherProvider.collectAsState()
@@ -491,6 +492,7 @@ fun WeatherScreen(
                 ambientGlowIntensity = ambientGlowIntensity,
                 widgetThemeMode = widgetThemeMode,
                 widgetOpacity = widgetOpacity,
+                widgetStyle = widgetStyle,
                 isWidgetAutoRefresh = isWidgetAutoRefresh,
                 forecastModel = forecastModel,
                 favoriteCities = favoriteCities,
@@ -514,6 +516,7 @@ fun WeatherScreen(
 
                 onSelectWidgetThemeMode = { viewModel.setWidgetThemeMode(it) },
                 onSetWidgetOpacity = { viewModel.setWidgetOpacity(it) },
+                onSelectWidgetStyle = { viewModel.setWidgetStyle(it) },
                 onSetWidgetAutoRefresh = { viewModel.setWidgetAutoRefresh(it) },
                 onSelectForecastModel = { viewModel.setForecastModel(it) },
                 onSelectPeriodicNotifHours = { viewModel.setPeriodicNotifHours(it) },

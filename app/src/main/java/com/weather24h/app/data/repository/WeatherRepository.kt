@@ -8,6 +8,7 @@ import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.model.WeatherProvider
+import com.weather24h.app.data.model.WidgetStyle
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.GoogleWeatherApiService
 import com.weather24h.app.data.remote.WeatherApiComService
@@ -395,6 +396,19 @@ class WeatherRepository(
 
     fun setWidgetAutoRefreshEnabled(enabled: Boolean) {
         prefs.edit().putBoolean("widget_auto_refresh_enabled", enabled).apply()
+    }
+
+    fun getWidgetStyle(): WidgetStyle {
+        val str = prefs.getString("widget_visual_style", WidgetStyle.FROSTED_GLASS.name)
+        return try {
+            WidgetStyle.valueOf(str ?: WidgetStyle.FROSTED_GLASS.name)
+        } catch (_: Exception) {
+            WidgetStyle.FROSTED_GLASS
+        }
+    }
+
+    fun setWidgetStyle(style: WidgetStyle) {
+        prefs.edit().putString("widget_visual_style", style.name).apply()
     }
 
     // ==========================================

@@ -7,6 +7,7 @@ import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.model.WeatherProvider
+import com.weather24h.app.data.model.WidgetStyle
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
@@ -101,6 +102,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _widgetOpacity = MutableStateFlow(repository.getWidgetOpacity())
     val widgetOpacity: StateFlow<Float> = _widgetOpacity.asStateFlow()
 
+    private val _widgetStyle = MutableStateFlow(repository.getWidgetStyle())
+    val widgetStyle: StateFlow<WidgetStyle> = _widgetStyle.asStateFlow()
+
     // Cài đặt Tự động làm mới Widget (1h/lần)
     private val _isWidgetAutoRefresh = MutableStateFlow(repository.isWidgetAutoRefreshEnabled())
     val isWidgetAutoRefresh: StateFlow<Boolean> = _isWidgetAutoRefresh.asStateFlow()
@@ -144,6 +148,12 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         val clamped = opacity.coerceIn(0.0f, 1.0f)
         _widgetOpacity.value = clamped
         repository.setWidgetOpacity(clamped)
+        com.weather24h.app.ui.widget.WeatherWidgetProvider.updateAllWidgets(getApplication())
+    }
+
+    fun setWidgetStyle(style: WidgetStyle) {
+        _widgetStyle.value = style
+        repository.setWidgetStyle(style)
         com.weather24h.app.ui.widget.WeatherWidgetProvider.updateAllWidgets(getApplication())
     }
 

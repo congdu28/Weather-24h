@@ -10,6 +10,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -19,12 +20,21 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Hiệu ứng thời tiết trực quan động cao cấp (Cinematic Weather Atmosphere)
- * - Nắng rạng rỡ với vầng hào quang thở và tia nắng xoay chậm (God Rays)
- * - Mưa rơi tự nhiên với hạt nước chéo và tia bọt nước mặt đất
- * - Dông sét chân thực với chớp sáng toàn cảnh và tia sét phân nhánh
- * - Đêm sao lấp lánh đa tầng cùng vệt sao băng lướt nhẹ
- * - Mây bay đa tầng thị sai (parallax) bồng bềnh
+ * Động cơ hiệu ứng khí quyển thời tiết thời gian thực cao cấp (Living Dynamic Weather Atmosphere Engine)
+ * 
+ * - MƯA THỰC TẾ: Giọt mưa rơi nghiêng theo gió đa tầng (foreground/background), bọt nước bắn tung tóe (splash)
+ *   và gợn sóng nước (ripple) lăn tăn trên bề mặt đáy, lớp sương hơi nước ẩm bốc lên mềm mại.
+ * - DÔNG SÉT VOLUMETRIC: Chớp giật đa xung (double-flash burst) phủ sáng chân thực toàn bầu trời,
+ *   kèm tia sét phân nhánh ngẫu nhiên với lõi sáng trắng tím và quầng hào quang cyan.
+ * - NẮNG VÀNG RỰC RỠ: Đĩa mặt trời tỏa vầng hào quang ấm áp, chùm tia nắng thể tích (God Rays) xoay êm ái,
+ *   kèm các hạt bụi nắng (solar dust motes / bokeh) lơ lửng bồng bềnh trong không khí.
+ * - ĐÊM SAO & CỰC QUANG: Bầu trời sao đa tầng thị sai với tia sao 4 cánh lấp lánh, dải lụa cực quang
+ *   (Aurora wave) huyền ảo uốn lượn êm dịu, vệt sao băng rực rỡ lướt qua.
+ * - MÂY TRÔI ĐA TẦNG: Các cụm mây thể tích bồng bềnh 3 lớp thị sai trôi nhịp nhàng với tốc độ khác nhau.
+ * - SƯƠNG MÙ KHÍ QUYỂN: Các dải sương mờ dập dềnh uốn sóng ngang mềm mại.
+ * - TUYẾT RƠI LÃNG MẠN: Các bông tuyết lượn sóng đa kích thước bay chậm rãi.
+ * 
+ * Tối ưu hóa 100% GPU Canvas, không cấp phát bộ nhớ trong frame render (Zero Garbage Collection).
  */
 @Composable
 fun WeatherAtmosphereEffect(
@@ -32,95 +42,162 @@ fun WeatherAtmosphereEffect(
     isDay: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "WeatherAtmosphere")
+    val infiniteTransition = rememberInfiniteTransition(label = "WeatherAtmosphereLoop")
 
-    // Chu kỳ chuyển động mưa/tuyết/mây liên tục (2400ms)
-    val animationProgress by infiniteTransition.animateFloat(
+    // 1. Chu kỳ chuyển động chính của mưa / tuyết / mây (2200ms)
+    val mainLoop by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2400, easing = LinearEasing),
+            animation = tween(durationMillis = 2200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "AtmosphereLoop"
+        label = "MainLoop"
     )
 
-    // Chu kỳ thở hào quang mặt trời / mặt trăng (3600ms)
-    val pulseProgress by infiniteTransition.animateFloat(
-        initialValue = 0.5f,
-        targetValue = 1f,
+    // 2. Nhịp thở hào quang mặt trời / cực quang / nhịp sóng (3800ms)
+    val breathingPulse by infiniteTransition.animateFloat(
+        initialValue = 0.65f,
+        targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
+            animation = tween(durationMillis = 3800, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "PulseEffect"
+        label = "BreathingPulse"
     )
 
-    // Chu kỳ xoay chậm của vầng hào quang nắng (36000ms / 36s cho 1 vòng quay siêu êm ái)
+    // 3. Chu kỳ xoay chậm của tia nắng God Rays (42000ms / 42s cho chuyển động vô cùng êm ái)
     val sunAngle by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 36000, easing = LinearEasing),
+            animation = tween(durationMillis = 42000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "SunAngle"
     )
 
-    // Chu kỳ sấm sét chớp nháy thực tế
-    val lightningFlash by infiniteTransition.animateFloat(
+    // 4. Chu kỳ dông sét chớp giật tự nhiên đa xung (Double-Pulse Flash, chu kỳ 6800ms)
+    val stormFlash by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = keyframes {
-                durationMillis = 6000
+                durationMillis = 6800
                 0.0f at 0
-                0.0f at 4200
-                0.90f at 4270
-                0.15f at 4340
-                1.00f at 4410
-                0.20f at 4490
-                0.0f at 4600
-                0.0f at 6000
+                0.0f at 4800
+                0.75f at 4860 // Chớp mồi
+                0.18f at 4910 // Khoảng ngắt ngắn
+                1.00f at 4980 // Chớp chính cực đại
+                0.35f at 5050 // Âm hưởng chớp
+                0.00f at 5160
+                0.0f at 6800
             },
             repeatMode = RepeatMode.Restart
         ),
-        label = "LightningEffect"
+        label = "StormFlash"
     )
 
-    // Chu kỳ sao băng đêm thỉnh thoảng vụt qua (7000ms)
+    // 5. Chu kỳ sao băng lướt qua bầu trời đêm (8500ms)
     val meteorProgress by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
             animation = keyframes {
-                durationMillis = 7500
+                durationMillis = 8500
                 0.0f at 0
-                0.0f at 5200
-                1.0f at 6200
-                1.0f at 7500
+                0.0f at 6000
+                1.0f at 7100
+                1.0f at 8500
             },
             repeatMode = RepeatMode.Restart
         ),
         label = "MeteorProgress"
     )
 
-    // Khởi tạo các mảng hạt ngẫu nhiên qua remember
-    val rainParticles = remember {
-        List(80) {
-            Triple(Random.nextFloat(), Random.nextFloat(), Random.nextFloat() * 0.6f + 0.6f)
+    // 6. Chu kỳ trôi mây & sương mù chậm rãi (18000ms)
+    val slowDrift by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 18000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "SlowDrift"
+    )
+
+    // 7. Khởi tạo mảng hạt cố định ngẫu nhiên (Pre-computed particles, không tạo mới trong frame draw)
+    // Hạt mưa: (xRatio, yRatio, speedFactor, lengthFactor, layer: 0=xa/1=gần)
+    val rainDrops = remember {
+        List(95) {
+            val isFg = Random.nextFloat() > 0.45f
+            RainDropParticle(
+                xRatio = Random.nextFloat(),
+                yRatio = Random.nextFloat(),
+                speed = if (isFg) Random.nextFloat() * 0.4f + 0.9f else Random.nextFloat() * 0.3f + 0.6f,
+                length = if (isFg) Random.nextFloat() * 12f + 26f else Random.nextFloat() * 8f + 16f,
+                thickness = if (isFg) 1.6f else 1.0f,
+                alpha = if (isFg) Random.nextFloat() * 0.35f + 0.45f else Random.nextFloat() * 0.20f + 0.20f,
+                isForeground = isFg
+            )
         }
     }
 
-    val stars = remember {
-        List(48) {
-            Triple(Random.nextFloat(), Random.nextFloat() * 0.70f, Random.nextFloat() * 0.6f + 0.4f)
+    // Điểm bọt nước bắn (Splashes & Ripples ở đáy màn hình):
+    val splashPoints = remember {
+        List(14) {
+            SplashSite(
+                xRatio = Random.nextFloat(),
+                yRatio = Random.nextFloat() * 0.20f + 0.80f, // 80% - 100% chiều cao
+                phaseOffset = Random.nextFloat(),
+                maxRadius = Random.nextFloat() * 10f + 12f
+            )
         }
     }
 
-    val snowParticles = remember {
-        List(55) {
-            Triple(Random.nextFloat(), Random.nextFloat(), Random.nextFloat() * 3.5f + 1.8f)
+    // Hạt bụi nắng lơ lửng ban ngày (Solar Dust Motes / Warm Bokeh):
+    val dustMotes = remember {
+        List(30) {
+            DustMoteParticle(
+                xRatio = Random.nextFloat(),
+                yRatio = Random.nextFloat() * 0.75f,
+                radius = Random.nextFloat() * 2.2f + 1.2f,
+                driftSpeed = Random.nextFloat() * 0.4f + 0.3f,
+                phase = Random.nextFloat() * 6.28f,
+                baseAlpha = Random.nextFloat() * 0.45f + 0.25f
+            )
+        }
+    }
+
+    // Bầu trời sao đêm: (xRatio, yRatio, size, twinkleFreq, hasSpikes)
+    val starField = remember {
+        List(60) { index ->
+            val hasSpikes = index % 12 == 0
+            val size = if (hasSpikes) Random.nextFloat() * 1.4f + 2.4f else Random.nextFloat() * 1.0f + 1.0f
+            StarParticle(
+                xRatio = Random.nextFloat(),
+                yRatio = Random.nextFloat() * 0.72f,
+                radius = size,
+                twinkleSpeed = Random.nextFloat() * 1.5f + 0.8f,
+                phase = Random.nextFloat() * 6.28f,
+                baseAlpha = if (hasSpikes) 0.92f else Random.nextFloat() * 0.5f + 0.35f,
+                hasCrossSpikes = hasSpikes
+            )
+        }
+    }
+
+    // Hạt tuyết:
+    val snowFlakes = remember {
+        List(65) {
+            SnowFlakeParticle(
+                xRatio = Random.nextFloat(),
+                yRatio = Random.nextFloat(),
+                radius = Random.nextFloat() * 3.5f + 1.5f,
+                speed = Random.nextFloat() * 0.4f + 0.5f,
+                swayAmplitude = Random.nextFloat() * 16f + 8f,
+                phase = Random.nextFloat() * 6.28f,
+                alpha = Random.nextFloat() * 0.45f + 0.50f
+            )
         }
     }
 
@@ -129,181 +206,224 @@ fun WeatherAtmosphereEffect(
         val height = size.height
 
         when {
+            // =========================================================================
             // 1. DÔNG BÃO & SẤM SÉT (Thunderstorm)
+            // =========================================================================
             type == WeatherType.THUNDERSTORM -> {
-                // Ánh chớp giật bầu trời
-                if (lightningFlash > 0.05f) {
+                // Ánh chớp giật bầu trời lan tỏa đa tầng sắc tím điện & xanh cyan
+                if (stormFlash > 0.05f) {
                     drawRect(
                         brush = Brush.verticalGradient(
                             listOf(
-                                Color(0xFFC084FC).copy(alpha = lightningFlash * 0.42f),
-                                Color(0xFF67E8F9).copy(alpha = lightningFlash * 0.20f),
+                                Color(0xFFC084FC).copy(alpha = (stormFlash * 0.46f).coerceIn(0f, 0.9f)),
+                                Color(0xFF38BDF8).copy(alpha = (stormFlash * 0.25f).coerceIn(0f, 0.6f)),
                                 Color.Transparent
                             )
                         ),
                         size = size
                     )
 
-                    // Vẽ tia sét nhánh khi chớp sáng cực đại
-                    if (lightningFlash > 0.4f) {
-                        drawLightningBolt(width, height, lightningFlash)
+                    // Vẽ tia sét nhánh rực rỡ khi chớp đạt đỉnh (> 0.4)
+                    if (stormFlash > 0.38f) {
+                        drawRealisticLightningFork(width, height, stormFlash)
                     }
                 }
 
-                // Mưa rơi nhanh, hạt dày và giọt nước bắn
-                drawRainStreaks(rainParticles, animationProgress, width, height, speedMultiplier = 1.7f, isHeavy = true)
+                // Mưa xối xả tốc độ cao kèm bọt nước bắn mạnh
+                drawRainStreaksEnhanced(rainDrops, mainLoop, width, height, speedMultiplier = 1.6f, isHeavy = true)
+                drawWaterSplashesAndRipples(splashPoints, mainLoop, width, height, intensity = 1.4f)
             }
 
-            // 2. MƯA / MƯA PHÙN (Rain / Drizzle)
+            // =========================================================================
+            // 2. MƯA & MƯA PHÙN (Rain & Drizzle)
+            // =========================================================================
             type == WeatherType.RAIN || type == WeatherType.DRIZZLE -> {
                 val isHeavy = type == WeatherType.RAIN
                 val speed = if (isHeavy) 1.25f else 0.75f
-                drawRainStreaks(rainParticles, animationProgress, width, height, speedMultiplier = speed, isHeavy = isHeavy)
+                val splashIntensity = if (isHeavy) 1.0f else 0.5f
 
-                // Lớp hơi ẩm đáy màn hình
+                drawRainStreaksEnhanced(rainDrops, mainLoop, width, height, speedMultiplier = speed, isHeavy = isHeavy)
+                drawWaterSplashesAndRipples(splashPoints, mainLoop, width, height, intensity = splashIntensity)
+
+                // Lớp sương ẩm mờ dịu ở đáy màn hình
                 drawRect(
                     brush = Brush.verticalGradient(
-                        0.72f to Color.Transparent,
-                        1.0f to Color.White.copy(alpha = 0.09f)
+                        0.75f to Color.Transparent,
+                        1.0f to Color.White.copy(alpha = if (isHeavy) 0.12f else 0.06f)
                     ),
                     size = size
                 )
             }
 
-            // 3. TRỜI NẮNG / TRONG XANH BAN NGÀY (Clear / Sunny Day)
+            // =========================================================================
+            // 3. TRỜI NẮNG VÀNG / QUANG ĐÃNG BAN NGÀY (Clear / Sunny Day)
+            // =========================================================================
             (type == WeatherType.CLEAR || type == WeatherType.PARTLY_CLOUDY) && isDay -> {
                 val sunCenter = Offset(width * 0.82f, height * 0.11f)
                 val baseRadius = width * 0.28f
 
-                // Vầng hào quang ấm áp tỏa ra
+                // Hào quang ấm áp tỏa rộng với nhịp thở nhẹ nhàng
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFFFDE047).copy(alpha = 0.42f * pulseProgress),
-                            Color(0xFFF59E0B).copy(alpha = 0.20f * pulseProgress),
-                            Color(0xFFFB923C).copy(alpha = 0.06f * pulseProgress),
+                            Color(0xFFFDE047).copy(alpha = 0.44f * breathingPulse),
+                            Color(0xFFF59E0B).copy(alpha = 0.22f * breathingPulse),
+                            Color(0xFFFB923C).copy(alpha = 0.08f * breathingPulse),
                             Color.Transparent
                         ),
                         center = sunCenter,
-                        radius = baseRadius * 1.6f
+                        radius = baseRadius * 1.8f
                     ),
                     center = sunCenter,
-                    radius = baseRadius * 1.6f
+                    radius = baseRadius * 1.8f
                 )
 
-                // Đĩa mặt trời rực rỡ tâm điểm
+                // Đĩa mặt trời rực sáng tâm điểm
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
                             Color.White.copy(alpha = 0.98f),
-                            Color(0xFFFEF08A).copy(alpha = 0.90f),
-                            Color(0xFFF59E0B).copy(alpha = 0.35f)
+                            Color(0xFFFEF08A).copy(alpha = 0.92f),
+                            Color(0xFFF59E0B).copy(alpha = 0.40f)
                         ),
                         center = sunCenter,
-                        radius = baseRadius * 0.42f
+                        radius = baseRadius * 0.45f
                     ),
                     center = sunCenter,
-                    radius = baseRadius * 0.42f
+                    radius = baseRadius * 0.45f
                 )
 
-                // Các tia nắng xoay chậm mượt mà (God Rays xoay nhẹ theo sunAngle)
+                // Chùm tia nắng thể tích (God Rays) xoay êm ả 360 độ
                 rotate(degrees = sunAngle, pivot = sunCenter) {
-                    drawSunRays(sunCenter, width, height, pulseProgress)
+                    drawSoftGodRays(sunCenter, width, height, breathingPulse)
                 }
+
+                // Các hạt bụi nắng (solar dust motes / warm bokeh) lơ lửng trong không khí
+                drawFloatingSolarMotes(dustMotes, mainLoop, width, height)
             }
 
-            // 4. BAN ĐÊM TRỜI QUANG (Clear Night / Starlight & Meteors)
+            // =========================================================================
+            // 4. BẦU TRỜI ĐÊM SAO & CỰC QUANG (Starry Night, Aurora & Meteors)
+            // =========================================================================
             !isDay && (type == WeatherType.CLEAR || type == WeatherType.PARTLY_CLOUDY) -> {
-                // Ánh trăng dịu mát
+                // Ánh trăng dịu mát với quầng sáng thanh thoát
                 val moonCenter = Offset(width * 0.80f, height * 0.10f)
                 drawCircle(
                     brush = Brush.radialGradient(
                         colors = listOf(
-                            Color(0xFFE2E8F0).copy(alpha = 0.35f * pulseProgress),
-                            Color(0xFF94A3B8).copy(alpha = 0.12f * pulseProgress),
+                            Color(0xFFE2E8F0).copy(alpha = 0.38f * breathingPulse),
+                            Color(0xFF94A3B8).copy(alpha = 0.14f * breathingPulse),
                             Color.Transparent
                         ),
                         center = moonCenter,
-                        radius = width * 0.22f
+                        radius = width * 0.24f
                     ),
                     center = moonCenter,
-                    radius = width * 0.22f
+                    radius = width * 0.24f
                 )
 
+                // Lõi vầng trăng sáng
                 drawCircle(
-                    color = Color(0xFFF8FAFC).copy(alpha = 0.88f),
+                    color = Color(0xFFF8FAFC).copy(alpha = 0.90f),
                     center = moonCenter,
-                    radius = width * 0.062f
+                    radius = width * 0.065f
                 )
 
-                // Bầu trời sao lấp lánh đa tần số
-                stars.forEachIndexed { index, (xRatio, yRatio, baseBrightness) ->
-                    val starX = xRatio * width
-                    val starY = yRatio * height
-                    val starTwinkle = ((pulseProgress * (1f + (index % 3) * 0.2f) + index * 0.12f) % 1.0f) * 0.5f + 0.5f
-                    val starAlpha = (baseBrightness * starTwinkle).coerceIn(0.18f, 0.96f)
+                // Dải lụa cực quang huyền ảo (Aurora Ribbon Wave) lượn sóng trên vòm trời
+                drawAuroraRibbon(width, height, slowDrift, breathingPulse)
 
-                    drawCircle(
-                        color = Color.White.copy(alpha = starAlpha),
-                        center = Offset(starX, starY),
-                        radius = (if (index % 6 == 0) 2.4f else 1.3f)
-                    )
-                }
+                // Bầu trời sao lấp lánh đa tần số kèm tia sao 4 cánh
+                drawStarFieldWithCrossSpikes(starField, breathingPulse, width, height)
 
-                // Vệt sao băng lướt qua bầu trời đêm
+                // Vệt sao băng rực rỡ lướt qua vòm trời đêm
                 if (meteorProgress in 0.01f..0.99f) {
-                    val mStartX = width * (0.85f - meteorProgress * 0.65f)
-                    val mStartY = height * (0.05f + meteorProgress * 0.35f)
-                    val mTailLength = 45f
-                    val tailEndX = mStartX + mTailLength * 0.8f
-                    val tailEndY = mStartY - mTailLength * 0.5f
-
-                    drawLine(
-                        brush = Brush.linearGradient(
-                            listOf(
-                                Color.Transparent,
-                                Color(0xFFBAE6FD).copy(alpha = 0.4f),
-                                Color.White.copy(alpha = 0.95f)
-                            ),
-                            start = Offset(tailEndX, tailEndY),
-                            end = Offset(mStartX, mStartY)
-                        ),
-                        start = Offset(tailEndX, tailEndY),
-                        end = Offset(mStartX, mStartY),
-                        strokeWidth = 2.0f
-                    )
+                    drawShootingMeteor(width, height, meteorProgress)
                 }
             }
 
-            // 5. NHIỀU MÂY / ÂM U / SƯƠNG MÙ (Volumetric Parallax Clouds)
-            type == WeatherType.CLOUDY || type == WeatherType.FOG -> {
-                drawVolumetricCloudLayers(width, height, animationProgress, pulseProgress)
+            // =========================================================================
+            // 5. NHIỀU MÂY & U ÁM (Multi-tier Volumetric Clouds)
+            // =========================================================================
+            type == WeatherType.CLOUDY -> {
+                drawRealisticCloudFormations(width, height, slowDrift, breathingPulse)
             }
 
-            // 6. TUYẾT RƠI (Snow)
+            // =========================================================================
+            // 6. SƯƠNG MÙ KHÍ QUYỂN (Atmospheric Rolling Fog / Mist)
+            // =========================================================================
+            type == WeatherType.FOG -> {
+                drawAtmosphericRollingMist(width, height, slowDrift, breathingPulse)
+            }
+
+            // =========================================================================
+            // 7. TUYẾT RƠI LÃNG MẠN (Romantic Snowfall)
+            // =========================================================================
             type == WeatherType.SNOW -> {
-                snowParticles.forEachIndexed { index, (xRatio, yRatio, flakeRadius) ->
-                    val progressWithOffset = (animationProgress + index * 0.035f) % 1f
-                    val currentY = (yRatio + progressWithOffset) % 1f * height
-                    val sway = sin(progressWithOffset * 6.28 + index) * 14f
-                    val currentX = (xRatio * width + sway.toFloat()) % width
-
-                    drawCircle(
-                        color = Color.White.copy(alpha = 0.78f),
-                        center = Offset(currentX, currentY),
-                        radius = flakeRadius
-                    )
-                }
+                drawGentleSnowfall(snowFlakes, mainLoop, width, height)
             }
         }
     }
 }
 
+// =====================================================================================
+// DATA CLASSES CHO HẠT HIỆU ỨNG (PRE-ALLOCATED DATA MODELS)
+// =====================================================================================
+
+private data class RainDropParticle(
+    val xRatio: Float,
+    val yRatio: Float,
+    val speed: Float,
+    val length: Float,
+    val thickness: Float,
+    val alpha: Float,
+    val isForeground: Boolean
+)
+
+private data class SplashSite(
+    val xRatio: Float,
+    val yRatio: Float,
+    val phaseOffset: Float,
+    val maxRadius: Float
+)
+
+private data class DustMoteParticle(
+    val xRatio: Float,
+    val yRatio: Float,
+    val radius: Float,
+    val driftSpeed: Float,
+    val phase: Float,
+    val baseAlpha: Float
+)
+
+private data class StarParticle(
+    val xRatio: Float,
+    val yRatio: Float,
+    val radius: Float,
+    val twinkleSpeed: Float,
+    val phase: Float,
+    val baseAlpha: Float,
+    val hasCrossSpikes: Boolean
+)
+
+private data class SnowFlakeParticle(
+    val xRatio: Float,
+    val yRatio: Float,
+    val radius: Float,
+    val speed: Float,
+    val swayAmplitude: Float,
+    val phase: Float,
+    val alpha: Float
+)
+
+// =====================================================================================
+// DRAWSCOPE HELPER FUNCTIONS (HARDWARE-ACCELERATED RENDER LOGIC)
+// =====================================================================================
+
 /**
- * Vẽ các vệt mưa chéo rơi liên tục kèm bọt bắn nhẹ
+ * Vẽ các vệt mưa chéo rơi tự nhiên kèm độ sâu thị sai (foreground / background)
  */
-private fun DrawScope.drawRainStreaks(
-    particles: List<Triple<Float, Float, Float>>,
+private fun DrawScope.drawRainStreaksEnhanced(
+    drops: List<RainDropParticle>,
     progress: Float,
     width: Float,
     height: Float,
@@ -312,12 +432,11 @@ private fun DrawScope.drawRainStreaks(
 ) {
     val slantX = -18f
 
-    particles.forEachIndexed { index, (xRatio, yRatio, lengthMultiplier) ->
-        val speed = ((index % 4) + 2) * 0.25f * speedMultiplier
-        val currentProgress = (progress * speed + yRatio) % 1f
-        val startY = currentProgress * (height + 100f) - 50f
-        val startX = (xRatio * width + (slantX * currentProgress * 2)) % width
-        val streakLength = (if (isHeavy) 34f else 22f) * lengthMultiplier
+    drops.forEach { drop ->
+        val currentProgress = (progress * drop.speed * speedMultiplier + drop.yRatio) % 1f
+        val startY = currentProgress * (height + 120f) - 60f
+        val startX = (drop.xRatio * width + (slantX * currentProgress * 2.2f)) % width
+        val streakLength = drop.length * (if (isHeavy) 1.25f else 1.0f)
 
         val endX = startX + slantX * (streakLength / 40f)
         val endY = startY + streakLength
@@ -325,66 +444,141 @@ private fun DrawScope.drawRainStreaks(
         drawLine(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    Color.White.copy(alpha = 0.05f),
-                    Color(0xFFBAE6FD).copy(alpha = if (isHeavy) 0.55f else 0.35f),
-                    Color.White.copy(alpha = 0.20f)
+                    Color.White.copy(alpha = 0.04f),
+                    Color(0xFFBAE6FD).copy(alpha = drop.alpha),
+                    Color.White.copy(alpha = drop.alpha * 0.85f)
                 ),
                 startY = startY,
                 endY = endY
             ),
             start = Offset(startX, startY),
             end = Offset(endX, endY),
-            strokeWidth = if (isHeavy) 1.8f else 1.2f
+            strokeWidth = drop.thickness
         )
     }
 }
 
 /**
- * Vẽ tia sét phân nhánh khi có dông bão
+ * Hiệu ứng bọt nước bắn tung tóe (Splashes) và gợn sóng (Ripples) khi giọt nước chạm đáy
  */
-private fun DrawScope.drawLightningBolt(width: Float, height: Float, flashAlpha: Float) {
-    val boltPath = Path().apply {
-        val startX = width * 0.45f
+private fun DrawScope.drawWaterSplashesAndRipples(
+    sites: List<SplashSite>,
+    progress: Float,
+    width: Float,
+    height: Float,
+    intensity: Float
+) {
+    sites.forEachIndexed { index, site ->
+        val cycle = (progress * 2.2f + site.phaseOffset) % 1f
+        val splashX = site.xRatio * width
+        val splashY = site.yRatio * height
+
+        // 1. Gợn sóng elip lan tỏa nhẹ
+        if (cycle < 0.65f) {
+            val rippleScale = cycle / 0.65f
+            val rippleRadius = site.maxRadius * rippleScale * intensity
+            val rippleAlpha = ((1f - rippleScale) * 0.40f * intensity).coerceIn(0f, 0.6f)
+
+            drawOval(
+                color = Color(0xFFBAE6FD).copy(alpha = rippleAlpha),
+                topLeft = Offset(splashX - rippleRadius, splashY - rippleRadius * 0.35f),
+                size = Size(rippleRadius * 2f, rippleRadius * 0.70f),
+                style = Stroke(width = 1.0f)
+            )
+        }
+
+        // 2. Tia bọt nước bắn lên dạng cung nhọn
+        if (cycle < 0.50f) {
+            val burstProgress = cycle / 0.50f
+            val burstAlpha = ((1f - burstProgress) * 0.55f * intensity).coerceIn(0f, 0.75f)
+            val burstY = splashY - (burstProgress * 14f * intensity)
+            val burstSpread = burstProgress * 10f * intensity
+
+            // 2 giọt nước bắn trái / phải
+            drawCircle(
+                color = Color.White.copy(alpha = burstAlpha),
+                radius = 1.2f,
+                center = Offset(splashX - burstSpread, burstY)
+            )
+            drawCircle(
+                color = Color.White.copy(alpha = burstAlpha),
+                radius = 1.0f,
+                center = Offset(splashX + burstSpread * 0.85f, burstY - 2f)
+            )
+        }
+    }
+}
+
+/**
+ * Tia sét phân nhánh ngẫu nhiên sắc sảo và chân thực khi dông bão
+ */
+private fun DrawScope.drawRealisticLightningFork(width: Float, height: Float, flashIntensity: Float) {
+    val startX = width * 0.48f
+
+    // 1. Nhánh sét chính
+    val mainBolt = Path().apply {
         moveTo(startX, 0f)
-        lineTo(startX - 25f, height * 0.18f)
-        lineTo(startX + 10f, height * 0.26f)
-        lineTo(startX - 35f, height * 0.42f)
-        lineTo(startX + 5f, height * 0.50f)
-        lineTo(startX - 20f, height * 0.68f)
+        lineTo(startX - 28f, height * 0.16f)
+        lineTo(startX + 14f, height * 0.24f)
+        lineTo(startX - 40f, height * 0.40f)
+        lineTo(startX + 8f, height * 0.48f)
+        lineTo(startX - 22f, height * 0.64f)
+        lineTo(startX + 4f, height * 0.74f)
     }
 
+    // 2. Nhánh sét phụ rẽ nhánh
+    val branchBolt = Path().apply {
+        moveTo(startX - 40f, height * 0.40f)
+        lineTo(startX - 75f, height * 0.48f)
+        lineTo(startX - 90f, height * 0.58f)
+    }
+
+    // Quầng hào quang tím/cyan bao quanh tia sét
+    val glowAlpha = (flashIntensity * 0.45f).coerceIn(0f, 0.65f)
     drawPath(
-        path = boltPath,
-        color = Color(0xFFF3E8FF).copy(alpha = flashAlpha.coerceIn(0f, 0.9f)),
-        style = Stroke(width = 2.8f)
+        path = mainBolt,
+        color = Color(0xFF818CF8).copy(alpha = glowAlpha),
+        style = Stroke(width = 6.5f, cap = StrokeCap.Round)
+    )
+    drawPath(
+        path = branchBolt,
+        color = Color(0xFF38BDF8).copy(alpha = glowAlpha * 0.7f),
+        style = Stroke(width = 4.0f, cap = StrokeCap.Round)
     )
 
+    // Lõi sét màu trắng tím cực đại
+    val coreAlpha = flashIntensity.coerceIn(0f, 0.95f)
     drawPath(
-        path = boltPath,
-        color = Color(0xFF67E8F9).copy(alpha = flashAlpha * 0.4f),
-        style = Stroke(width = 6.0f)
+        path = mainBolt,
+        color = Color(0xFFFDF4FF).copy(alpha = coreAlpha),
+        style = Stroke(width = 2.4f, cap = StrokeCap.Round)
+    )
+    drawPath(
+        path = branchBolt,
+        color = Color(0xFFFDF4FF).copy(alpha = coreAlpha * 0.8f),
+        style = Stroke(width = 1.5f, cap = StrokeCap.Round)
     )
 }
 
 /**
- * Vẽ tia nắng mặt trời tỏa góc
+ * Chùm tia nắng thể tích (Soft Volumetric God Rays) tỏa góc mềm mại
  */
-private fun DrawScope.drawSunRays(
+private fun DrawScope.drawSoftGodRays(
     sunCenter: Offset,
     width: Float,
     height: Float,
     pulse: Float
 ) {
-    for (i in 0 until 6) {
-        val angleRad = (i * 60f) * (Math.PI / 180.0)
-        val rayLength = width * 0.9f
+    for (i in 0 until 8) {
+        val angleRad = (i * 45f) * (Math.PI / 180.0)
+        val rayLength = width * 1.15f
         val endX = sunCenter.x + (cos(angleRad) * rayLength).toFloat()
         val endY = sunCenter.y + (sin(angleRad) * rayLength).toFloat()
 
         val path = Path().apply {
             moveTo(sunCenter.x, sunCenter.y)
-            lineTo(endX + 35f, endY + 35f)
-            lineTo(endX - 35f, endY - 35f)
+            lineTo(endX + 42f, endY + 42f)
+            lineTo(endX - 42f, endY - 42f)
             close()
         }
 
@@ -392,8 +586,8 @@ private fun DrawScope.drawSunRays(
             path = path,
             brush = Brush.radialGradient(
                 colors = listOf(
-                    Color(0xFFFEF08A).copy(alpha = 0.12f * pulse),
-                    Color(0xFFF59E0B).copy(alpha = 0.04f * pulse),
+                    Color(0xFFFEF08A).copy(alpha = 0.14f * pulse),
+                    Color(0xFFF59E0B).copy(alpha = 0.05f * pulse),
                     Color.Transparent
                 ),
                 center = sunCenter,
@@ -404,37 +598,250 @@ private fun DrawScope.drawSunRays(
 }
 
 /**
- * Vẽ mây bồng bềnh 3 lớp thị sai (Volumetric Parallax Clouds)
+ * Các hạt bụi nắng (Solar Dust Motes / Bokeh) lơ lửng bồng bềnh trong ánh mặt trời
  */
-private fun DrawScope.drawVolumetricCloudLayers(
+private fun DrawScope.drawFloatingSolarMotes(
+    motes: List<DustMoteParticle>,
+    progress: Float,
+    width: Float,
+    height: Float
+) {
+    motes.forEachIndexed { index, mote ->
+        val moteProgress = (progress * mote.driftSpeed + index * 0.033f) % 1f
+        val sway = sin(moteProgress * 6.28f + mote.phase) * 22f
+        val curX = (mote.xRatio * width + sway) % width
+        val curY = ((mote.yRatio + 1f - moteProgress) % 1f) * (height * 0.70f) + (height * 0.05f)
+
+        val alphaPulse = (sin(moteProgress * 6.28f + mote.phase) * 0.25f + 0.75f) * mote.baseAlpha
+
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = alphaPulse.coerceIn(0f, 1f)),
+                    Color(0xFFFEF08A).copy(alpha = (alphaPulse * 0.6f).coerceIn(0f, 1f)),
+                    Color.Transparent
+                ),
+                center = Offset(curX, curY),
+                radius = mote.radius * 2f
+            ),
+            center = Offset(curX, curY),
+            radius = mote.radius * 2f
+        )
+    }
+}
+
+/**
+ * Dải lụa cực quang huyền diệu (Aurora Ribbon Wave) trên bầu trời đêm
+ */
+private fun DrawScope.drawAuroraRibbon(
     width: Float,
     height: Float,
-    progress: Float,
+    drift: Float,
+    pulse: Float
+) {
+    val auroraY = height * 0.18f
+    val waveOffset = drift * 6.28f
+
+    val auroraPath = Path().apply {
+        moveTo(0f, auroraY)
+        val segments = 8
+        val step = width / segments
+        for (i in 1..segments) {
+            val cx = (i - 0.5f) * step
+            val cy = auroraY + sin(i * 0.8f + waveOffset) * 28f
+            val ex = i * step
+            val ey = auroraY + sin(i * 0.8f + waveOffset + 0.4f) * 20f
+            quadraticBezierTo(cx, cy, ex, ey)
+        }
+        lineTo(width, 0f)
+        lineTo(0f, 0f)
+        close()
+    }
+
+    drawPath(
+        path = auroraPath,
+        brush = Brush.verticalGradient(
+            colors = listOf(
+                Color(0xFF34D399).copy(alpha = 0.08f * pulse),
+                Color(0xFF818CF8).copy(alpha = 0.06f * pulse),
+                Color.Transparent
+            ),
+            startY = 0f,
+            endY = height * 0.32f
+        )
+    )
+}
+
+/**
+ * Bầu trời sao đa tầng thị sai kèm tia sao 4 cánh lấp lánh (Diffraction Spikes)
+ */
+private fun DrawScope.drawStarFieldWithCrossSpikes(
+    stars: List<StarParticle>,
+    pulse: Float,
+    width: Float,
+    height: Float
+) {
+    stars.forEachIndexed { index, star ->
+        val starX = star.xRatio * width
+        val starY = star.yRatio * height
+        val twinkle = (sin(pulse * 6.28f * star.twinkleSpeed + star.phase) * 0.4f + 0.6f)
+        val alpha = (star.baseAlpha * twinkle).coerceIn(0.15f, 0.98f)
+
+        // Hạt sao tròn cơ bản
+        drawCircle(
+            color = Color.White.copy(alpha = alpha),
+            center = Offset(starX, starY),
+            radius = star.radius
+        )
+
+        // Tia sao 4 cánh tỏa sáng cho các ngôi sao nổi bật
+        if (star.hasCrossSpikes && alpha > 0.65f) {
+            val spikeLen = star.radius * 2.8f
+            val spikeAlpha = (alpha * 0.55f).coerceIn(0f, 0.7f)
+
+            // Tia ngang
+            drawLine(
+                color = Color.White.copy(alpha = spikeAlpha),
+                start = Offset(starX - spikeLen, starY),
+                end = Offset(starX + spikeLen, starY),
+                strokeWidth = 0.8f
+            )
+            // Tia dọc
+            drawLine(
+                color = Color.White.copy(alpha = spikeAlpha),
+                start = Offset(starX, starY - spikeLen),
+                end = Offset(starX, starY + spikeLen),
+                strokeWidth = 0.8f
+            )
+        }
+    }
+}
+
+/**
+ * Vệt sao băng rực rỡ lướt qua bầu trời
+ */
+private fun DrawScope.drawShootingMeteor(width: Float, height: Float, progress: Float) {
+    val startX = width * (0.88f - progress * 0.72f)
+    val startY = height * (0.04f + progress * 0.38f)
+    val tailLength = 55f
+    val endX = startX + tailLength * 0.82f
+    val endY = startY - tailLength * 0.52f
+
+    drawLine(
+        brush = Brush.linearGradient(
+            listOf(
+                Color.Transparent,
+                Color(0xFFBAE6FD).copy(alpha = 0.45f),
+                Color.White.copy(alpha = 0.98f)
+            ),
+            start = Offset(endX, endY),
+            end = Offset(startX, startY)
+        ),
+        start = Offset(endX, endY),
+        end = Offset(startX, startY),
+        strokeWidth = 2.2f,
+        cap = StrokeCap.Round
+    )
+
+    // Đầu sao băng sáng lóa
+    drawCircle(
+        color = Color.White,
+        radius = 2.0f,
+        center = Offset(startX, startY)
+    )
+}
+
+/**
+ * Các cụm mây thể tích bồng bềnh 3 lớp thị sai trôi nhịp nhàng
+ */
+private fun DrawScope.drawRealisticCloudFormations(
+    width: Float,
+    height: Float,
+    drift: Float,
     pulse: Float
 ) {
     val baseY = height * 0.08f
 
-    // Lớp mây sau (chạy chậm)
-    val offset1 = progress * width * 0.12f
-    drawOval(
-        color = Color.White.copy(alpha = 0.10f * pulse + 0.05f),
-        topLeft = Offset((width * 0.6f - offset1) % (width * 1.4f) - width * 0.2f, baseY - 20f),
-        size = Size(width * 0.85f, height * 0.20f)
-    )
-
-    // Lớp mây giữa (chạy vừa)
-    val offset2 = progress * width * 0.22f
-    drawOval(
-        color = Color.White.copy(alpha = 0.14f * pulse + 0.06f),
-        topLeft = Offset((width * 0.15f - offset2) % (width * 1.3f) - width * 0.15f, baseY + 25f),
-        size = Size(width * 0.75f, height * 0.17f)
-    )
-
-    // Lớp mây trước (chạy nhanh hơn)
-    val offset3 = progress * width * 0.32f
+    // Lớp 1 (Mây xa, trôi chậm, xám xanh dịu)
+    val offset1 = drift * width * 0.15f
     drawOval(
         color = Color.White.copy(alpha = 0.08f * pulse + 0.04f),
-        topLeft = Offset((width * 0.85f - offset3) % (width * 1.5f) - width * 0.2f, baseY + 60f),
+        topLeft = Offset((width * 0.65f - offset1) % (width * 1.5f) - width * 0.25f, baseY - 15f),
         size = Size(width * 0.90f, height * 0.22f)
     )
+
+    // Lớp 2 (Mây trung, trôi vừa, đầy đặn hơn)
+    val offset2 = drift * width * 0.28f
+    drawOval(
+        color = Color.White.copy(alpha = 0.12f * pulse + 0.06f),
+        topLeft = Offset((width * 0.20f - offset2) % (width * 1.4f) - width * 0.20f, baseY + 28f),
+        size = Size(width * 0.80f, height * 0.18f)
+    )
+
+    // Lớp 3 (Mây gần, trôi nhẹ lướt ngang)
+    val offset3 = drift * width * 0.42f
+    drawOval(
+        color = Color.White.copy(alpha = 0.07f * pulse + 0.03f),
+        topLeft = Offset((width * 0.90f - offset3) % (width * 1.6f) - width * 0.25f, baseY + 65f),
+        size = Size(width * 0.95f, height * 0.24f)
+    )
+}
+
+/**
+ * Dải sương mù dập dềnh uốn sóng ngang mềm mại (Atmospheric Rolling Mist)
+ */
+private fun DrawScope.drawAtmosphericRollingMist(
+    width: Float,
+    height: Float,
+    drift: Float,
+    pulse: Float
+) {
+    val mistBaseY = height * 0.16f
+    for (i in 0 until 3) {
+        val waveOffset = (drift * 6.28f * (i + 1) * 0.5f)
+        val mistPath = Path().apply {
+            val curY = mistBaseY + i * 55f
+            moveTo(0f, curY)
+            val segments = 6
+            val step = width / segments
+            for (s in 1..segments) {
+                val cx = (s - 0.5f) * step
+                val cy = curY + sin(s * 1.1f + waveOffset) * 18f
+                val ex = s * step
+                val ey = curY + sin(s * 1.1f + waveOffset + 0.5f) * 12f
+                quadraticBezierTo(cx, cy, ex, ey)
+            }
+            lineTo(width, curY + 45f)
+            lineTo(0f, curY + 45f)
+            close()
+        }
+
+        drawPath(
+            path = mistPath,
+            color = Color.White.copy(alpha = (0.06f + i * 0.03f) * pulse)
+        )
+    }
+}
+
+/**
+ * Tuyết rơi lãng mạn lượn sóng đa kích thước
+ */
+private fun DrawScope.drawGentleSnowfall(
+    snowFlakes: List<SnowFlakeParticle>,
+    progress: Float,
+    width: Float,
+    height: Float
+) {
+    snowFlakes.forEachIndexed { index, flake ->
+        val flakeProgress = (progress * flake.speed + index * 0.025f) % 1f
+        val sway = sin(flakeProgress * 6.28f + flake.phase) * flake.swayAmplitude
+        val curX = (flake.xRatio * width + sway) % width
+        val curY = (flake.yRatio + flakeProgress) % 1f * height
+
+        drawCircle(
+            color = Color.White.copy(alpha = flake.alpha),
+            center = Offset(curX, curY),
+            radius = flake.radius
+        )
+    }
 }

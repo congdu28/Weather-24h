@@ -48,6 +48,7 @@ import com.weather24h.app.BuildConfig
 import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.WeatherForecastModel
 import com.weather24h.app.data.model.WeatherProvider
+import com.weather24h.app.data.model.WidgetStyle
 
 private enum class SettingsSubScreen {
     MAIN,
@@ -87,6 +88,7 @@ fun SettingsDialog(
     cardOpacity: Float = 0.80f,
     widgetThemeMode: com.weather24h.app.ui.theme.AppThemeMode = com.weather24h.app.ui.theme.AppThemeMode.SYSTEM,
     widgetOpacity: Float = 0.85f,
+    widgetStyle: WidgetStyle = WidgetStyle.FROSTED_GLASS,
     isWidgetAutoRefresh: Boolean = true,
     forecastModel: WeatherForecastModel = WeatherForecastModel.BEST_MATCH,
     favoriteCities: List<CityLocation>,
@@ -105,6 +107,7 @@ fun SettingsDialog(
     onSetCardOpacity: (Float) -> Unit = {},
     onSelectWidgetThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit = {},
     onSetWidgetOpacity: (Float) -> Unit = {},
+    onSelectWidgetStyle: (WidgetStyle) -> Unit = {},
     onSetWidgetAutoRefresh: (Boolean) -> Unit = {},
     onSelectForecastModel: (WeatherForecastModel) -> Unit = {},
     onSelectPeriodicNotifHours: (Int) -> Unit,
@@ -1583,9 +1586,162 @@ fun SettingsDialog(
                                             )
                                         }
 
-                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Spacer(modifier = Modifier.height(10.dp))
 
-                                        // A. Giao diện theme của Widget (Sáng / Tối / Theo hệ thống)
+                                        // A. Khung xem trước Widget thời gian thực (Live Widget Preview)
+                                        Text(
+                                            text = "XEM TRƯỚC TRỰC QUAN WIDGET",
+                                            color = sectionHeaderColor,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Surface(
+                                            shape = RoundedCornerShape(18.dp),
+                                            color = when (widgetStyle) {
+                                                WidgetStyle.MINIMAL_CLEAN -> Color.Transparent
+                                                WidgetStyle.SOLID_DARK -> Color.Black
+                                                WidgetStyle.ADAPTIVE_COLOR -> Color(0xFF0369A1).copy(alpha = widgetOpacity.coerceAtLeast(0.4f))
+                                                WidgetStyle.FROSTED_GLASS -> (if (widgetThemeMode == com.weather24h.app.ui.theme.AppThemeMode.LIGHT) Color.White else Color(0xFF1E293B)).copy(alpha = widgetOpacity)
+                                            },
+                                            border = BorderStroke(
+                                                width = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN) 0.dp else 1.dp,
+                                                color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN) Color.Transparent else (if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f))
+                                            ),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(14.dp)
+                                            ) {
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Column {
+                                                        Text(
+                                                            text = defaultCity.name,
+                                                            color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
+                                                            fontSize = 15.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                        Text(
+                                                            text = "Trời nắng • Cảm giác 31°C",
+                                                            color = (if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.75f),
+                                                            fontSize = 11.sp
+                                                        )
+                                                    }
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Text(text = "☀️", fontSize = 24.sp)
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text(
+                                                            text = "29°",
+                                                            color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
+                                                            fontSize = 28.sp,
+                                                            fontWeight = FontWeight.Bold
+                                                        )
+                                                    }
+                                                }
+
+                                                Spacer(modifier = Modifier.height(10.dp))
+
+                                                // 3 mini hourly forecast chips
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    listOf(
+                                                        Triple("15:00", "☀️", "30°"),
+                                                        Triple("16:00", "🌤️", "29°"),
+                                                        Triple("17:00", "🌧️", "26°")
+                                                    ).forEach { (hour, icon, temp) ->
+                                                        Surface(
+                                                            shape = RoundedCornerShape(8.dp),
+                                                            color = (if (isDark) Color.White else Color.Black).copy(alpha = 0.12f),
+                                                            modifier = Modifier.weight(1f)
+                                                        ) {
+                                                            Column(
+                                                                horizontalAlignment = Alignment.CenterHorizontally,
+                                                                modifier = Modifier.padding(vertical = 4.dp)
+                                                            ) {
+                                                                Text(text = hour, color = (if (isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.7f), fontSize = 10.sp)
+                                                                Text(text = icon, fontSize = 14.sp)
+                                                                Text(text = temp, color = if (isDark) Color.White else Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(18.dp))
+
+                                        // B. Phong cách thị giác Widget (WidgetStyle Options)
+                                        Text(
+                                            text = "PHONG CÁCH THỊ GIÁC WIDGET",
+                                            color = sectionHeaderColor,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+
+                                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            WidgetStyle.values().forEach { style ->
+                                                val isSelected = widgetStyle == style
+                                                Surface(
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    color = if (isSelected) Color(0xFFF472B6).copy(alpha = 0.18f) else chipBg,
+                                                    border = BorderStroke(1.2.dp, if (isSelected) Color(0xFFF472B6) else chipBorder),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            onSelectWidgetStyle(style)
+                                                            Toast.makeText(context, "Đã chọn: ${style.title}", Toast.LENGTH_SHORT).show()
+                                                        }
+                                                ) {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(12.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text(text = style.iconEmoji, fontSize = 20.sp)
+                                                        Spacer(modifier = Modifier.width(10.dp))
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Text(
+                                                                text = style.title,
+                                                                color = if (isSelected) Color(0xFFF472B6) else contentColor,
+                                                                fontSize = 13.sp,
+                                                                fontWeight = FontWeight.Bold
+                                                            )
+                                                            Text(
+                                                                text = style.description,
+                                                                color = subtextColor,
+                                                                fontSize = 11.sp,
+                                                                lineHeight = 15.sp
+                                                            )
+                                                        }
+                                                        if (isSelected) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.CheckCircle,
+                                                                contentDescription = null,
+                                                                tint = Color(0xFFF472B6),
+                                                                modifier = Modifier.size(20.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(18.dp))
+
+                                        // C. Giao diện theme của Widget (Sáng / Tối / Theo hệ thống)
                                         Text(
                                             text = "GIAO DIỆN MÀU WIDGET (THEME)",
                                             color = sectionHeaderColor,
@@ -1632,7 +1788,7 @@ fun SettingsDialog(
 
                                         Spacer(modifier = Modifier.height(16.dp))
 
-                                        // B. Độ trong suốt của nền Widget
+                                        // D. Độ trong suốt của nền Widget
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,

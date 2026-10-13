@@ -151,17 +151,47 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     }
                 }
                 val bgOpacity = prefs.getFloat("widget_bg_opacity", 0.85f).coerceIn(0.0f, 1.0f)
+                val styleStr = prefs.getString("widget_visual_style", "FROSTED_GLASS")
+                val widgetStyle = try {
+                    com.weather24h.app.data.model.WidgetStyle.valueOf(styleStr ?: "FROSTED_GLASS")
+                } catch (_: Exception) {
+                    com.weather24h.app.data.model.WidgetStyle.FROSTED_GLASS
+                }
 
-                // Áp dụng hình nền & độ trong suốt (chuẩn RemoteViews ImageView API)
-                val bgDrawableRes = if (isDark) R.drawable.widget_bg_dark else R.drawable.widget_bg_light
+                // Áp dụng hình nền & độ trong suốt theo phong cách thị giác đã chọn
+                val bgDrawableRes = if (isDark || widgetStyle == com.weather24h.app.data.model.WidgetStyle.SOLID_DARK) {
+                    R.drawable.widget_bg_dark
+                } else {
+                    R.drawable.widget_bg_light
+                }
                 views.setImageViewResource(R.id.widget_bg_layer, bgDrawableRes)
-                val alphaInt = (bgOpacity * 255).toInt().coerceIn(0, 255)
+
+                val alphaInt = when (widgetStyle) {
+                    com.weather24h.app.data.model.WidgetStyle.MINIMAL_CLEAN -> 0
+                    com.weather24h.app.data.model.WidgetStyle.SOLID_DARK -> 255
+                    else -> (bgOpacity * 255).toInt().coerceIn(0, 255)
+                }
                 views.setInt(R.id.widget_bg_layer, "setImageAlpha", alphaInt)
 
+                // Áp dụng màu thích ứng thời tiết nếu chọn ADAPTIVE_COLOR
+                if (widgetStyle == com.weather24h.app.data.model.WidgetStyle.ADAPTIVE_COLOR && weather != null) {
+                    val adaptiveColor = when (weather.current.condition.type) {
+                        WeatherType.THUNDERSTORM -> 0xFF311042.toInt()
+                        WeatherType.RAIN, WeatherType.DRIZZLE -> 0xFF0C4A6E.toInt()
+                        WeatherType.CLEAR -> if (weather.current.isDay) 0xFF0369A1.toInt() else 0xFF020617.toInt()
+                        WeatherType.PARTLY_CLOUDY, WeatherType.CLOUDY -> 0xFF1E293B.toInt()
+                        WeatherType.SNOW -> 0xFF0F172A.toInt()
+                        WeatherType.FOG -> 0xFF334155.toInt()
+                    }
+                    views.setInt(R.id.widget_bg_layer, "setColorFilter", adaptiveColor)
+                } else {
+                    views.setInt(R.id.widget_bg_layer, "setColorFilter", 0)
+                }
+
                 // Bảng màu chữ tương ứng với theme sáng / tối
-                val colorPrimary = if (isDark) 0xFFFFFFFF.toInt() else 0xFF0F172A.toInt()
-                val colorSecondary = if (isDark) 0xFFCBD5E1.toInt() else 0xFF475569.toInt()
-                val colorAccent = if (isDark) 0xFF38BDF8.toInt() else 0xFF0284C7.toInt()
+                val colorPrimary = if (isDark || widgetStyle != com.weather24h.app.data.model.WidgetStyle.FROSTED_GLASS) 0xFFFFFFFF.toInt() else 0xFF0F172A.toInt()
+                val colorSecondary = if (isDark || widgetStyle != com.weather24h.app.data.model.WidgetStyle.FROSTED_GLASS) 0xFFCBD5E1.toInt() else 0xFF475569.toInt()
+                val colorAccent = if (isDark || widgetStyle != com.weather24h.app.data.model.WidgetStyle.FROSTED_GLASS) 0xFF38BDF8.toInt() else 0xFF0284C7.toInt()
                 val colorDim = if (isDark) 0xFF94A3B8.toInt() else 0xFF64748B.toInt()
                 val colorAiTip = if (isDark) 0xFFF0ABFC.toInt() else 0xFF7E22CE.toInt()
                 val chipBgRes = if (isDark) R.drawable.widget_hour_chip_dark else R.drawable.widget_hour_chip_light
