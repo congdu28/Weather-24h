@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.CityWeatherSummary
+import com.weather24h.app.data.model.icon
 import com.weather24h.app.ui.theme.LocalCardOpacity
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
 

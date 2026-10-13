@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.CityWeatherSummary
+import com.weather24h.app.data.model.icon
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
 
 @OptIn(ExperimentalLayoutApi::class)

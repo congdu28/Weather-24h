@@ -77,3 +77,19 @@ data class WeatherCondition(
         }
     }
 }
+
+val WeatherType.emoji: String
+    get() = when (this) {
+        WeatherType.CLEAR -> "☀️"
+        WeatherType.PARTLY_CLOUDY -> "⛅"
+        WeatherType.CLOUDY -> "☁️"
+        WeatherType.FOG -> "🌫️"
+        WeatherType.DRIZZLE -> "🌦️"
+        WeatherType.RAIN -> "🌧️"
+        WeatherType.THUNDERSTORM -> "⛈️"
+        WeatherType.SNOW -> "❄️"
+    }
+
+val WeatherType.icon: String
+    get() = emoji
+
