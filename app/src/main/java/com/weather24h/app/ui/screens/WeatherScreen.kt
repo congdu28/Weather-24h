@@ -430,25 +430,6 @@ fun WeatherScreen(
                                 WeatherMetricsGrid(weather = weather)
                             }
 
-                            // Footer Updated Time
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = if (weather.isOffline)
-                                            "Dữ liệu ngoại tuyến • ${weather.providerName} • Lưu lúc ${weather.lastUpdated}"
-                                        else
-                                            "Nguồn: ${weather.providerName} • Cập nhật lúc ${weather.lastUpdated}",
-                                        color = if (isDarkTheme) Color.White.copy(alpha = 0.55f) else Color(0xFF475569),
-                                        fontSize = 12.sp
-                                    )
-
-                                }
-                            }
                         }
                     }
                 }

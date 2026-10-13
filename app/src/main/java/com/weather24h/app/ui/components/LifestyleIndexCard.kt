@@ -29,6 +29,7 @@ import com.weather24h.app.ui.theme.LocalIsDarkTheme
 import com.weather24h.app.ui.theme.LocalContentTextColor
 import com.weather24h.app.ui.theme.LocalSubtextColor
 import com.weather24h.app.ui.theme.LocalCardBorder
+import com.weather24h.app.ui.theme.LocalCardGlassBg
 
 @Composable
 fun LifestyleIndexCard(
@@ -45,7 +46,7 @@ fun LifestyleIndexCard(
 
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = cardOpacity.coerceAtLeast(0.92f)),
+        color = LocalCardGlassBg.current,
         border = BorderStroke(1.dp, LocalCardBorder.current),
         modifier = modifier
             .fillMaxWidth()
@@ -60,7 +61,7 @@ fun LifestyleIndexCard(
                 Box(
                     modifier = Modifier
                         .size(32.dp)
-                        .background(accentColor.copy(alpha = 0.12f), CircleShape),
+                        .background(accentColor.copy(alpha = 0.12f * cardOpacity), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = "🧘", fontSize = 16.sp)
@@ -213,7 +214,8 @@ private fun LifestyleGridTile(
     val badgeColor = lifestyleBadgeColor(item.badgeColor, isDark)
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9),
+        color = (if (isDark) Color.White else Color(0xFF0F172A))
+            .copy(alpha = 0.05f * LocalCardOpacity.current),
         border = BorderStroke(1.dp, LocalCardBorder.current),
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))

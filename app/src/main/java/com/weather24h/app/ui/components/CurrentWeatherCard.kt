@@ -278,12 +278,14 @@ fun CurrentWeatherCard(
                     softWrap = false
                 )
             }
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Nguồn: ${weather.providerName}\nDữ liệu lúc ${weather.lastUpdated}",
+                text = "${weather.providerName} • ${if (weather.isOffline) "Đã lưu" else "Cập nhật"} ${weather.lastUpdated}",
                 color = subtextColor,
-                fontSize = 10.5.sp,
-                textAlign = TextAlign.Center
+                fontSize = 9.sp,
+                lineHeight = 12.sp,
+                textAlign = TextAlign.End,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
