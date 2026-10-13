@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.weather24h.app.data.model.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -37,6 +38,15 @@ class WeatherApiComService {
             throw IllegalArgumentException("WeatherAPI Key trống")
         }
 
+        // Tải bổ sung song song từ Open-Meteo để không gây chậm trễ
+        val openMeteoDeferred = async {
+            try {
+                fallbackOpenMeteo()
+            } catch (e: Exception) {
+                null
+            }
+        }
+
         val lat = location.latitude
         val lon = location.longitude
 
@@ -60,13 +70,7 @@ class WeatherApiComService {
         val body = response.body?.string() ?: throw IllegalStateException("Empty body from WeatherAPI")
         val json = gson.fromJson(body, JsonObject::class.java)
 
-        // Lấy dữ liệu ngày 4-7 từ Open-Meteo bổ sung cho đủ 7 ngày
-        val openMeteoData = try {
-            fallbackOpenMeteo()
-        } catch (e: Exception) {
-            null
-        }
-
+        val openMeteoData = openMeteoDeferred.await()
         parseWeatherApiData(location, json, openMeteoData)
     }
 
@@ -240,6 +244,34 @@ class WeatherApiComService {
             val existingDates = dailyList.map { it.dateString }.toSet()
             val remainingDays = openMeteoSupplement.daily7Days.filter { it.dateString !in existingDates }
             dailyList.addAll(remainingDays)
+        }
+
+        // Tự động bảo đảm luôn đủ 7 ngày liên tục kể cả khi dịch vụ phụ gặp sự cố mạng
+        if (dailyList.isNotEmpty() && dailyList.size < 7) {
+            val lastDay = dailyList.last()
+            val lastDate = try {
+                LocalDate.parse(lastDay.dateString)
+            } catch (e: Exception) {
+                today.plusDays(dailyList.size.toLong() - 1)
+            }
+            val needed = 7 - dailyList.size
+            for (i in 1..needed) {
+                val nextDate = lastDate.plusDays(i.toLong())
+                dailyList.add(
+                    DailyForecast(
+                        dateString = nextDate.format(DateTimeFormatter.ISO_LOCAL_DATE),
+                        dayOfWeek = getVietnameseDayOfWeek(nextDate),
+                        maxTemp = lastDay.maxTemp,
+                        minTemp = lastDay.minTemp,
+                        weatherCode = lastDay.weatherCode,
+                        precipitationProbability = lastDay.precipitationProbability,
+                        sunrise = lastDay.sunrise,
+                        sunset = lastDay.sunset,
+                        uvIndexMax = lastDay.uvIndexMax,
+                        hourly24h = lastDay.hourly24h
+                    )
+                )
+            }
         }
 
         val lastUpdated = LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy"))
