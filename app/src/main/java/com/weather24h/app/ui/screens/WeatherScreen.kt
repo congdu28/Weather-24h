@@ -66,6 +66,7 @@ fun WeatherScreen(
     val isWidgetAutoRefresh by viewModel.isWidgetAutoRefresh.collectAsState()
     val forecastModel by viewModel.forecastModel.collectAsState()
     val weatherProvider by viewModel.weatherProvider.collectAsState()
+    val customWeatherApiKey by viewModel.customWeatherApiKey.collectAsState()
     val customGoogleWeatherKey by viewModel.customGoogleWeatherKey.collectAsState()
 
     var showSearchDialog by remember { mutableStateOf(false) }
@@ -478,6 +479,9 @@ fun WeatherScreen(
             SettingsDialog(
                 currentThemeMode = themeMode,
                 currentWeatherProvider = weatherProvider,
+                customWeatherApiKey = customWeatherApiKey,
+                isUsingCustomWeatherApiKey = viewModel.isUsingCustomWeatherApiKey(),
+                hasEffectiveWeatherApiKey = viewModel.hasWeatherApiKey(),
                 customGoogleWeatherKey = customGoogleWeatherKey,
                 isUsingCustomGoogleWeatherKey = viewModel.isUsingCustomGoogleWeatherKey(),
                 hasEffectiveGoogleWeatherKey = viewModel.hasGoogleWeatherKey(),
@@ -502,6 +506,11 @@ fun WeatherScreen(
                 onDismiss = { showSettingsDialog = false },
                 onSelectThemeMode = { viewModel.setThemeMode(it) },
                 onSelectWeatherProvider = { viewModel.setWeatherProvider(it) },
+                onSaveWeatherApiKey = { viewModel.saveWeatherApiKey(it) },
+                onClearWeatherApiKey = { viewModel.clearWeatherApiKey() },
+                onTestWeatherApiKey = { key, onResult ->
+                    viewModel.testWeatherApiKey(key, onResult)
+                },
                 onSaveGoogleWeatherKey = { viewModel.saveGoogleWeatherKey(it) },
                 onClearGoogleWeatherKey = { viewModel.clearGoogleWeatherKey() },
                 onTestGoogleWeatherKey = { key, onResult ->

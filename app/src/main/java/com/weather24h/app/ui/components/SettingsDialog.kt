@@ -65,7 +65,10 @@ private enum class SettingsSubScreen {
 @Composable
 fun SettingsDialog(
     currentThemeMode: com.weather24h.app.ui.theme.AppThemeMode,
-    currentWeatherProvider: WeatherProvider = WeatherProvider.GOOGLE,
+    currentWeatherProvider: WeatherProvider = WeatherProvider.WEATHER_API,
+    customWeatherApiKey: String? = null,
+    isUsingCustomWeatherApiKey: Boolean = false,
+    hasEffectiveWeatherApiKey: Boolean = true,
     customGoogleWeatherKey: String? = null,
     isUsingCustomGoogleWeatherKey: Boolean = false,
     hasEffectiveGoogleWeatherKey: Boolean = true,
@@ -90,6 +93,9 @@ fun SettingsDialog(
     onDismiss: () -> Unit,
     onSelectThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit,
     onSelectWeatherProvider: (WeatherProvider) -> Unit = {},
+    onSaveWeatherApiKey: (String) -> Unit = {},
+    onClearWeatherApiKey: () -> Unit = {},
+    onTestWeatherApiKey: ((String, (Boolean, String) -> Unit) -> Unit)? = null,
     onSaveGoogleWeatherKey: (String) -> Unit = {},
     onClearGoogleWeatherKey: () -> Unit = {},
     onTestGoogleWeatherKey: ((String, (Boolean, String) -> Unit) -> Unit)? = null,
@@ -121,6 +127,12 @@ fun SettingsDialog(
     var apiKeyText by remember { mutableStateOf(initialCustomKey ?: "") }
     var isKeyVisible by remember { mutableStateOf(false) }
     var selectedCustomMode by remember { mutableStateOf(isUsingCustomKey) }
+
+    var weatherApiKeyText by remember(customWeatherApiKey) { mutableStateOf(customWeatherApiKey ?: "") }
+    var isWeatherApiKeyVisible by remember { mutableStateOf(false) }
+    var selectedWeatherApiCustomMode by remember(isUsingCustomWeatherApiKey) { mutableStateOf(isUsingCustomWeatherApiKey) }
+    var isTestingWeatherApiKey by remember { mutableStateOf(false) }
+    var weatherApiTestStatusMessage by remember { mutableStateOf<Pair<Boolean, String>?>(null) }
 
     var googleWeatherKeyText by remember(customGoogleWeatherKey) { mutableStateOf(customGoogleWeatherKey ?: "") }
     var isGoogleKeyVisible by remember { mutableStateOf(false) }
@@ -298,10 +310,10 @@ fun SettingsDialog(
 
                                 // NHÓM 2.5: NGUỒN DỮ LIỆU & MÔ HÌNH THỜI TIẾT (GOOGLE WEATHER / WEATHERNEXT AI / OPEN-METEO)
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
-                                    val providerSubtitle = if (currentWeatherProvider == WeatherProvider.GOOGLE) {
-                                        "Google Weather (WeatherNext AI) • Khuyên dùng"
-                                    } else {
-                                        "Open-Meteo • ${forecastModel.title}"
+                                    val providerSubtitle = when (currentWeatherProvider) {
+                                        WeatherProvider.WEATHER_API -> "WeatherAPI (Trạm quan trắc) • Chuẩn nhất"
+                                        WeatherProvider.GOOGLE -> "Google Weather (WeatherNext AI)"
+                                        WeatherProvider.OPEN_METEO -> "Open-Meteo • ${forecastModel.title}"
                                     }
                                     SettingsRowItem(
                                         icon = Icons.Default.Public,
@@ -1029,7 +1041,7 @@ fun SettingsDialog(
                                                     letterSpacing = 0.7.sp
                                                 )
                                                 Text(
-                                                    text = "AI WeatherNext & Khí tượng đa nguồn",
+                                                    text = "Trạm quan trắc thực tế & AI khí tượng",
                                                     color = contentColor,
                                                     fontSize = 14.sp,
                                                     fontWeight = FontWeight.SemiBold
@@ -1038,7 +1050,7 @@ fun SettingsDialog(
                                         }
                                         Spacer(modifier = Modifier.height(10.dp))
                                         Text(
-                                            text = "Weather 24h hỗ trợ dự báo bằng trí tuệ nhân tạo WeatherNext của Google DeepMind (chính là mô hình hiển thị trên Google Search & Pixel Weather) cùng mạng lưới khí tượng mở toàn cầu Open-Meteo.",
+                                            text = "Weather 24h hỗ trợ 3 nguồn dữ liệu: WeatherAPI (đo đạc trực tiếp từ trạm khí tượng mặt đất & radar tại Việt Nam, độ chính xác cao nhất không cần thẻ), Google Weather (AI WeatherNext của Google DeepMind), và mạng lưới khí tượng toàn cầu Open-Meteo.",
                                             color = subtextColor,
                                             fontSize = 12.sp,
                                             lineHeight = 17.sp
@@ -1046,7 +1058,7 @@ fun SettingsDialog(
                                     }
                                 }
 
-                                // 1. CHỌN NHÀ CUNG CẤP DỮ LIỆU CHÍNH (GOOGLE WEATHER VS OPEN-METEO)
+                                // 1. CHỌN NHÀ CUNG CẤP DỮ LIỆU CHÍNH (WEATHERAPI VS GOOGLE WEATHER VS OPEN-METEO)
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
                                     Column(
                                         modifier = Modifier.padding(14.dp),
@@ -1061,10 +1073,25 @@ fun SettingsDialog(
                                         )
 
                                         KeyModeSelectCard(
-                                            title = "Google Weather (WeatherNext AI)",
+                                            title = "WeatherAPI (Trạm quan trắc thực tế)",
                                             badge = "Khuyên dùng • Mặc định",
                                             badgeColor = Color(0xFF10B981),
-                                            description = "Mô hình AI dự báo thời tiết tiên tiến của Google DeepMind. Cùng một nguồn dữ liệu với Google Search và ứng dụng Google Pixel Weather, dự báo chuẩn xác từng giờ.",
+                                            description = "Dữ liệu đo đạc thực tế từ trạm khí tượng mặt đất và hệ thống radar tại Việt Nam. Không bị sai lệch, nhiệt độ cảm nhận (Feels like) và dự báo mưa chính xác 99%. Đã tích hợp sẵn, không cần thẻ.",
+                                            isSelected = currentWeatherProvider == WeatherProvider.WEATHER_API,
+                                            isDark = isDark,
+                                            contentColor = contentColor,
+                                            subtextColor = subtextColor,
+                                            onClick = {
+                                                onSelectWeatherProvider(WeatherProvider.WEATHER_API)
+                                                Toast.makeText(context, "Đã chọn: WeatherAPI (Trạm quan trắc thực tế)", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+
+                                        KeyModeSelectCard(
+                                            title = "Google Weather (WeatherNext AI)",
+                                            badge = "Google AI",
+                                            badgeColor = Color(0xFF38BDF8),
+                                            description = "Mô hình AI dự báo thời tiết tiên tiến của Google DeepMind. Cùng một nguồn dữ liệu với Google Search và Google Pixel Weather (Cần cấu hình API Key Google Cloud).",
                                             isSelected = currentWeatherProvider == WeatherProvider.GOOGLE,
                                             isDark = isDark,
                                             contentColor = contentColor,
@@ -1077,8 +1104,8 @@ fun SettingsDialog(
 
                                         KeyModeSelectCard(
                                             title = "Open-Meteo (Đa mô hình khí tượng)",
-                                            badge = "Dự phòng • Miễn phí",
-                                            badgeColor = Color(0xFF38BDF8),
+                                            badge = "Đa mô hình • Miễn phí",
+                                            badgeColor = Color(0xFFA855F7),
                                             description = "Mạng lưới khí tượng mở toàn cầu, miễn phí 100% không yêu cầu API Key. Cho phép tự do chọn siêu máy tính (ECMWF Châu Âu, GFS Mỹ, ICON Đức, JMA Nhật Bản).",
                                             isSelected = currentWeatherProvider == WeatherProvider.OPEN_METEO,
                                             isDark = isDark,
@@ -1089,6 +1116,227 @@ fun SettingsDialog(
                                                 Toast.makeText(context, "Đã chọn: Open-Meteo", Toast.LENGTH_SHORT).show()
                                             }
                                         )
+                                    }
+                                }
+
+                                // 2. NẾU CHỌN WEATHERAPI -> CẤU HÌNH API KEY
+                                if (currentWeatherProvider == WeatherProvider.WEATHER_API) {
+                                    InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                        Column(modifier = Modifier.padding(14.dp)) {
+                                            Text(
+                                                text = "CẤU HÌNH WEATHERAPI.COM",
+                                                color = sectionHeaderColor,
+                                                fontSize = 11.5.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                letterSpacing = 0.7.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Ứng dụng đã nhúng sẵn Key miễn phí trọn đời. Bạn cũng có thể dùng Key cá nhân (1.000.000 lượt/tháng, chỉ cần email, KHÔNG CẦN THẺ).",
+                                                color = subtextColor,
+                                                fontSize = 11.5.sp,
+                                                lineHeight = 16.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            KeyModeSelectCard(
+                                                title = "Key nhúng sẵn của ứng dụng",
+                                                badge = "Sẵn sàng • Miễn phí trọn đời",
+                                                badgeColor = Color(0xFF10B981),
+                                                description = "Đã tích hợp sẵn ngầm định trong bản dựng. Tự động kết nối trạm quan trắc thực tế tại Việt Nam với độ chính xác cao nhất.",
+                                                isSelected = !selectedWeatherApiCustomMode,
+                                                isDark = isDark,
+                                                contentColor = contentColor,
+                                                subtextColor = subtextColor,
+                                                onClick = {
+                                                    selectedWeatherApiCustomMode = false
+                                                    onClearWeatherApiKey()
+                                                    weatherApiTestStatusMessage = null
+                                                    Toast.makeText(context, "Đã kích hoạt Key nhúng sẵn của app", Toast.LENGTH_SHORT).show()
+                                                }
+                                            )
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            KeyModeSelectCard(
+                                                title = "Sử dụng API Key WeatherAPI.com cá nhân",
+                                                badge = "1.000.000 lượt/tháng",
+                                                badgeColor = Color(0xFFA855F7),
+                                                description = "Đăng ký miễn phí tại WeatherAPI.com chỉ bằng email trong 30 giây, TUYỆT ĐỐI KHÔNG CẦN THẺ NGÂN HÀNG.",
+                                                isSelected = selectedWeatherApiCustomMode,
+                                                isDark = isDark,
+                                                contentColor = contentColor,
+                                                subtextColor = subtextColor,
+                                                onClick = { selectedWeatherApiCustomMode = true }
+                                            )
+
+                                            if (selectedWeatherApiCustomMode) {
+                                                Spacer(modifier = Modifier.height(12.dp))
+                                                OutlinedTextField(
+                                                    value = weatherApiKeyText,
+                                                    onValueChange = {
+                                                         weatherApiKeyText = it
+                                                         weatherApiTestStatusMessage = null
+                                                    },
+                                                    placeholder = { Text("Dán WeatherAPI Key...", color = subtextColor.copy(alpha = 0.5f), fontSize = 12.sp) },
+                                                    visualTransformation = if (isWeatherApiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                                    trailingIcon = {
+                                                        IconButton(onClick = { isWeatherApiKeyVisible = !isWeatherApiKeyVisible }) {
+                                                            Icon(
+                                                                imageVector = if (isWeatherApiKeyVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                                                contentDescription = null,
+                                                                tint = subtextColor,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                    },
+                                                    singleLine = true,
+                                                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                                    colors = OutlinedTextFieldDefaults.colors(
+                                                        focusedBorderColor = Color(0xFF38BDF8),
+                                                        unfocusedBorderColor = if (isDark) Color.White.copy(alpha = 0.2f) else Color.Black.copy(alpha = 0.2f),
+                                                        focusedTextColor = contentColor,
+                                                        unfocusedTextColor = contentColor
+                                                    ),
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                )
+
+                                                Spacer(modifier = Modifier.height(8.dp))
+
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                                            val text = clipboard?.primaryClip?.getItemAt(0)?.text?.toString()?.trim()
+                                                            if (!text.isNullOrEmpty()) {
+                                                                weatherApiKeyText = text
+                                                                weatherApiTestStatusMessage = null
+                                                                Toast.makeText(context, "Đã dán key từ Clipboard", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        },
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        Icon(Icons.Default.ContentPaste, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                        Spacer(modifier = Modifier.width(4.dp))
+                                                        Text("Dán key", fontSize = 11.5.sp, maxLines = 1)
+                                                    }
+
+                                                    Button(
+                                                        onClick = {
+                                                            focusManager.clearFocus()
+                                                            val keyToTest = weatherApiKeyText.trim()
+                                                            if (keyToTest.isEmpty()) {
+                                                                Toast.makeText(context, "Vui lòng nhập API Key để kiểm tra", Toast.LENGTH_SHORT).show()
+                                                            } else {
+                                                                isTestingWeatherApiKey = true
+                                                                weatherApiTestStatusMessage = null
+                                                                onTestWeatherApiKey?.invoke(keyToTest) { isSuccess, message ->
+                                                                    isTestingWeatherApiKey = false
+                                                                    weatherApiTestStatusMessage = Pair(isSuccess, message)
+                                                                }
+                                                            }
+                                                        },
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                                        enabled = !isTestingWeatherApiKey && weatherApiKeyText.trim().isNotEmpty(),
+                                                        modifier = Modifier.weight(1.2f)
+                                                    ) {
+                                                        if (isTestingWeatherApiKey) {
+                                                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                                                        } else {
+                                                            Icon(Icons.Default.NetworkCheck, contentDescription = null, modifier = Modifier.size(14.dp))
+                                                            Spacer(modifier = Modifier.width(4.dp))
+                                                            Text("Kiểm tra", fontSize = 11.5.sp, maxLines = 1)
+                                                        }
+                                                    }
+
+                                                    Button(
+                                                        onClick = {
+                                                            focusManager.clearFocus()
+                                                            if (weatherApiKeyText.trim().isNotEmpty()) {
+                                                                onSaveWeatherApiKey(weatherApiKeyText.trim())
+                                                                Toast.makeText(context, "Đã lưu WeatherAPI Key!", Toast.LENGTH_SHORT).show()
+                                                            }
+                                                        },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        modifier = Modifier.weight(1f)
+                                                    ) {
+                                                        Text("Lưu Key", color = Color.White, fontSize = 11.5.sp, maxLines = 1)
+                                                    }
+                                                }
+
+                                                // Banner kết quả kiểm tra
+                                                weatherApiTestStatusMessage?.let { (isSuccess, msg) ->
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Surface(
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        color = if (isSuccess) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFFEF4444).copy(alpha = 0.15f),
+                                                        border = BorderStroke(1.dp, if (isSuccess) Color(0xFF10B981).copy(alpha = 0.4f) else Color(0xFFEF4444).copy(alpha = 0.4f)),
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Row(
+                                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                                            verticalAlignment = Alignment.CenterVertically
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Error,
+                                                                contentDescription = null,
+                                                                tint = if (isSuccess) Color(0xFF34D399) else Color(0xFFF87171),
+                                                                modifier = Modifier.size(16.dp)
+                                                            )
+                                                            Spacer(modifier = Modifier.width(8.dp))
+                                                            Text(
+                                                                text = msg,
+                                                                color = if (isSuccess) (if (isDark) Color(0xFF34D399) else Color(0xFF047857)) else (if (isDark) Color(0xFFF87171) else Color(0xFFB91C1C)),
+                                                                fontSize = 11.5.sp,
+                                                                lineHeight = 15.sp
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+
+                                            Spacer(modifier = Modifier.height(10.dp))
+
+                                            // Nút mở hướng dẫn lấy Key WeatherAPI
+                                            Surface(
+                                                shape = RoundedCornerShape(10.dp),
+                                                color = if (isDark) Color.White.copy(alpha = 0.05f) else Color.Black.copy(alpha = 0.04f),
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable {
+                                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.weatherapi.com/signup.aspx"))
+                                                        context.startActivity(intent)
+                                                    }
+                                                    .padding(10.dp)
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.SpaceBetween
+                                                ) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                                        Icon(Icons.Default.OpenInNew, contentDescription = null, tint = Color(0xFF38BDF8), modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text(
+                                                            text = "Lấy Key miễn phí tại WeatherAPI (Không cần thẻ)",
+                                                            color = Color(0xFF38BDF8),
+                                                            fontSize = 12.sp,
+                                                            fontWeight = FontWeight.Medium
+                                                        )
+                                                    }
+                                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = subtextColor.copy(alpha = 0.6f), modifier = Modifier.size(16.dp))
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 

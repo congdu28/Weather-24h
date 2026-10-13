@@ -164,9 +164,12 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         repository.setAmbientGlowIntensity(clamped)
     }
 
-    // Nguồn dữ liệu thời tiết (Google Weather vs Open-Meteo)
+    // Nguồn dữ liệu thời tiết (WeatherAPI vs Google Weather vs Open-Meteo)
     private val _weatherProvider = MutableStateFlow(repository.getWeatherProvider())
     val weatherProvider: StateFlow<WeatherProvider> = _weatherProvider.asStateFlow()
+
+    private val _customWeatherApiKey = MutableStateFlow(repository.getCustomWeatherApiKey())
+    val customWeatherApiKey: StateFlow<String?> = _customWeatherApiKey.asStateFlow()
 
     private val _customGoogleWeatherKey = MutableStateFlow(repository.getCustomGoogleWeatherKey())
     val customGoogleWeatherKey: StateFlow<String?> = _customGoogleWeatherKey.asStateFlow()
@@ -177,6 +180,39 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         refreshWeather()
     }
 
+    // --- WeatherAPI Key Actions ---
+    fun saveWeatherApiKey(key: String) {
+        repository.saveWeatherApiKey(key)
+        _customWeatherApiKey.value = repository.getCustomWeatherApiKey()
+        if (_weatherProvider.value == WeatherProvider.WEATHER_API) {
+            refreshWeather()
+        }
+    }
+
+    fun clearWeatherApiKey() {
+        repository.clearCustomWeatherApiKey()
+        _customWeatherApiKey.value = null
+        if (_weatherProvider.value == WeatherProvider.WEATHER_API) {
+            refreshWeather()
+        }
+    }
+
+    fun getEffectiveWeatherApiKey(): String = repository.getEffectiveWeatherApiKey()
+    fun hasWeatherApiKey(): Boolean = repository.hasWeatherApiKey()
+    fun isUsingCustomWeatherApiKey(): Boolean = repository.isUsingCustomWeatherApiKey()
+
+    fun testWeatherApiKey(key: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.testWeatherApiKey(key)
+            result.onSuccess { msg ->
+                onResult(true, msg)
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Kiểm tra kết nối thất bại")
+            }
+        }
+    }
+
+    // --- Google Weather Key Actions ---
     fun saveGoogleWeatherKey(key: String) {
         repository.saveGoogleWeatherKey(key)
         _customGoogleWeatherKey.value = repository.getCustomGoogleWeatherKey()
