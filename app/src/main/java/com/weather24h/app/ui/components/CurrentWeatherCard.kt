@@ -154,7 +154,9 @@ fun CurrentWeatherCard(
             Spacer(modifier = Modifier.height(12.dp))
 
             val weatherIcon = WeatherCondition.getWeatherIcon(condition.type, weather.current.isDay)
-            val iconTint = WeatherCondition.getWeatherIconTint(condition.type, weather.current.isDay)
+            val iconTint = if (!isDark && condition.type == com.weather24h.app.data.model.WeatherType.CLOUDY) {
+                Color(0xFF64748B)
+            } else WeatherCondition.getWeatherIconTint(condition.type, weather.current.isDay)
 
             // Main Weather Icon & Temperature
             Row(
