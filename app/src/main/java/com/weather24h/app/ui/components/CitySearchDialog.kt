@@ -63,12 +63,12 @@ fun CitySearchDialog(
             tonalElevation = 6.dp,
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(0.86f)
+                .fillMaxHeight(0.88f)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(20.dp)
+                    .padding(16.dp)
             ) {
                 // Title & Close Button
                 Row(
@@ -76,17 +76,21 @@ fun CitySearchDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = "Chọn địa điểm",
                             color = contentColor,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "Tìm kiếm hoặc chọn từ danh sách yêu thích",
                             color = subtextColor,
-                            fontSize = 11.5.sp
+                            fontSize = 11.5.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     IconButton(
@@ -115,7 +119,10 @@ fun CitySearchDialog(
                         Text(
                             text = "Nhập tên quận, thành phố...",
                             color = subtextColor.copy(alpha = 0.6f),
-                            fontSize = 13.5.sp
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     },
                     leadingIcon = {
@@ -181,20 +188,27 @@ fun CitySearchDialog(
                             Text(
                                 text = "Sử dụng vị trí hiện tại (GPS)",
                                 color = contentColor,
-                                fontSize = 13.5.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "Tự động cập nhật thời tiết theo tọa độ thực",
                                 color = if (isDark) Color(0xFFBAE6FD) else Color(0xFF0369A1),
-                                fontSize = 11.sp
+                                fontSize = 10.5.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "📍 Định vị",
                             fontSize = 11.sp,
                             color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -261,7 +275,10 @@ fun CitySearchDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
                                     Box(
                                         modifier = Modifier
                                             .size(24.dp)
@@ -279,9 +296,11 @@ fun CitySearchDialog(
                                     Text(
                                         text = "ĐỊA ĐIỂM YÊU THÍCH",
                                         color = contentColor,
-                                        fontSize = 12.5.sp,
+                                        fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        letterSpacing = 0.5.sp
+                                        letterSpacing = 0.4.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                     if (favoriteCities.isNotEmpty()) {
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -292,18 +311,23 @@ fun CitySearchDialog(
                                             Text(
                                                 text = "${favoriteCities.size}",
                                                 color = contentColor.copy(alpha = 0.85f),
-                                                fontSize = 10.5.sp,
+                                                fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
+                                                maxLines = 1,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                             )
                                         }
                                     }
                                 }
 
+                                Spacer(modifier = Modifier.width(6.dp))
+
                                 Text(
                                     text = "Chạm để mở ngay",
                                     color = subtextColor.copy(alpha = 0.75f),
-                                    fontSize = 10.5.sp
+                                    fontSize = 10.5.sp,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
@@ -491,7 +515,7 @@ private fun FavoriteCityCardItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 9.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Phần thân bấm chọn thành phố
@@ -499,13 +523,13 @@ private fun FavoriteCityCardItem(
                 modifier = Modifier
                     .weight(1f)
                     .clickable(onClick = onSelect)
-                    .padding(vertical = 3.dp),
+                    .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Biểu tượng thời tiết hoặc Ngôi sao vàng
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
+                        .size(36.dp)
                         .background(
                             if (isCurrent) Color(0xFF38BDF8).copy(alpha = 0.22f)
                             else Color(0xFFFFD166).copy(alpha = if (isDark) 0.16f else 0.14f),
@@ -516,33 +540,37 @@ private fun FavoriteCityCardItem(
                     if (summary != null) {
                         Text(
                             text = summary.weatherType.icon,
-                            fontSize = 19.sp
+                            fontSize = 18.sp
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
                             tint = Color(0xFFFFD166),
-                            modifier = Modifier.size(19.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.width(11.dp))
+                Spacer(modifier = Modifier.width(9.dp))
 
                 // Cột thông tin thành phố
                 Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
                             text = city.name,
                             color = contentColor,
-                            fontSize = 14.5.sp,
+                            fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         if (isCurrent) {
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(5.dp))
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
                                 color = Color(0xFF38BDF8).copy(alpha = 0.22f)
@@ -550,8 +578,10 @@ private fun FavoriteCityCardItem(
                                 Text(
                                     text = "Đang xem",
                                     color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                    fontSize = 9.5.sp,
+                                    fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
                                     modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
                                 )
                             }
@@ -568,7 +598,7 @@ private fun FavoriteCityCardItem(
                     Text(
                         text = subtitle,
                         color = subtextColor,
-                        fontSize = 11.5.sp,
+                        fontSize = 11.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -576,22 +606,24 @@ private fun FavoriteCityCardItem(
 
                 // Nhiệt độ hiện tại nếu đã lưu tóm tắt
                 if (summary != null) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "${summary.tempC}°",
                         color = contentColor,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
 
             // Nút xóa nhanh khỏi danh sách yêu thích
             IconButton(
                 onClick = onRemove,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(28.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
@@ -641,18 +673,22 @@ private fun CityItemRow(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(10.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
                     Text(
                         text = city.name,
                         color = contentColor,
                         fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     if (city.displayName.isNotEmpty()) {
                         Text(
                             text = city.displayName,
                             color = subtextColor,
-                            fontSize = 12.sp
+                            fontSize = 12.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

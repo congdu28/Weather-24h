@@ -44,11 +44,19 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         stylistService = stylistService
     )
 
-    private val _uiState = MutableStateFlow<WeatherUiState>(WeatherUiState.Loading)
+    private val _uiState = MutableStateFlow<WeatherUiState>(
+        repository.getCachedWeather()?.let {
+            WeatherUiState.Success(
+                weather = it,
+                outfit = null,
+                isOutfitLoading = false
+            )
+        } ?: WeatherUiState.Loading
+    )
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
 
-    // Trạng thái đang làm mới mượt mà (Pull-to-refresh & Nút cập nhật góc trên)
-    private val _isRefreshing = MutableStateFlow(false)
+    // Trạng thái đang làm mới mượt mà (Pull-to-refresh, khởi động ngầm & Nút cập nhật)
+    private val _isRefreshing = MutableStateFlow(repository.getCachedWeather() != null)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     private val _searchResults = MutableStateFlow<List<CityLocation>>(emptyList())
@@ -276,10 +284,16 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         // Lên lịch đồng bộ định kỳ Widget (1h/lần) & Thông báo (nếu bật)
         PeriodicWeatherWorker.schedule(application, _periodicNotifHours.value)
 
+        // Tải trang phục cho thời tiết đã lưu từ phiên trước (nếu có)
+        val cached = repository.getCachedWeather()
+        if (cached != null) {
+            loadOutfitForWeather(cached)
+        }
+
         // Khi ưu tiên GPS, MainActivity sẽ tải đúng vị trí sau khi quyền được xử lý.
         // Chỉ tải thành phố đã lưu ngay nếu người dùng đã tắt khởi động bằng GPS.
         if (!_isStartWithGps.value) {
-            loadWeather(currentCity)
+            loadWeather(currentCity, isBackgroundRefresh = true)
         }
         startAutoRefreshTimer(_autoRefreshMinutes.value)
         refreshFavoriteSummaries()
@@ -287,8 +301,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
 
     /** Dùng thành phố đã lưu nếu lần định vị đầu tiên bị từ chối hoặc thất bại. */
     fun loadInitialFallbackWeather() {
-        if (_uiState.value is WeatherUiState.Loading && loadWeatherJob?.isActive != true) {
+        if (_uiState.value !is WeatherUiState.Success && loadWeatherJob?.isActive != true) {
             loadWeather(currentCity)
+        } else if (_uiState.value is WeatherUiState.Success) {
+            refreshWeather(isPullRefresh = true)
         }
     }
 
@@ -296,23 +312,29 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
      * Tải dữ liệu thời tiết cho một thành phố cụ thể.
      * Tự động hủy mọi tác vụ cũ đang chạy để tránh race condition.
      */
-    fun loadWeather(city: CityLocation) {
+    fun loadWeather(city: CityLocation, isBackgroundRefresh: Boolean = false) {
         gpsJob?.cancel()
         loadWeatherJob?.cancel()
         loadOutfitJob?.cancel()
 
+        val isSameCity = city.name.equals(currentCity.name, ignoreCase = true)
         currentCity = city
         repository.setLastActiveCity(city)
 
         loadWeatherJob = viewModelScope.launch {
-            _uiState.value = WeatherUiState.Loading
+            val hasExistingData = _uiState.value is WeatherUiState.Success
+            if (!hasExistingData || (!isSameCity && !isBackgroundRefresh)) {
+                _uiState.value = WeatherUiState.Loading
+            } else {
+                _isRefreshing.value = true
+            }
             try {
                 val weather = repository.getWeatherData(city)
                 if (!isActive) return@launch
 
                 _uiState.value = WeatherUiState.Success(
                     weather = weather,
-                    outfit = null,
+                    outfit = if (isSameCity) (_uiState.value as? WeatherUiState.Success)?.outfit else null,
                     isOutfitLoading = true
                 )
                 _favoriteSummaries.value = repository.getFavoriteSummaries()
@@ -325,8 +347,12 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 loadOutfitForWeather(weather)
             } catch (e: Exception) {
                 if (isActive) {
-                    _uiState.value = WeatherUiState.Error("Không thể tải thời tiết cho ${city.name}. Vui lòng thử lại!")
+                    if (_uiState.value !is WeatherUiState.Success) {
+                        _uiState.value = WeatherUiState.Error("Không thể tải thời tiết cho ${city.name}. Vui lòng thử lại!")
+                    }
                 }
+            } finally {
+                _isRefreshing.value = false
             }
         }
     }
@@ -551,14 +577,18 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun cancelRefreshing() {
+        _isRefreshing.value = false
+    }
+
     fun setLocationFromGps(lat: Double, lon: Double, isPullRefresh: Boolean = false) {
         gpsJob?.cancel()
         loadWeatherJob?.cancel()
         loadOutfitJob?.cancel()
 
         gpsJob = viewModelScope.launch {
-            val isBackgroundUpdate = isPullRefresh && _uiState.value is WeatherUiState.Success
-            if (isBackgroundUpdate) {
+            val hasExistingData = _uiState.value is WeatherUiState.Success
+            if (hasExistingData) {
                 _isRefreshing.value = true
             } else {
                 _uiState.value = WeatherUiState.Loading
@@ -604,7 +634,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                     val finalWeather = weather.copy(location = realCity)
 
                     val currentState = _uiState.value
-                    if (isBackgroundUpdate && currentState is WeatherUiState.Success) {
+                    if (hasExistingData && currentState is WeatherUiState.Success) {
                         _uiState.value = currentState.copy(weather = finalWeather)
                     } else {
                         _uiState.value = WeatherUiState.Success(
@@ -619,7 +649,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                     }
 
                     loadOutfitForWeather(finalWeather)
-                } else if (!isBackgroundUpdate) {
+                } else if (!hasExistingData) {
                     _uiState.value = WeatherUiState.Error("Không thể tải thời tiết tại vị trí GPS này.")
                 }
             } finally {

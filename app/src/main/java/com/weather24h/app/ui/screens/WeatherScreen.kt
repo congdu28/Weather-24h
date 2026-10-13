@@ -341,10 +341,12 @@ fun WeatherScreen(
                                         )
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                            text = "Đang cập nhật thời tiết...",
+                                            text = "Đang cập nhật thời tiết mới nhất...",
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Medium,
-                                            color = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+                                            color = if (isDarkTheme) Color.White else Color(0xFF0F172A),
+                                            maxLines = 1,
+                                            softWrap = false
                                         )
                                     } else {
                                         Icon(

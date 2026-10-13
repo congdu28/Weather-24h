@@ -46,6 +46,8 @@ class MainActivity : ComponentActivity() {
             if (isInitial) {
                 viewModel.loadInitialFallbackWeather()
                 requestNotificationPermissionIfNeeded()
+            } else {
+                viewModel.cancelRefreshing()
             }
         }
     }
@@ -206,6 +208,8 @@ class MainActivity : ComponentActivity() {
         if (isInitial) {
             viewModel.loadInitialFallbackWeather()
             requestNotificationPermissionIfNeeded()
+        } else {
+            viewModel.cancelRefreshing()
         }
     }
 

@@ -99,7 +99,9 @@ fun FavoriteCitiesQuickBar(
                         text = "Vị trí GPS",
                         color = if (isGpsActive) activeColor else textPrimary,
                         fontSize = 12.sp,
-                        fontWeight = if (isGpsActive) FontWeight.Bold else FontWeight.Medium
+                        fontWeight = if (isGpsActive) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
@@ -151,7 +153,9 @@ fun FavoriteCitiesQuickBar(
                         text = city.name,
                         color = if (isActive) activeColor else textPrimary,
                         fontSize = 12.sp,
-                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium
+                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false
                     )
                     if (summary != null) {
                         Spacer(modifier = Modifier.width(5.dp))
@@ -159,7 +163,9 @@ fun FavoriteCitiesQuickBar(
                             text = "${summary.tempC}°",
                             color = if (isActive) activeColor else (if (isDark) Color(0xFFBAE6FD) else Color(0xFF0369A1)),
                             fontSize = 11.5.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }

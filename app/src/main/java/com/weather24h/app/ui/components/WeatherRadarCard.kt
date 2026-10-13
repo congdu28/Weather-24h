@@ -133,16 +133,16 @@ fun WeatherRadarCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
-                            text = "BẢN ĐỒ RADAR KHÍ TƯỢNG",
+                            text = "RADAR KHÍ TƯỢNG",
                             color = accentColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.3.sp,
+                            letterSpacing = 0.5.sp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = if (selectedEngine == "windy") "Windy WebGL • Trực quan & Sắc nét" else "RainViewer • Trạm Radar 2D Ổn định",
+                            text = if (selectedEngine == "windy") "Windy WebGL • Trực quan sắc nét" else "RainViewer • Trạm Radar 2D ổn định",
                             color = subtextColor,
                             fontSize = 10.5.sp,
                             maxLines = 1,
@@ -206,7 +206,8 @@ fun WeatherRadarCard(
                                 color = accentColor,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                maxLines = 1
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -221,7 +222,7 @@ fun WeatherRadarCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 LayerPill(
-                    title = "⚡ Windy (Mượt nhất)",
+                    title = "⚡ Windy (Mượt)",
                     isSelected = selectedEngine == "windy",
                     isDark = isDark,
                     onClick = {
@@ -231,7 +232,7 @@ fun WeatherRadarCard(
                     modifier = Modifier.weight(1f)
                 )
                 LayerPill(
-                    title = "📡 RainViewer (Tương thích 100%)",
+                    title = "📡 RainViewer (Ổn định)",
                     isSelected = selectedEngine == "rainviewer",
                     isDark = isDark,
                     onClick = {
@@ -721,9 +722,12 @@ private fun LayerPill(
             fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 6.dp)
+                .padding(horizontal = 4.dp, vertical = 7.dp)
         )
     }
 }
