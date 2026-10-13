@@ -103,7 +103,7 @@ class GoogleWeatherApiService {
                     )
                 }
             }
-        } catch (_: Exception) {}
+        } catch (e: Exception) {}
 
         // Chuyển đổi dữ liệu sang WeatherData
         parseGoogleWeatherData(location, currentJson, hourlyJson, dailyJson, airQuality)
@@ -297,7 +297,7 @@ class GoogleWeatherApiService {
             val instant = Instant.parse(isoString)
             val ldt = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
             ldt.format(DateTimeFormatter.ofPattern("HH:mm"))
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             null
         }
     }

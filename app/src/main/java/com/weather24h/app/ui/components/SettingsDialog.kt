@@ -2,6 +2,8 @@ package com.weather24h.app.ui.components
 
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -1260,7 +1262,7 @@ fun SettingsDialog(
                                                             verticalAlignment = Alignment.CenterVertically
                                                         ) {
                                                             Icon(
-                                                                imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.ErrorOutline,
+                                                                imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Error,
                                                                 contentDescription = null,
                                                                 tint = if (isSuccess) Color(0xFF34D399) else Color(0xFFF87171),
                                                                 modifier = Modifier.size(16.dp)
