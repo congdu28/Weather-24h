@@ -65,8 +65,11 @@ fun WeatherScreen(
     val widgetOpacity by viewModel.widgetOpacity.collectAsState()
     val isWidgetAutoRefresh by viewModel.isWidgetAutoRefresh.collectAsState()
     val forecastModel by viewModel.forecastModel.collectAsState()
+    val weatherProvider by viewModel.weatherProvider.collectAsState()
+    val customGoogleWeatherKey by viewModel.customGoogleWeatherKey.collectAsState()
 
     var showSearchDialog by remember { mutableStateOf(false) }
+
     var showSettingsDialog by remember { mutableStateOf(false) }
     var lastBackPressTime by remember { mutableStateOf(0L) }
 
@@ -436,12 +439,13 @@ fun WeatherScreen(
                                 ) {
                                     Text(
                                         text = if (weather.isOffline)
-                                            "Dữ liệu ngoại tuyến • ${weather.forecastModel.title} • Lưu lúc ${weather.lastUpdated}"
+                                            "Dữ liệu ngoại tuyến • ${weather.providerName} • Lưu lúc ${weather.lastUpdated}"
                                         else
-                                            "Nguồn: ${weather.forecastModel.title} • Cập nhật lúc ${weather.lastUpdated}",
+                                            "Nguồn: ${weather.providerName} • Cập nhật lúc ${weather.lastUpdated}",
                                         color = if (isDarkTheme) Color.White.copy(alpha = 0.55f) else Color(0xFF475569),
                                         fontSize = 12.sp
                                     )
+
                                 }
                             }
                         }
@@ -473,6 +477,10 @@ fun WeatherScreen(
         if (showSettingsDialog) {
             SettingsDialog(
                 currentThemeMode = themeMode,
+                currentWeatherProvider = weatherProvider,
+                customGoogleWeatherKey = customGoogleWeatherKey,
+                isUsingCustomGoogleWeatherKey = viewModel.isUsingCustomGoogleWeatherKey(),
+                hasEffectiveGoogleWeatherKey = viewModel.hasGoogleWeatherKey(),
                 initialCustomKey = viewModel.getCustomApiKey(),
                 isUsingCustomKey = viewModel.isUsingCustomKey(),
                 hasDefaultKey = viewModel.hasDefaultKey(),
@@ -493,10 +501,17 @@ fun WeatherScreen(
                 favoriteCities = favoriteCities,
                 onDismiss = { showSettingsDialog = false },
                 onSelectThemeMode = { viewModel.setThemeMode(it) },
+                onSelectWeatherProvider = { viewModel.setWeatherProvider(it) },
+                onSaveGoogleWeatherKey = { viewModel.saveGoogleWeatherKey(it) },
+                onClearGoogleWeatherKey = { viewModel.clearGoogleWeatherKey() },
+                onTestGoogleWeatherKey = { key, onResult ->
+                    viewModel.testGoogleWeatherKey(key, onResult)
+                },
                 onSetBgDimmingLevel = { viewModel.setBgDimmingLevel(it) },
                 onSetCardOpacity = { viewModel.setCardOpacity(it) },
                 onSelectAmbientGlowStyle = { viewModel.setAmbientGlowStyle(it) },
                 onSetAmbientGlowIntensity = { viewModel.setAmbientGlowIntensity(it) },
+
                 onSelectWidgetThemeMode = { viewModel.setWidgetThemeMode(it) },
                 onSetWidgetOpacity = { viewModel.setWidgetOpacity(it) },
                 onSetWidgetAutoRefresh = { viewModel.setWidgetAutoRefresh(it) },

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.WeatherData
+import com.weather24h.app.data.model.WeatherProvider
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
@@ -162,6 +163,51 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         _ambientGlowIntensity.value = clamped
         repository.setAmbientGlowIntensity(clamped)
     }
+
+    // Nguồn dữ liệu thời tiết (Google Weather vs Open-Meteo)
+    private val _weatherProvider = MutableStateFlow(repository.getWeatherProvider())
+    val weatherProvider: StateFlow<WeatherProvider> = _weatherProvider.asStateFlow()
+
+    private val _customGoogleWeatherKey = MutableStateFlow(repository.getCustomGoogleWeatherKey())
+    val customGoogleWeatherKey: StateFlow<String?> = _customGoogleWeatherKey.asStateFlow()
+
+    fun setWeatherProvider(provider: WeatherProvider) {
+        _weatherProvider.value = provider
+        repository.setWeatherProvider(provider)
+        refreshWeather()
+    }
+
+    fun saveGoogleWeatherKey(key: String) {
+        repository.saveGoogleWeatherKey(key)
+        _customGoogleWeatherKey.value = repository.getCustomGoogleWeatherKey()
+        if (_weatherProvider.value == WeatherProvider.GOOGLE) {
+            refreshWeather()
+        }
+    }
+
+    fun clearGoogleWeatherKey() {
+        repository.clearCustomGoogleWeatherKey()
+        _customGoogleWeatherKey.value = null
+        if (_weatherProvider.value == WeatherProvider.GOOGLE) {
+            refreshWeather()
+        }
+    }
+
+    fun getEffectiveGoogleWeatherKey(): String = repository.getEffectiveGoogleWeatherKey()
+    fun hasGoogleWeatherKey(): Boolean = repository.hasGoogleWeatherKey()
+    fun isUsingCustomGoogleWeatherKey(): Boolean = repository.isUsingCustomGoogleWeatherKey()
+
+    fun testGoogleWeatherKey(key: String, onResult: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.testGoogleWeatherKey(key)
+            result.onSuccess { msg ->
+                onResult(true, msg)
+            }.onFailure { err ->
+                onResult(false, err.message ?: "Kiểm tra kết nối thất bại")
+            }
+        }
+    }
+
 
     private var currentCity: CityLocation = repository.getLastActiveCity()
     private var autoRefreshJob: Job? = null

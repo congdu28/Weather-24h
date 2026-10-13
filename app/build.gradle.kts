@@ -15,13 +15,18 @@ val defaultGeminiKey: String = localProps.getProperty("GEMINI_API_KEY")
     ?: (project.findProperty("GEMINI_API_KEY") as? String)
     ?: ""
 
+val defaultGoogleWeatherKey: String = localProps.getProperty("GOOGLE_WEATHER_API_KEY")
+    ?: System.getenv("GOOGLE_WEATHER_API_KEY")
+    ?: (project.findProperty("GOOGLE_WEATHER_API_KEY") as? String)
+    ?: ""
+
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.18"
+    ?: "1.0.19"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 118
+    ?: 119
 
 android {
     namespace = "com.weather24h.app"
@@ -58,7 +63,9 @@ android {
         }
 
         buildConfigField("String", "DEFAULT_GEMINI_API_KEY", "\"$defaultGeminiKey\"")
+        buildConfigField("String", "DEFAULT_GOOGLE_WEATHER_KEY", "\"$defaultGoogleWeatherKey\"")
     }
+
 
     buildTypes {
         release {

@@ -72,7 +72,8 @@ data class WeatherData(
     val airQuality: AirQuality?,
     val lastUpdated: String,
     val forecastModel: WeatherForecastModel = WeatherForecastModel.BEST_MATCH,
-    val isOffline: Boolean = false
+    val isOffline: Boolean = false,
+    val providerName: String = "Google Weather (WeatherNext AI)"
 ) {
     val maxTemp24h: Double
         get() = hourly24h.maxOfOrNull { it.temperature } ?: current.temperature

@@ -521,7 +521,8 @@ class WeatherApiService {
             daily7Days = dailyList,
             airQuality = aqi,
             lastUpdated = updatedStr,
-            forecastModel = model
+            forecastModel = model,
+            providerName = "Open-Meteo (${model.title})"
         )
     }
 
@@ -613,7 +614,9 @@ class WeatherApiService {
             daily7Days = daily,
             airQuality = AirQuality(22.0, 38.0, 42),
             lastUpdated = DateTimeFormatter.ofPattern("HH:mm - dd/MM/yyyy").format(LocalDateTime.now()),
-            forecastModel = model
+            forecastModel = model,
+            providerName = "Open-Meteo (${model.title})"
         )
     }
 }
+

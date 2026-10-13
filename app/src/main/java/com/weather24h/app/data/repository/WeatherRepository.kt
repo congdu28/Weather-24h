@@ -3,10 +3,13 @@ package com.weather24h.app.data.repository
 import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.weather24h.app.BuildConfig
 import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.WeatherData
+import com.weather24h.app.data.model.WeatherProvider
 import com.weather24h.app.data.remote.GeminiStylistService
+import com.weather24h.app.data.remote.GoogleWeatherApiService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.ui.widget.WeatherWidgetProvider
 import com.weather24h.app.util.WeatherNotificationHelper
@@ -18,15 +21,36 @@ class WeatherRepository(
 ) {
     private val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
     private val gson = Gson()
+    private val googleApiService = GoogleWeatherApiService()
 
     /**
-     * Lấy dữ liệu thời tiết (Hỗ trợ Offline-first)
+     * Lấy dữ liệu thời tiết (Hỗ trợ đa nguồn: Google Weather làm nguồn chính + Open-Meteo dự phòng)
      * Khi có mạng: Tải mới, lưu cache, cập nhật Widget và kiểm tra cảnh báo.
      * Khi mất mạng: Tự động trả về dữ liệu cache gần nhất với cờ isOffline = true.
      */
     suspend fun getWeatherData(location: CityLocation): WeatherData {
         return try {
-            val freshWeather = apiService.getFullWeather(location, getForecastModel())
+            val provider = getWeatherProvider()
+            val freshWeather = if (provider == WeatherProvider.GOOGLE) {
+                val effectiveKey = getEffectiveGoogleWeatherKey()
+                if (effectiveKey.isNotBlank()) {
+                    try {
+                        googleApiService.getFullWeather(location, effectiveKey)
+                    } catch (e: Exception) {
+                        // Tự động chuyển dự phòng sang Open-Meteo khi Google API gặp sự cố hoặc vượt hạn mức
+                        apiService.getFullWeather(location, getForecastModel()).copy(
+                            providerName = "Open-Meteo (Dự phòng tự động)"
+                        )
+                    }
+                } else {
+                    // Chưa cấu hình Google Key, tự động chuyển Open-Meteo miễn phí
+                    apiService.getFullWeather(location, getForecastModel()).copy(
+                        providerName = "Open-Meteo (Chưa cấu hình Google Key)"
+                    )
+                }
+            } else {
+                apiService.getFullWeather(location, getForecastModel())
+            }
 
             // Lưu vào bộ nhớ đệm ngoại tuyến
             saveCachedWeather(freshWeather)
@@ -50,6 +74,7 @@ class WeatherRepository(
             }
         }
     }
+
 
     suspend fun searchCities(query: String): List<CityLocation> {
         return apiService.searchCities(query)
@@ -349,4 +374,40 @@ class WeatherRepository(
     fun setCardOpacity(opacity: Float) {
         prefs.edit().putFloat("card_bg_opacity", opacity.coerceIn(0.20f, 1.0f)).apply()
     }
+
+    // ==========================================
+    // QUẢN LÝ NGUỒN DỮ LIỆU THỜI TIẾT (PROVIDER)
+    // ==========================================
+    fun getWeatherProvider(): WeatherProvider {
+        val id = prefs.getString("weather_data_provider", WeatherProvider.GOOGLE.id)
+        return WeatherProvider.fromId(id)
+    }
+
+    fun setWeatherProvider(provider: WeatherProvider) {
+        prefs.edit().putString("weather_data_provider", provider.id).apply()
+    }
+
+    fun getCustomGoogleWeatherKey(): String? = prefs.getString("custom_google_weather_key", null)
+
+    fun saveGoogleWeatherKey(key: String) {
+        prefs.edit().putString("custom_google_weather_key", key.trim()).apply()
+    }
+
+    fun clearCustomGoogleWeatherKey() {
+        prefs.edit().remove("custom_google_weather_key").apply()
+    }
+
+    fun getEffectiveGoogleWeatherKey(): String {
+        val custom = getCustomGoogleWeatherKey()
+        if (!custom.isNullOrBlank()) return custom
+        return BuildConfig.DEFAULT_GOOGLE_WEATHER_KEY
+    }
+
+    fun hasGoogleWeatherKey(): Boolean = getEffectiveGoogleWeatherKey().isNotBlank()
+    fun isUsingCustomGoogleWeatherKey(): Boolean = !getCustomGoogleWeatherKey().isNullOrBlank()
+
+    suspend fun testGoogleWeatherKey(key: String): Result<String> {
+        return googleApiService.testApiKey(key)
+    }
 }
+
