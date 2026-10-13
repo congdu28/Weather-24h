@@ -219,7 +219,7 @@ fun MetricCard(
                     text = title,
                     color = LocalSubtextColor.current,
                     fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.SemiBold,
                     letterSpacing = 0.5.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -242,8 +242,8 @@ fun MetricCard(
             Text(
                 text = subtext,
                 color = LocalSubtextColor.current,
-                fontSize = 11.sp,
-                lineHeight = 14.sp,
+                fontSize = 11.5.sp,
+                lineHeight = 15.sp,
                 minLines = 2,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

@@ -245,13 +245,13 @@ fun CurrentWeatherCard(
                     text = "Cảm giác thật: ${weather.current.feelsLike.roundToInt()}°",
                     color = subtextColor,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     softWrap = false
                 )
                 Text(
                     text = "•",
-                    color = subtextColor.copy(alpha = 0.4f),
+                    color = subtextColor.copy(alpha = 0.65f),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
@@ -259,13 +259,13 @@ fun CurrentWeatherCard(
                     text = "Cao: ${weather.maxTemp24h.roundToInt()}°",
                     color = subtextColor,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     softWrap = false
                 )
                 Text(
                     text = "•",
-                    color = subtextColor.copy(alpha = 0.4f),
+                    color = subtextColor.copy(alpha = 0.65f),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(horizontal = 4.dp)
                 )
@@ -273,7 +273,7 @@ fun CurrentWeatherCard(
                     text = "Thấp: ${weather.minTemp24h.roundToInt()}°",
                     color = subtextColor,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     softWrap = false
                 )
@@ -282,8 +282,9 @@ fun CurrentWeatherCard(
             Text(
                 text = "${if (weather.isOffline) "Đã lưu" else "Cập nhật"} ${weather.lastUpdated}",
                 color = subtextColor,
-                fontSize = 9.sp,
-                lineHeight = 12.sp,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 14.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )

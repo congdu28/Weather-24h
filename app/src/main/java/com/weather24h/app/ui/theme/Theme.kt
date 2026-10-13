@@ -64,7 +64,7 @@ fun Weather24hTheme(
     val cardGlassBg = if (isDark) baseDark.copy(alpha = clampedOpacity) else baseLight.copy(alpha = clampedOpacity)
     val cardBorder = if (isDark) CardBorderDark.copy(alpha = (clampedOpacity * 0.40f).coerceIn(0.08f, 0.40f)) else CardBorderLight.copy(alpha = (clampedOpacity * 0.30f).coerceIn(0.06f, 0.30f))
     val contentTextColor = if (isDark) Color.White else Color(0xFF0F172A)
-    val subtextColor = if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569)
+    val subtextColor = if (isDark) Color(0xFFCBD5E1) else Color(0xFF334155)
 
     CompositionLocalProvider(
         LocalIsDarkTheme provides isDark,

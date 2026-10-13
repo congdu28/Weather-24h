@@ -299,7 +299,7 @@ fun HourlyForecastSection(
                                 } else {
                                     Text(
                                         text = item.rainProbabilityText,
-                                        color = subtextColor.copy(alpha = 0.45f),
+                                        color = subtextColor.copy(alpha = 0.70f),
                                         fontSize = 10.5.sp,
                                         fontWeight = FontWeight.Normal
                                     )
@@ -351,7 +351,8 @@ fun HourlyForecastSection(
                                 Text(
                                     text = "${item.windSpeed.roundToInt()} km/h",
                                     color = subtextColor,
-                                    fontSize = 10.sp
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }

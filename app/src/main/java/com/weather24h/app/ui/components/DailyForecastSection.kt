@@ -141,7 +141,7 @@ fun DailyForecastSection(
                         } else {
                             Text(
                                 text = day.rainProbabilityText,
-                                color = subtextColor.copy(alpha = 0.45f),
+                                color = subtextColor.copy(alpha = 0.70f),
                                 fontSize = 10.sp
                             )
                         }
@@ -152,6 +152,7 @@ fun DailyForecastSection(
                         text = "${day.minTemp.roundToInt()}°",
                         color = subtextColor,
                         fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.End,
                         modifier = Modifier.width(30.dp)
                     )
@@ -495,7 +496,7 @@ fun DayForecastDetailDialog(
                                                     } else {
                                                         Text(
                                                             text = item.rainProbabilityText,
-                                                            color = subtextColor.copy(alpha = 0.45f),
+                                                            color = subtextColor.copy(alpha = 0.70f),
                                                             fontSize = 10.sp,
                                                             fontWeight = FontWeight.Normal
                                                         )

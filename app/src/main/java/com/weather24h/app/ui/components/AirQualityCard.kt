@@ -264,11 +264,11 @@ fun AirQualityCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(text = "0", fontSize = 9.sp, color = subtextColor)
-                    Text(text = "25", fontSize = 9.sp, color = subtextColor)
-                    Text(text = "50", fontSize = 9.sp, color = subtextColor)
-                    Text(text = "100", fontSize = 9.sp, color = subtextColor)
-                    Text(text = "150+ µg/m³", fontSize = 9.sp, color = subtextColor)
+                    Text(text = "0", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = subtextColor.copy(alpha = 0.85f))
+                    Text(text = "25", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = subtextColor.copy(alpha = 0.85f))
+                    Text(text = "50", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = subtextColor.copy(alpha = 0.85f))
+                    Text(text = "100", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = subtextColor.copy(alpha = 0.85f))
+                    Text(text = "150+ µg/m³", fontSize = 10.sp, fontWeight = FontWeight.Medium, color = subtextColor.copy(alpha = 0.85f))
                 }
             }
 
@@ -377,8 +377,8 @@ private fun SubMetricBox(
         ) {
             Text(
                 text = title,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 10.5.sp,
+                fontWeight = FontWeight.SemiBold,
                 color = subtextColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -387,7 +387,7 @@ private fun SubMetricBox(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = value,
-                    fontSize = 14.5.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = contentColor,
                     maxLines = 1,
@@ -397,7 +397,8 @@ private fun SubMetricBox(
                     Spacer(modifier = Modifier.width(2.dp))
                     Text(
                         text = unit,
-                        fontSize = 9.sp,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
                         color = subtextColor,
                         modifier = Modifier.padding(bottom = 1.dp)
                     )
@@ -406,7 +407,7 @@ private fun SubMetricBox(
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = subtext,
-                fontSize = 9.5.sp,
+                fontSize = 10.sp,
                 color = subtextColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

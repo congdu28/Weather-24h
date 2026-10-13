@@ -5,9 +5,11 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.weather24h.app.MainActivity
+import com.weather24h.app.R
 import com.weather24h.app.data.model.AlertSeverity
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.SevereWeatherDetector
@@ -83,9 +85,13 @@ object WeatherNotificationHelper {
         val cityName = weather.location.name
 
         val outfitTip = outfit?.summary ?: "Trang phục phù hợp: ${condition.description.lowercase()} mát mẻ."
+        val appLogo = getAppLogoBitmap(context)
 
         val notification = NotificationCompat.Builder(context, CHANNEL_MORNING_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_stat_weather)
+            .apply {
+                if (appLogo != null) setLargeIcon(appLogo)
+            }
             .setContentTitle("🌤️ Thời tiết hôm nay tại $cityName ($temp°C)")
             .setContentText("${condition.description} • $outfitTip")
             .setStyle(
@@ -121,8 +127,12 @@ object WeatherNotificationHelper {
         )
 
         val tipsSummary = severeAlert.safetyTips.joinToString("\n• ", prefix = "• ")
+        val appLogo = getAppLogoBitmap(context)
         val alert = NotificationCompat.Builder(context, CHANNEL_ALERT_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setSmallIcon(R.drawable.ic_stat_weather)
+            .apply {
+                if (appLogo != null) setLargeIcon(appLogo)
+            }
             .setContentTitle("${severeAlert.iconEmoji} ${severeAlert.title} - ${weather.location.name}")
             .setContentText("${severeAlert.timeInfo}: ${severeAlert.headline}")
             .setStyle(
@@ -159,8 +169,12 @@ object WeatherNotificationHelper {
         else
             "Hà Nội 28°C • Trời nắng đẹp. Gợi ý Gemini: Áo sơ mi mỏng nhẹ + Kính râm thời trang."
 
+        val appLogo = getAppLogoBitmap(context)
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_stat_weather)
+            .apply {
+                if (appLogo != null) setLargeIcon(appLogo)
+            }
             .setContentTitle(title)
             .setContentText(message)
             .setStyle(NotificationCompat.BigTextStyle().bigText(message))
@@ -200,8 +214,12 @@ object WeatherNotificationHelper {
         val content = "Cảm giác $feelsLike°C | Độ ẩm $humidity% | Gió $wind km/h"
         val expandedText = "${condition.description} tại $cityName\n• Nhiệt độ: $temp°C (Cảm giác như $feelsLike°C)\n• Độ ẩm: $humidity% • Tốc độ gió: $wind km/h • Chỉ số UV: ${weather.current.uvIndex}\n• Cập nhật: ${weather.lastUpdated}"
 
+        val appLogo = getAppLogoBitmap(context)
         val notification = NotificationCompat.Builder(context, CHANNEL_PERIODIC_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_stat_weather)
+            .apply {
+                if (appLogo != null) setLargeIcon(appLogo)
+            }
             .setContentTitle(title)
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(expandedText))
@@ -211,6 +229,12 @@ object WeatherNotificationHelper {
             .build()
 
         manager.notify(3001, notification)
+    }
+
+    private fun getAppLogoBitmap(context: Context) = try {
+        BitmapFactory.decodeResource(context.resources, R.drawable.app_logo)
+    } catch (_: Exception) {
+        null
     }
 
     fun cancelCurrentWeatherNotification(context: Context) {

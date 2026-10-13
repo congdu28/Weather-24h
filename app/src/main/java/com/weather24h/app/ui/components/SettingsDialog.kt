@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.weather24h.app.BuildConfig
+import com.weather24h.app.R
 import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.WeatherForecastModel
 import com.weather24h.app.data.model.WeatherProvider
@@ -2078,15 +2081,13 @@ fun SettingsDialog(
                                             .padding(20.dp),
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        Box(
+                                        Image(
+                                            painter = painterResource(id = R.drawable.app_logo),
+                                            contentDescription = "Weather 24h",
                                             modifier = Modifier
                                                 .size(68.dp)
-                                                .clip(RoundedCornerShape(22.dp))
-                                                .background(Brush.linearGradient(listOf(Color(0xFF0284C7), Color(0xFF7C3AED)))),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(Icons.Default.Cloud, contentDescription = null, tint = Color.White, modifier = Modifier.size(38.dp))
-                                        }
+                                                .clip(RoundedCornerShape(20.dp))
+                                        )
                                         Spacer(modifier = Modifier.height(12.dp))
                                         Text("Weather 24h", color = contentColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                         Text("Phiên bản v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})", color = subtextColor, fontSize = 12.sp)

@@ -9,18 +9,10 @@
         <aapt:attr name="android:fillColor">
             <gradient
                 android:angle="315"
-                android:endColor="#0B0F19"
-                android:startColor="#1E1B4B"
+                android:startColor="#6366F1"
+                android:centerColor="#0D9488"
+                android:endColor="#10B981"
                 android:type="linear" />
         </aapt:attr>
     </path>
-    <!-- Subtle cosmic ambient glow -->
-    <path
-        android:fillAlpha="0.25"
-        android:fillColor="#38BDF8"
-        android:pathData="M54,54m-42,0a42,42 0,1 1,84 0a42,42 0,1 1,-84 0" />
-    <path
-        android:fillAlpha="0.2"
-        android:fillColor="#A855F7"
-        android:pathData="M62,46m-30,0a30,30 0,1 1,60 0a30,30 0,1 1,-60 0" />
 </vector>
