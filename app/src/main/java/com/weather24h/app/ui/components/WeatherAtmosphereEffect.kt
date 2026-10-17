@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import com.weather24h.app.data.model.WeatherType
+import com.weather24h.app.ui.theme.AtmospherePerformanceMode
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
@@ -40,8 +41,17 @@ import kotlin.random.Random
 fun WeatherAtmosphereEffect(
     type: WeatherType,
     isDay: Boolean,
+    isScrolling: Boolean = false,
+    isPowerSaveMode: Boolean = false,
+    performanceMode: AtmospherePerformanceMode = AtmospherePerformanceMode.BALANCED,
     modifier: Modifier = Modifier
 ) {
+    val isBatterySaving = when (performanceMode) {
+        AtmospherePerformanceMode.BATTERY_SAVER -> true
+        AtmospherePerformanceMode.HIGH_QUALITY -> false
+        AtmospherePerformanceMode.BALANCED -> isPowerSaveMode
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "WeatherAtmosphereLoop")
 
     // 1. Chu kỳ chuyển động chính của mưa / tuyết / mây (2200ms)
@@ -201,6 +211,43 @@ fun WeatherAtmosphereEffect(
         }
     }
 
+    // Lọc tập hạt động tối ưu theo trạng thái cuộn và chế độ pin
+    val activeRainDrops = remember(rainDrops, isBatterySaving, isScrolling) {
+        when {
+            isBatterySaving -> rainDrops.take(35)
+            isScrolling -> rainDrops.take(50)
+            else -> rainDrops
+        }
+    }
+
+    val activeSplashPoints = remember(splashPoints, isBatterySaving, isScrolling) {
+        when {
+            isScrolling -> emptyList() // Bỏ qua bọt nước & gợn sóng khi cuộn danh sách để đạt 60/120 FPS tuyệt đối
+            isBatterySaving -> splashPoints.take(5)
+            else -> splashPoints
+        }
+    }
+
+    val activeDustMotes = remember(dustMotes, isBatterySaving, isScrolling) {
+        when {
+            isBatterySaving -> dustMotes.take(10)
+            isScrolling -> dustMotes.take(15)
+            else -> dustMotes
+        }
+    }
+
+    val activeStarField = remember(starField, isBatterySaving) {
+        if (isBatterySaving) starField.take(24) else starField
+    }
+
+    val activeSnowFlakes = remember(snowFlakes, isBatterySaving, isScrolling) {
+        when {
+            isBatterySaving -> snowFlakes.take(22)
+            isScrolling -> snowFlakes.take(35)
+            else -> snowFlakes
+        }
+    }
+
     Canvas(modifier = modifier.fillMaxSize()) {
         val width = size.width
         val height = size.height
@@ -230,8 +277,10 @@ fun WeatherAtmosphereEffect(
                 }
 
                 // Mưa xối xả tốc độ cao kèm bọt nước bắn mạnh
-                drawRainStreaksEnhanced(rainDrops, mainLoop, width, height, speedMultiplier = 1.6f, isHeavy = true)
-                drawWaterSplashesAndRipples(splashPoints, mainLoop, width, height, intensity = 1.4f)
+                drawRainStreaksEnhanced(activeRainDrops, mainLoop, width, height, speedMultiplier = 1.6f, isHeavy = true)
+                if (activeSplashPoints.isNotEmpty()) {
+                    drawWaterSplashesAndRipples(activeSplashPoints, mainLoop, width, height, intensity = 1.4f)
+                }
             }
 
             // =========================================================================
@@ -242,8 +291,10 @@ fun WeatherAtmosphereEffect(
                 val speed = if (isHeavy) 1.25f else 0.75f
                 val splashIntensity = if (isHeavy) 1.0f else 0.5f
 
-                drawRainStreaksEnhanced(rainDrops, mainLoop, width, height, speedMultiplier = speed, isHeavy = isHeavy)
-                drawWaterSplashesAndRipples(splashPoints, mainLoop, width, height, intensity = splashIntensity)
+                drawRainStreaksEnhanced(activeRainDrops, mainLoop, width, height, speedMultiplier = speed, isHeavy = isHeavy)
+                if (activeSplashPoints.isNotEmpty()) {
+                    drawWaterSplashesAndRipples(activeSplashPoints, mainLoop, width, height, intensity = splashIntensity)
+                }
 
                 // Lớp sương ẩm mờ dịu ở đáy màn hình
                 drawRect(
@@ -293,13 +344,14 @@ fun WeatherAtmosphereEffect(
                     radius = baseRadius * 0.45f
                 )
 
-                // Chùm tia nắng thể tích (God Rays) xoay êm ả 360 độ
-                rotate(degrees = sunAngle, pivot = sunCenter) {
-                    drawSoftGodRays(sunCenter, width, height, breathingPulse)
+                // Chùm tia nắng thể tích (God Rays) xoay êm ả 360 độ (cố định góc khi cuộn để giải phóng GPU)
+                val currentSunAngle = if (isScrolling) 45f else sunAngle
+                rotate(degrees = currentSunAngle, pivot = sunCenter) {
+                    drawSoftGodRays(sunCenter, width, height, breathingPulse, isBatterySaving = isBatterySaving)
                 }
 
                 // Các hạt bụi nắng (solar dust motes / warm bokeh) lơ lửng trong không khí
-                drawFloatingSolarMotes(dustMotes, mainLoop, width, height)
+                drawFloatingSolarMotes(activeDustMotes, mainLoop, width, height)
             }
 
             // =========================================================================
@@ -330,13 +382,13 @@ fun WeatherAtmosphereEffect(
                 )
 
                 // Dải lụa cực quang huyền ảo (Aurora Ribbon Wave) lượn sóng trên vòm trời
-                drawAuroraRibbon(width, height, slowDrift, breathingPulse)
+                drawAuroraRibbon(width, height, slowDrift, breathingPulse, isBatterySaving = isBatterySaving)
 
                 // Bầu trời sao lấp lánh đa tần số kèm tia sao 4 cánh
-                drawStarFieldWithCrossSpikes(starField, breathingPulse, width, height)
+                drawStarFieldWithCrossSpikes(activeStarField, breathingPulse, width, height, isBatterySaving = isBatterySaving)
 
-                // Vệt sao băng rực rỡ lướt qua vòm trời đêm
-                if (meteorProgress in 0.01f..0.99f) {
+                // Vệt sao băng rực rỡ lướt qua vòm trời đêm (bỏ qua khi cuộn hoặc tiết kiệm pin)
+                if (!isBatterySaving && !isScrolling && meteorProgress in 0.01f..0.99f) {
                     drawShootingMeteor(width, height, meteorProgress)
                 }
             }
@@ -359,7 +411,7 @@ fun WeatherAtmosphereEffect(
             // 7. TUYẾT RƠI LÃNG MẠN (Romantic Snowfall)
             // =========================================================================
             type == WeatherType.SNOW -> {
-                drawGentleSnowfall(snowFlakes, mainLoop, width, height)
+                drawGentleSnowfall(activeSnowFlakes, mainLoop, width, height)
             }
         }
     }
@@ -567,10 +619,13 @@ private fun DrawScope.drawSoftGodRays(
     sunCenter: Offset,
     width: Float,
     height: Float,
-    pulse: Float
+    pulse: Float,
+    isBatterySaving: Boolean = false
 ) {
-    for (i in 0 until 8) {
-        val angleRad = (i * 45f) * (Math.PI / 180.0)
+    val rayCount = if (isBatterySaving) 4 else 8
+    val angleStep = 360f / rayCount
+    for (i in 0 until rayCount) {
+        val angleRad = (i * angleStep) * (Math.PI / 180.0)
         val rayLength = width * 1.15f
         val endX = sunCenter.x + (cos(angleRad) * rayLength).toFloat()
         val endY = sunCenter.y + (sin(angleRad) * rayLength).toFloat()
@@ -637,14 +692,15 @@ private fun DrawScope.drawAuroraRibbon(
     width: Float,
     height: Float,
     drift: Float,
-    pulse: Float
+    pulse: Float,
+    isBatterySaving: Boolean = false
 ) {
     val auroraY = height * 0.18f
     val waveOffset = drift * 6.28f
 
     val auroraPath = Path().apply {
         moveTo(0f, auroraY)
-        val segments = 8
+        val segments = if (isBatterySaving) 4 else 8
         val step = width / segments
         for (i in 1..segments) {
             val cx = (i - 0.5f) * step
@@ -679,7 +735,8 @@ private fun DrawScope.drawStarFieldWithCrossSpikes(
     stars: List<StarParticle>,
     pulse: Float,
     width: Float,
-    height: Float
+    height: Float,
+    isBatterySaving: Boolean = false
 ) {
     stars.forEachIndexed { index, star ->
         val starX = star.xRatio * width
@@ -694,8 +751,8 @@ private fun DrawScope.drawStarFieldWithCrossSpikes(
             radius = star.radius
         )
 
-        // Tia sao 4 cánh tỏa sáng cho các ngôi sao nổi bật
-        if (star.hasCrossSpikes && alpha > 0.65f) {
+        // Tia sao 4 cánh tỏa sáng cho các ngôi sao nổi bật (bỏ qua khi ở chế độ tiết kiệm pin)
+        if (!isBatterySaving && star.hasCrossSpikes && alpha > 0.65f) {
             val spikeLen = star.radius * 2.8f
             val spikeAlpha = (alpha * 0.55f).coerceIn(0f, 0.7f)
 

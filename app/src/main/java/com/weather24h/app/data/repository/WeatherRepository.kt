@@ -137,10 +137,72 @@ class WeatherRepository(
     }
 
     // ==========================================
-    // QUẢN LÝ BỘ NHỚ ĐỆM NGOẠI TUYẾN (OFFLINE CACHE)
+    // QUẢN LÝ BỘ NHỚ ĐỆM NGOẠI TUYẾN (OFFLINE CACHE & PRE-FETCH)
     // ==========================================
+    private val memoryWeatherCache = java.util.concurrent.ConcurrentHashMap<String, WeatherData>()
+
+    private fun getCityKey(location: CityLocation): String {
+        return "${location.name.lowercase().trim()}_${String.format(java.util.Locale.US, "%.2f", location.latitude)}_${String.format(java.util.Locale.US, "%.2f", location.longitude)}"
+    }
+
+    fun saveCachedWeatherForCity(weather: WeatherData) {
+        val key = getCityKey(weather.location)
+        memoryWeatherCache[key] = weather
+        try {
+            val json = gson.toJson(weather)
+            prefs.edit()
+                .putString("cache_city_$key", json)
+                .putString("cache_city_by_name_${weather.location.name.lowercase().trim()}", json)
+                .apply()
+        } catch (_: Exception) {}
+    }
+
+    fun getCachedWeatherForCity(location: CityLocation): WeatherData? {
+        val key = getCityKey(location)
+        val inMem = memoryWeatherCache[key]
+        if (inMem != null) return inMem
+
+        val byName = memoryWeatherCache.values.firstOrNull {
+            it.location.name.equals(location.name, ignoreCase = true)
+        }
+        if (byName != null) return byName
+
+        // Kiểm tra Shared Preferences theo key tọa độ
+        val jsonByKey = prefs.getString("cache_city_$key", null)
+        if (!jsonByKey.isNullOrEmpty()) {
+            try {
+                val fromPrefs = gson.fromJson(jsonByKey, WeatherData::class.java)
+                if (fromPrefs != null) {
+                    memoryWeatherCache[key] = fromPrefs
+                    return fromPrefs
+                }
+            } catch (_: Exception) {}
+        }
+
+        // Kiểm tra Shared Preferences theo tên thành phố
+        val jsonByName = prefs.getString("cache_city_by_name_${location.name.lowercase().trim()}", null)
+        if (!jsonByName.isNullOrEmpty()) {
+            try {
+                val fromPrefs = gson.fromJson(jsonByName, WeatherData::class.java)
+                if (fromPrefs != null) {
+                    memoryWeatherCache[key] = fromPrefs
+                    return fromPrefs
+                }
+            } catch (_: Exception) {}
+        }
+
+        val cachedDefault = getCachedWeather(location)
+        if (cachedDefault != null) {
+            memoryWeatherCache[key] = cachedDefault
+            return cachedDefault
+        }
+
+        return null
+    }
+
     fun saveCachedWeather(weather: WeatherData) {
         try {
+            saveCachedWeatherForCity(weather)
             val json = gson.toJson(weather)
             prefs.edit()
                 .putString("cached_weather_json", json)
@@ -165,6 +227,7 @@ class WeatherRepository(
     }
 
     fun clearOfflineCache() {
+        memoryWeatherCache.clear()
         prefs.edit()
             .remove("cached_weather_json")
             .remove("last_cached_time")
@@ -379,6 +442,22 @@ class WeatherRepository(
 
     fun setAmbientGlowIntensity(intensity: Float) {
         prefs.edit().putFloat("ambient_glow_intensity", intensity.coerceIn(0.0f, 1.0f)).apply()
+    }
+
+    // ==========================================
+    // CÀI ĐẶT HIỆU NĂNG NỀN ĐỘNG THỜI TIẾT
+    // ==========================================
+    fun getAtmospherePerformanceMode(): com.weather24h.app.ui.theme.AtmospherePerformanceMode {
+        val name = prefs.getString("atmosphere_performance_mode", com.weather24h.app.ui.theme.AtmospherePerformanceMode.BALANCED.name)
+        return try {
+            com.weather24h.app.ui.theme.AtmospherePerformanceMode.valueOf(name ?: com.weather24h.app.ui.theme.AtmospherePerformanceMode.BALANCED.name)
+        } catch (_: Exception) {
+            com.weather24h.app.ui.theme.AtmospherePerformanceMode.BALANCED
+        }
+    }
+
+    fun setAtmospherePerformanceMode(mode: com.weather24h.app.ui.theme.AtmospherePerformanceMode) {
+        prefs.edit().putString("atmosphere_performance_mode", mode.name).apply()
     }
 
     // ==========================================

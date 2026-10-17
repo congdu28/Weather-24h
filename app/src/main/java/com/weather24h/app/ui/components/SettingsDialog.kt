@@ -52,6 +52,7 @@ import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.WeatherForecastModel
 import com.weather24h.app.data.model.WeatherProvider
 import com.weather24h.app.data.model.WidgetStyle
+import com.weather24h.app.ui.theme.AtmospherePerformanceMode
 
 private enum class SettingsSubScreen {
     MAIN,
@@ -64,6 +65,14 @@ private enum class SettingsSubScreen {
     OFFLINE_WIDGET,
     ABOUT
 }
+
+private data class PreviewDayItem(
+    val d: String,
+    val icon: String,
+    val max: String,
+    val min: String,
+    val rain: String
+)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -88,6 +97,7 @@ fun SettingsDialog(
     bgDimmingLevel: Float,
     ambientGlowStyle: com.weather24h.app.ui.theme.AmbientGlowStyle,
     ambientGlowIntensity: Float,
+    atmospherePerformanceMode: AtmospherePerformanceMode = AtmospherePerformanceMode.BALANCED,
     cardOpacity: Float = 0.80f,
     widgetThemeMode: com.weather24h.app.ui.theme.AppThemeMode = com.weather24h.app.ui.theme.AppThemeMode.SYSTEM,
     widgetOpacity: Float = 0.85f,
@@ -107,6 +117,7 @@ fun SettingsDialog(
     onSetBgDimmingLevel: (Float) -> Unit,
     onSelectAmbientGlowStyle: (com.weather24h.app.ui.theme.AmbientGlowStyle) -> Unit,
     onSetAmbientGlowIntensity: (Float) -> Unit,
+    onSelectAtmospherePerformanceMode: (AtmospherePerformanceMode) -> Unit = {},
     onSetCardOpacity: (Float) -> Unit = {},
     onSelectWidgetThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit = {},
     onSetWidgetOpacity: (Float) -> Unit = {},
@@ -741,6 +752,67 @@ fun SettingsDialog(
                                                             contentDescription = null,
                                                             tint = Color(0xFFA855F7),
                                                             modifier = Modifier.size(20.dp)
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            ItemDivider(dividerColor = dividerColor)
+                                        }
+                                    }
+                                }
+
+                                // 4. Tối ưu hiệu năng nền động & pin
+                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = "TỐI ƯU HIỆU NĂNG NỀN ĐỘNG & PIN",
+                                            color = sectionHeaderColor,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.7.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        listOf(
+                                            AtmospherePerformanceMode.BALANCED,
+                                            AtmospherePerformanceMode.HIGH_QUALITY,
+                                            AtmospherePerformanceMode.BATTERY_SAVER
+                                        ).forEach { mode ->
+                                            val isModeSelected = atmospherePerformanceMode == mode
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .clickable {
+                                                        onSelectAtmospherePerformanceMode(mode)
+                                                        Toast.makeText(context, "Đã chọn: ${mode.title}", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                    .padding(vertical = 12.dp, horizontal = 6.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = mode.title,
+                                                        color = if (isModeSelected) Color(0xFF38BDF8) else contentColor,
+                                                        fontSize = 14.5.sp,
+                                                        fontWeight = if (isModeSelected) FontWeight.Bold else FontWeight.Medium
+                                                    )
+                                                    Spacer(modifier = Modifier.height(3.dp))
+                                                    Text(
+                                                        text = mode.description,
+                                                        color = subtextColor,
+                                                        fontSize = 11.5.sp,
+                                                        lineHeight = 16.sp
+                                                    )
+                                                }
+                                                Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                                                    if (isModeSelected) {
+                                                        Icon(
+                                                            Icons.Default.CheckCircle,
+                                                            contentDescription = null,
+                                                            tint = Color(0xFF38BDF8),
+                                                            modifier = Modifier.size(22.dp)
                                                         )
                                                     }
                                                 }
@@ -1592,6 +1664,7 @@ fun SettingsDialog(
                                         Spacer(modifier = Modifier.height(10.dp))
 
                                         // A. Khung xem trước Widget thời gian thực (Live Widget Preview)
+                                        var previewWidgetType by remember { mutableStateOf(0) }
                                         Text(
                                             text = "XEM TRƯỚC TRỰC QUAN WIDGET",
                                             color = sectionHeaderColor,
@@ -1599,6 +1672,40 @@ fun SettingsDialog(
                                             fontWeight = FontWeight.Bold,
                                             letterSpacing = 0.5.sp
                                         )
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        // Switcher giữa 4 loại widget
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                        ) {
+                                            listOf(
+                                                Pair(0, "4x2 Giờ"),
+                                                Pair(1, "4x1 5 Ngày"),
+                                                Pair(2, "2x1 Gọn"),
+                                                Pair(3, "1x1 Mini")
+                                            ).forEach { (idx, label) ->
+                                                val isTabSel = previewWidgetType == idx
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (isTabSel) Color(0xFFF472B6).copy(alpha = 0.25f) else chipBg,
+                                                    border = BorderStroke(1.dp, if (isTabSel) Color(0xFFF472B6) else chipBorder),
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clickable { previewWidgetType = idx }
+                                                ) {
+                                                    Text(
+                                                        text = label,
+                                                        color = if (isTabSel) Color(0xFFF472B6) else subtextColor,
+                                                        fontSize = 11.sp,
+                                                        fontWeight = if (isTabSel) FontWeight.Bold else FontWeight.Medium,
+                                                        textAlign = TextAlign.Center,
+                                                        modifier = Modifier.padding(vertical = 5.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
                                         Spacer(modifier = Modifier.height(8.dp))
 
                                         Surface(
@@ -1613,69 +1720,163 @@ fun SettingsDialog(
                                                 width = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN) 0.dp else 1.dp,
                                                 color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN) Color.Transparent else (if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f))
                                             ),
-                                            modifier = Modifier.fillMaxWidth()
+                                            modifier = if (previewWidgetType == 3) Modifier.size(130.dp).align(Alignment.CenterHorizontally) else Modifier.fillMaxWidth()
                                         ) {
-                                            Column(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(14.dp)
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Column {
-                                                        Text(
-                                                            text = defaultCity.name,
-                                                            color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
-                                                            fontSize = 15.sp,
-                                                            fontWeight = FontWeight.Bold
-                                                        )
-                                                        Text(
-                                                            text = "Trời nắng • Cảm giác 31°C",
-                                                            color = (if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.75f),
-                                                            fontSize = 11.sp
-                                                        )
-                                                    }
-                                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                                        Text(text = "☀️", fontSize = 24.sp)
-                                                        Spacer(modifier = Modifier.width(6.dp))
-                                                        Text(
-                                                            text = "29°",
-                                                            color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
-                                                            fontSize = 28.sp,
-                                                            fontWeight = FontWeight.Bold
-                                                        )
-                                                    }
-                                                }
-
-                                                Spacer(modifier = Modifier.height(10.dp))
-
-                                                // 3 mini hourly forecast chips
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                                ) {
-                                                    listOf(
-                                                        Triple("15:00", "☀️", "30°"),
-                                                        Triple("16:00", "🌤️", "29°"),
-                                                        Triple("17:00", "🌧️", "26°")
-                                                    ).forEach { (hour, icon, temp) ->
-                                                        Surface(
-                                                            shape = RoundedCornerShape(8.dp),
-                                                            color = (if (isDark) Color.White else Color.Black).copy(alpha = 0.12f),
-                                                            modifier = Modifier.weight(1f)
+                                            when (previewWidgetType) {
+                                                // 0: 4x2 Dự báo chi tiết theo giờ
+                                                0 -> {
+                                                    Column(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(14.dp)
+                                                    ) {
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            verticalAlignment = Alignment.CenterVertically
                                                         ) {
-                                                            Column(
-                                                                horizontalAlignment = Alignment.CenterHorizontally,
-                                                                modifier = Modifier.padding(vertical = 4.dp)
-                                                            ) {
-                                                                Text(text = hour, color = (if (isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.7f), fontSize = 10.sp)
-                                                                Text(text = icon, fontSize = 14.sp)
-                                                                Text(text = temp, color = if (isDark) Color.White else Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                            Column {
+                                                                Text(
+                                                                    text = defaultCity.name,
+                                                                    color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
+                                                                    fontSize = 15.sp,
+                                                                    fontWeight = FontWeight.Bold
+                                                                )
+                                                                Text(
+                                                                    text = "Trời nắng • Cảm giác 31°C",
+                                                                    color = (if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.75f),
+                                                                    fontSize = 11.sp
+                                                                )
+                                                            }
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Text(text = "☀️", fontSize = 24.sp)
+                                                                Spacer(modifier = Modifier.width(6.dp))
+                                                                Text(
+                                                                    text = "29°",
+                                                                    color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
+                                                                    fontSize = 28.sp,
+                                                                    fontWeight = FontWeight.Bold
+                                                                )
                                                             }
                                                         }
+
+                                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                                        // 3 mini hourly forecast chips
+                                                        Row(
+                                                            modifier = Modifier.fillMaxWidth(),
+                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            listOf(
+                                                                Triple("15:00", "☀️", "30°"),
+                                                                Triple("16:00", "🌤️", "29°"),
+                                                                Triple("17:00", "🌧️", "26°")
+                                                            ).forEach { (hour, icon, temp) ->
+                                                                Surface(
+                                                                    shape = RoundedCornerShape(8.dp),
+                                                                    color = (if (isDark) Color.White else Color.Black).copy(alpha = 0.12f),
+                                                                    modifier = Modifier.weight(1f)
+                                                                ) {
+                                                                    Column(
+                                                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                                                        modifier = Modifier.padding(vertical = 4.dp)
+                                                                    ) {
+                                                                        Text(text = hour, color = (if (isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.7f), fontSize = 10.sp)
+                                                                        Text(text = icon, fontSize = 14.sp)
+                                                                        Text(text = temp, color = if (isDark) Color.White else Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                // 1: 4x1 Dự báo 5 ngày
+                                                1 -> {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(10.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Column(modifier = Modifier.width(85.dp)) {
+                                                            Text(
+                                                                text = defaultCity.name,
+                                                                color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
+                                                                fontSize = 13.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                maxLines = 1
+                                                            )
+                                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                                Text("☀️", fontSize = 18.sp)
+                                                                Spacer(modifier = Modifier.width(4.dp))
+                                                                Text("29°", color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                                            }
+                                                            Text("C:32° T:24°", color = Color(0xFF38BDF8), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                                        }
+
+                                                        Row(
+                                                            modifier = Modifier.weight(1f),
+                                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        ) {
+                                                            listOf(
+                                                                PreviewDayItem("H.nay", "☀️", "32°", "24°", "10%"),
+                                                                PreviewDayItem("T2", "🌤️", "31°", "23°", "20%"),
+                                                                PreviewDayItem("T3", "🌧️", "29°", "22°", "60%"),
+                                                                PreviewDayItem("T4", "⛈️", "28°", "21°", "80%"),
+                                                                PreviewDayItem("T5", "⛅", "30°", "23°", "30%")
+                                                            ).forEach { item ->
+                                                                Surface(
+                                                                    shape = RoundedCornerShape(6.dp),
+                                                                    color = (if (isDark) Color.White else Color.Black).copy(alpha = 0.12f),
+                                                                    modifier = Modifier.weight(1f)
+                                                                ) {
+                                                                    Column(
+                                                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                                                        modifier = Modifier.padding(vertical = 3.dp)
+                                                                    ) {
+                                                                        Text(text = item.d, color = if (isDark) Color.White else Color(0xFF0F172A), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                                                        Text(text = item.icon, fontSize = 13.sp)
+                                                                        Text(text = item.max, color = if (isDark) Color.White else Color(0xFF0F172A), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                                        Text(text = item.min, color = (if (isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.6f), fontSize = 8.5.sp)
+                                                                        Text(text = item.rain, color = Color(0xFF38BDF8), fontSize = 8.sp)
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                // 2: 2x1 Tối giản
+                                                2 -> {
+                                                    Row(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(12.dp),
+                                                        verticalAlignment = Alignment.CenterVertically
+                                                    ) {
+                                                        Text("☀️", fontSize = 28.sp)
+                                                        Spacer(modifier = Modifier.width(8.dp))
+                                                        Text("29°", color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                                                        Spacer(modifier = Modifier.width(12.dp))
+                                                        Column(modifier = Modifier.weight(1f)) {
+                                                            Text(defaultCity.name, color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                                            Text("Trời nắng • Cảm giác 31°C", color = (if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.75f), fontSize = 10.5.sp)
+                                                            Text("Cao: 32° • Thấp: 24° • Mưa: 10%", color = Color(0xFF38BDF8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                        }
+                                                    }
+                                                }
+                                                // 3: 1x1 Mini
+                                                3 -> {
+                                                    Column(
+                                                        modifier = Modifier
+                                                            .fillMaxSize()
+                                                            .padding(8.dp),
+                                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                                        verticalArrangement = Arrangement.Center
+                                                    ) {
+                                                        Text("☀️", fontSize = 26.sp)
+                                                        Text("29°", color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                                        Text(defaultCity.name, color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                                        Text("32° / 24°", color = Color(0xFF38BDF8), fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
                                                     }
                                                 }
                                             }

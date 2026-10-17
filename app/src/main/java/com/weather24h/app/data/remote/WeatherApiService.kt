@@ -76,34 +76,63 @@ class WeatherApiService {
     }
 
     suspend fun searchCities(query: String): List<CityLocation> = withContext(Dispatchers.IO) {
-        if (query.trim().isEmpty()) return@withContext CityLocation.POPULAR_CITIES
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return@withContext CityLocation.POPULAR_CITIES
+
+        val normQuery = CityLocation.normalizeVietnamese(trimmed)
+        val localMatches = CityLocation.VIETNAM_MAJOR_CITIES.filter { city ->
+            val normName = CityLocation.normalizeVietnamese(city.name)
+            val normAdmin = city.admin1?.let { CityLocation.normalizeVietnamese(it) } ?: ""
+            normName.contains(normQuery) || normAdmin.contains(normQuery) ||
+            (normQuery == "hcm" && normName.contains("ho chi minh")) ||
+            (normQuery == "tphcm" && normName.contains("ho chi minh")) ||
+            (normQuery == "sg" && normName.contains("ho chi minh")) ||
+            (normQuery == "saigon" && normName.contains("ho chi minh")) ||
+            (normQuery == "hn" && normName.contains("ha noi")) ||
+            (normQuery == "dn" && normName.contains("da nang")) ||
+            (normQuery == "hp" && normName.contains("hai phong")) ||
+            (normQuery == "dl" && normName.contains("da lat"))
+        }
 
         try {
-            val encoded = URLEncoder.encode(query, "UTF-8")
+            val encoded = URLEncoder.encode(trimmed, "UTF-8")
             val url = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=10&language=vi&format=json"
             val request = Request.Builder().url(url).build()
             val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: return@withContext emptyList()
+            val responseBody = response.body?.string() ?: return@withContext localMatches
 
             val json = gson.fromJson(responseBody, JsonObject::class.java)
-            val results = json.getAsJsonArray("results") ?: return@withContext emptyList()
+            val results = json.getAsJsonArray("results") ?: return@withContext localMatches
 
-            val list = mutableListOf<CityLocation>()
+            val apiList = mutableListOf<CityLocation>()
             for (elem in results) {
                 val obj = elem.asJsonObject
-                list.add(
-                    CityLocation(
-                        name = obj.get("name")?.asString ?: "",
-                        country = obj.get("country")?.asString ?: "",
-                        admin1 = obj.get("admin1")?.asString,
-                        latitude = obj.get("latitude").asDouble,
-                        longitude = obj.get("longitude").asDouble
+                val name = obj.get("name")?.asString ?: ""
+                val lat = obj.get("latitude").asDouble
+                val lon = obj.get("longitude").asDouble
+                val isDuplicate = localMatches.any {
+                    it.name.equals(name, ignoreCase = true) ||
+                    (kotlin.math.abs(it.latitude - lat) < 0.05 && kotlin.math.abs(it.longitude - lon) < 0.05)
+                }
+                if (!isDuplicate) {
+                    apiList.add(
+                        CityLocation(
+                            name = name,
+                            country = obj.get("country")?.asString ?: "",
+                            admin1 = obj.get("admin1")?.asString,
+                            latitude = lat,
+                            longitude = lon
+                        )
                     )
-                )
+                }
             }
-            list
-        } catch (e: Exception) {
-            CityLocation.POPULAR_CITIES.filter { it.name.contains(query, ignoreCase = true) }
+            localMatches + apiList
+        } catch (_: Exception) {
+            localMatches.ifEmpty {
+                CityLocation.POPULAR_CITIES.filter {
+                    CityLocation.normalizeVietnamese(it.name).contains(normQuery)
+                }
+            }
         }
     }
 

@@ -1,5 +1,11 @@
 package com.weather24h.app.ui.theme
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import com.weather24h.app.data.model.WeatherType
@@ -77,63 +83,76 @@ enum class AmbientGlowStyle(
     )
 }
 
-fun getSkyGradient(type: WeatherType, isDay: Boolean, isDarkTheme: Boolean = true): Brush {
+enum class AtmospherePerformanceMode(
+    val title: String,
+    val description: String
+) {
+    BALANCED(
+        title = "Tự động tối ưu (Khuyên dùng)",
+        description = "Tự động giảm tải hạt khi cuộn màn hình hoặc khi máy bật Tiết kiệm pin"
+    ),
+    HIGH_QUALITY(
+        title = "Chất lượng cao nhất",
+        description = "Luôn duy trì đầy đủ số lượng hạt và chuyển động mượt mà 60/120 FPS"
+    ),
+    BATTERY_SAVER(
+        title = "Tiết kiệm pin tối đa",
+        description = "Giảm 60% số lượng hạt và lược bỏ hiệu ứng nặng để máy luôn mát và tiết kiệm pin"
+    )
+}
+
+fun getSkyGradientColors(type: WeatherType, isDay: Boolean, isDarkTheme: Boolean = true): Triple<Color, Color, Color> {
     if (!isDarkTheme) {
         // Chế độ Sáng (Light Theme): Nền trời tươi sáng, thanh thoát, dịu mắt
         return when (type) {
-            WeatherType.CLEAR -> Brush.verticalGradient(
-                listOf(Color(0xFFBAE6FD), Color(0xFFE0F2FE), Color(0xFFF0F9FF))
-            )
-            WeatherType.PARTLY_CLOUDY -> Brush.verticalGradient(
-                listOf(Color(0xFFCBD5E1), Color(0xFFE2E8F0), Color(0xFFF8FAFC))
-            )
-            WeatherType.CLOUDY, WeatherType.FOG -> Brush.verticalGradient(
-                listOf(Color(0xFF94A3B8), Color(0xFFCBD5E1), Color(0xFFF1F5F9))
-            )
-            WeatherType.DRIZZLE, WeatherType.RAIN -> Brush.verticalGradient(
-                listOf(Color(0xFF7DD3FC), Color(0xFFBAE6FD), Color(0xFFE2E8F0))
-            )
-            WeatherType.THUNDERSTORM -> Brush.verticalGradient(
-                listOf(Color(0xFF64748B), Color(0xFF94A3B8), Color(0xFFCBD5E1))
-            )
-            WeatherType.SNOW -> Brush.verticalGradient(
-                listOf(Color(0xFFE0F2FE), Color(0xFFF0FDF4), Color(0xFFFFFFFF))
-            )
+            WeatherType.CLEAR -> Triple(Color(0xFFBAE6FD), Color(0xFFE0F2FE), Color(0xFFF0F9FF))
+            WeatherType.PARTLY_CLOUDY -> Triple(Color(0xFFCBD5E1), Color(0xFFE2E8F0), Color(0xFFF8FAFC))
+            WeatherType.CLOUDY, WeatherType.FOG -> Triple(Color(0xFF94A3B8), Color(0xFFCBD5E1), Color(0xFFF1F5F9))
+            WeatherType.DRIZZLE, WeatherType.RAIN -> Triple(Color(0xFF7DD3FC), Color(0xFFBAE6FD), Color(0xFFE2E8F0))
+            WeatherType.THUNDERSTORM -> Triple(Color(0xFF64748B), Color(0xFF94A3B8), Color(0xFFCBD5E1))
+            WeatherType.SNOW -> Triple(Color(0xFFE0F2FE), Color(0xFFF0FDF4), Color(0xFFFFFFFF))
         }
     }
 
     // Chế độ Tối (Dark Theme): Bầu trời khí quyển trầm đậm, bảo vệ mắt và tôn nổi bật icon
     if (!isDay) {
         return when (type) {
-            WeatherType.THUNDERSTORM -> Brush.verticalGradient(
-                listOf(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF311042))
-            )
-            WeatherType.RAIN -> Brush.verticalGradient(
-                listOf(Color(0xFF020617), Color(0xFF0F172A), Color(0xFF1E293B))
-            )
-            else -> Brush.verticalGradient(
-                listOf(Color(0xFF020617), Color(0xFF0F172A), Color(0xFF1E293B))
-            )
+            WeatherType.THUNDERSTORM -> Triple(Color(0xFF0F172A), Color(0xFF1E1B4B), Color(0xFF311042))
+            WeatherType.RAIN -> Triple(Color(0xFF020617), Color(0xFF0F172A), Color(0xFF1E293B))
+            else -> Triple(Color(0xFF020617), Color(0xFF0F172A), Color(0xFF1E293B))
         }
     }
     return when (type) {
-        WeatherType.CLEAR -> Brush.verticalGradient(
-            listOf(Color(0xFF0369A1), Color(0xFF0284C7), Color(0xFF0C4A6E))
-        )
-        WeatherType.PARTLY_CLOUDY -> Brush.verticalGradient(
-            listOf(Color(0xFF1E293B), Color(0xFF334155), Color(0xFF0F172A))
-        )
-        WeatherType.CLOUDY, WeatherType.FOG -> Brush.verticalGradient(
-            listOf(Color(0xFF1E293B), Color(0xFF475569), Color(0xFF0F172A))
-        )
-        WeatherType.DRIZZLE, WeatherType.RAIN -> Brush.verticalGradient(
-            listOf(Color(0xFF0F172A), Color(0xFF1E3A5F), Color(0xFF0369A1))
-        )
-        WeatherType.THUNDERSTORM -> Brush.verticalGradient(
-            listOf(Color(0xFF1E1B4B), Color(0xFF2E1065), Color(0xFF0F172A))
-        )
-        WeatherType.SNOW -> Brush.verticalGradient(
-            listOf(Color(0xFF1E293B), Color(0xFF38BDF8).copy(alpha = 0.4f), Color(0xFF0F172A))
-        )
+        WeatherType.CLEAR -> Triple(Color(0xFF0369A1), Color(0xFF0284C7), Color(0xFF0C4A6E))
+        WeatherType.PARTLY_CLOUDY -> Triple(Color(0xFF1E293B), Color(0xFF334155), Color(0xFF0F172A))
+        WeatherType.CLOUDY, WeatherType.FOG -> Triple(Color(0xFF1E293B), Color(0xFF475569), Color(0xFF0F172A))
+        WeatherType.DRIZZLE, WeatherType.RAIN -> Triple(Color(0xFF0F172A), Color(0xFF1E3A5F), Color(0xFF0369A1))
+        WeatherType.THUNDERSTORM -> Triple(Color(0xFF1E1B4B), Color(0xFF2E1065), Color(0xFF0F172A))
+        WeatherType.SNOW -> Triple(Color(0xFF1E293B), Color(0xFF38BDF8).copy(alpha = 0.4f), Color(0xFF0F172A))
+    }
+}
+
+fun getSkyGradient(type: WeatherType, isDay: Boolean, isDarkTheme: Boolean = true): Brush {
+    val (top, mid, bottom) = getSkyGradientColors(type, isDay, isDarkTheme)
+    return Brush.verticalGradient(listOf(top, mid, bottom))
+}
+
+@Composable
+fun rememberAnimatedSkyGradient(
+    type: WeatherType,
+    isDay: Boolean,
+    isDarkTheme: Boolean = true
+): Brush {
+    val targetColors = remember(type, isDay, isDarkTheme) {
+        getSkyGradientColors(type, isDay, isDarkTheme)
+    }
+
+    val animSpec = tween<Color>(durationMillis = 850, easing = FastOutSlowInEasing)
+    val topColor by animateColorAsState(targetValue = targetColors.first, animationSpec = animSpec, label = "SkyTop")
+    val midColor by animateColorAsState(targetValue = targetColors.second, animationSpec = animSpec, label = "SkyMid")
+    val bottomColor by animateColorAsState(targetValue = targetColors.third, animationSpec = animSpec, label = "SkyBottom")
+
+    return remember(topColor, midColor, bottomColor) {
+        Brush.verticalGradient(listOf(topColor, midColor, bottomColor))
     }
 }

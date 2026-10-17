@@ -61,6 +61,8 @@ fun WeatherRadarCard(
     // Trạng thái sự cố WebGL trên thiết bị để hiển thị thông báo và tự động chuyển sang RainViewer
     var hasWebGLError by remember { mutableStateOf(false) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var isPreviewLoading by remember(selectedEngine, selectedLayer, reloadKey) { mutableStateOf(true) }
+    var isFullscreenLoading by remember(selectedEngine, selectedLayer, reloadKey) { mutableStateOf(true) }
 
     val isDark = LocalIsDarkTheme.current
     val cardOpacity = LocalCardOpacity.current
@@ -353,12 +355,37 @@ fun WeatherRadarCard(
                                     configureRadarWebView(
                                         webView = this,
                                         url = previewUrl,
-                                        onFallbackNeeded = onRadarFailure
+                                        onFallbackNeeded = onRadarFailure,
+                                        onLoadingChanged = { isPreviewLoading = it }
                                     )
                                 }
                             },
                             modifier = Modifier.fillMaxSize()
                         )
+                    }
+
+                    // Lớp phủ chờ tải màu tối (Dark loading placeholder chống nhấp nháy)
+                    if (isPreviewLoading) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFF020617)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = accentColor,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Đang tải dữ liệu Radar...",
+                                    color = Color.White.copy(alpha = 0.75f),
+                                    fontSize = 11.5.sp
+                                )
+                            }
+                        }
                     }
 
                     // TẤM LẮN CẢM ỨNG (Touch Shield Overlay):
@@ -557,12 +584,37 @@ fun WeatherRadarCard(
                                         configureRadarWebView(
                                             webView = this,
                                             url = fullUrl,
-                                            onFallbackNeeded = onRadarFailure
+                                            onFallbackNeeded = onRadarFailure,
+                                            onLoadingChanged = { isFullscreenLoading = it }
                                         )
                                     }
                                 },
                                 modifier = Modifier.fillMaxSize()
                             )
+                        }
+
+                        // Lớp phủ chờ tải toàn màn hình chống chớp trắng
+                        if (isFullscreenLoading) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFF0F172A)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        color = Color(0xFF38BDF8),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(10.dp))
+                                    Text(
+                                        text = "Đang tải dữ liệu bản đồ trực tiếp...",
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -591,13 +643,16 @@ fun WeatherRadarCard(
 private fun configureRadarWebView(
     webView: WebView,
     url: String,
-    onFallbackNeeded: (String) -> Unit
+    onFallbackNeeded: (String) -> Unit,
+    onLoadingChanged: ((Boolean) -> Unit)? = null
 ) {
     webView.apply {
         layoutParams = ViewGroup.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
         )
+        // Loại bỏ triệt để hiện tượng nháy trắng khi WebView khởi tạo hoặc tải trang
+        setBackgroundColor(android.graphics.Color.parseColor("#020617"))
         // Kích hoạt phần cứng GPU
         setLayerType(View.LAYER_TYPE_HARDWARE, null)
         isVerticalScrollBarEnabled = false
@@ -620,6 +675,16 @@ private fun configureRadarWebView(
         }
 
         webViewClient = object : WebViewClient() {
+            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                super.onPageStarted(view, url, favicon)
+                onLoadingChanged?.invoke(true)
+            }
+
+            override fun onPageFinished(view: WebView?, url: String?) {
+                super.onPageFinished(view, url)
+                onLoadingChanged?.invoke(false)
+            }
+
             override fun onRenderProcessGone(
                 view: WebView?,
                 detail: RenderProcessGoneDetail?

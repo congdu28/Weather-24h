@@ -23,6 +23,8 @@ fun AmbientGlowOverlay(
     intensity: Float,
     weatherType: WeatherType,
     isDay: Boolean,
+    isScrolling: Boolean = false,
+    isPowerSaveMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     if (intensity <= 0.01f) return
@@ -78,8 +80,10 @@ fun AmbientGlowOverlay(
         val w = size.width
         val h = size.height
 
+        val effectiveShiftX = if (isScrolling) 0f else shiftX
+
         // Quầng sáng 1: Phía trên bên phải
-        val center1 = Offset(w * 0.75f + shiftX, h * 0.22f)
+        val center1 = Offset(w * 0.75f + effectiveShiftX, h * 0.22f)
         val radius1 = (w * 0.65f) * pulse1
         drawCircle(
             brush = Brush.radialGradient(
@@ -95,37 +99,40 @@ fun AmbientGlowOverlay(
             radius = radius1
         )
 
-        // Quầng sáng 2: Phía dưới bên trái
-        val center2 = Offset(w * 0.25f - shiftX, h * 0.68f)
-        val radius2 = (w * 0.75f) * pulse2
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    secondary.copy(alpha = alphaBase * 0.8f),
-                    accent.copy(alpha = alphaBase * 0.35f),
-                    Color.Transparent
+        // Nếu ở chế độ Tiết kiệm pin, bỏ qua quầng 2 & 3 để tiết kiệm 66% GPU draw calls
+        if (!isPowerSaveMode) {
+            // Quầng sáng 2: Phía dưới bên trái
+            val center2 = Offset(w * 0.25f - effectiveShiftX, h * 0.68f)
+            val radius2 = (w * 0.75f) * pulse2
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        secondary.copy(alpha = alphaBase * 0.8f),
+                        accent.copy(alpha = alphaBase * 0.35f),
+                        Color.Transparent
+                    ),
+                    center = center2,
+                    radius = radius2
                 ),
                 center = center2,
                 radius = radius2
-            ),
-            center = center2,
-            radius = radius2
-        )
+            )
 
-        // Quầng sáng 3: Ánh sáng lan tỏa nhẹ đỉnh màn hình
-        val center3 = Offset(w * 0.5f, h * 0.06f)
-        val radius3 = w * 0.8f
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(
-                    accent.copy(alpha = alphaBase * 0.32f),
-                    Color.Transparent
+            // Quầng sáng 3: Ánh sáng lan tỏa nhẹ đỉnh màn hình
+            val center3 = Offset(w * 0.5f, h * 0.06f)
+            val radius3 = w * 0.8f
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        accent.copy(alpha = alphaBase * 0.32f),
+                        Color.Transparent
+                    ),
+                    center = center3,
+                    radius = radius3
                 ),
                 center = center3,
                 radius = radius3
-            ),
-            center = center3,
-            radius = radius3
-        )
+            )
+        }
     }
 }

@@ -73,6 +73,22 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             if (compactIds.isNotEmpty()) {
                 appWidgetManager.partiallyUpdateAppWidget(compactIds, compactViews)
             }
+
+            val forecastViews = RemoteViews(appContext.packageName, R.layout.weather_widget_forecast)
+            forecastViews.setTextViewText(R.id.forecast_widget_desc, "Đang làm mới dữ liệu...")
+            val forecastComp = ComponentName(appContext, Forecast5DayWidgetProvider::class.java)
+            val forecastIds = appWidgetManager.getAppWidgetIds(forecastComp)
+            if (forecastIds.isNotEmpty()) {
+                appWidgetManager.partiallyUpdateAppWidget(forecastIds, forecastViews)
+            }
+
+            val miniViews = RemoteViews(appContext.packageName, R.layout.weather_widget_mini)
+            miniViews.setTextViewText(R.id.mini_widget_desc, "Đang tải...")
+            val miniComp = ComponentName(appContext, MiniWeatherWidgetProvider::class.java)
+            val miniIds = appWidgetManager.getAppWidgetIds(miniComp)
+            if (miniIds.isNotEmpty()) {
+                appWidgetManager.partiallyUpdateAppWidget(miniIds, miniViews)
+            }
         } catch (e: Exception) {}
 
         // 2. Chạy ngầm bằng Coroutine với BroadcastReceiver.goAsync()
@@ -127,6 +143,12 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
             // 2. Đồng thời cập nhật Widget Tối giản (2x1 / 3x1)
             CompactWeatherWidgetProvider.updateAllCompactWidgets(context, data)
+
+            // 3. Đồng thời cập nhật Widget Dự báo 5 ngày (4x1 / 4x2)
+            Forecast5DayWidgetProvider.updateAllForecastWidgets(context, data)
+
+            // 4. Đồng thời cập nhật Widget Mini (1x1)
+            MiniWeatherWidgetProvider.updateAllMiniWidgets(context, data)
         }
 
         private fun updateWidget(

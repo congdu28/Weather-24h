@@ -1,6 +1,11 @@
 package com.weather24h.app.ui.screens
 
 import android.app.Activity
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.PowerManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
@@ -10,6 +15,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
@@ -40,7 +46,9 @@ import com.weather24h.app.data.model.SevereWeatherDetector
 import com.weather24h.app.data.model.WeatherCondition
 import com.weather24h.app.data.model.WeatherType
 import com.weather24h.app.ui.components.*
+import com.weather24h.app.ui.theme.AtmospherePerformanceMode
 import com.weather24h.app.ui.theme.getSkyGradient
+import com.weather24h.app.ui.theme.rememberAnimatedSkyGradient
 
 @Composable
 fun WeatherScreen(
@@ -74,6 +82,31 @@ fun WeatherScreen(
     val customWeatherApiKey by viewModel.customWeatherApiKey.collectAsState()
     val customGoogleWeatherKey by viewModel.customGoogleWeatherKey.collectAsState()
 
+    val atmospherePerformanceMode by viewModel.atmospherePerformanceMode.collectAsState()
+
+    // Quản lý trạng thái cuộn danh sách để tối ưu hiệu năng render hạt (60/120 FPS không giật lag)
+    val listState = rememberLazyListState()
+    val isScrolling by remember { derivedStateOf { listState.isScrollInProgress } }
+
+    // Tự động nhận diện chế độ Tiết kiệm pin của hệ điều hành Android
+    val powerManager = remember(context) { context.getSystemService(Context.POWER_SERVICE) as? PowerManager }
+    var isPowerSaveMode by remember { mutableStateOf(powerManager?.isPowerSaveMode == true) }
+
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                isPowerSaveMode = powerManager?.isPowerSaveMode == true
+            }
+        }
+        val filter = IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+        context.registerReceiver(receiver, filter)
+        onDispose {
+            try {
+                context.unregisterReceiver(receiver)
+            } catch (_: Exception) {}
+        }
+    }
+
     var showSearchDialog by remember { mutableStateOf(false) }
 
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -101,23 +134,30 @@ fun WeatherScreen(
     val themeMode by viewModel.themeMode.collectAsState()
     val isDarkTheme = com.weather24h.app.ui.theme.LocalIsDarkTheme.current
 
+    val animatedSkyGradient = rememberAnimatedSkyGradient(weatherType, isDay, isDarkTheme)
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(getSkyGradient(weatherType, isDay, isDarkTheme))
+            .background(animatedSkyGradient)
     ) {
         // Living dynamic ambient light & glow overlay
         AmbientGlowOverlay(
             style = ambientGlowStyle,
             intensity = ambientGlowIntensity,
             weatherType = weatherType,
-            isDay = isDay
+            isDay = isDay,
+            isScrolling = isScrolling,
+            isPowerSaveMode = isPowerSaveMode || atmospherePerformanceMode == AtmospherePerformanceMode.BATTERY_SAVER
         )
 
         // Living dynamic weather atmosphere effect (Sun rays, rain streaks, storm lightning, clouds, stars)
         WeatherAtmosphereEffect(
             type = weatherType,
-            isDay = isDay
+            isDay = isDay,
+            isScrolling = isScrolling,
+            isPowerSaveMode = isPowerSaveMode,
+            performanceMode = atmospherePerformanceMode
         )
 
         // Lớp phủ làm tối nền người dùng tùy chỉnh (Background Dimming Level)
@@ -374,6 +414,7 @@ fun WeatherScreen(
                         }
 
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -515,6 +556,7 @@ fun WeatherScreen(
                 cardOpacity = cardOpacity,
                 ambientGlowStyle = ambientGlowStyle,
                 ambientGlowIntensity = ambientGlowIntensity,
+                atmospherePerformanceMode = atmospherePerformanceMode,
                 widgetThemeMode = widgetThemeMode,
                 widgetOpacity = widgetOpacity,
                 widgetStyle = widgetStyle,
@@ -538,6 +580,7 @@ fun WeatherScreen(
                 onSetCardOpacity = { viewModel.setCardOpacity(it) },
                 onSelectAmbientGlowStyle = { viewModel.setAmbientGlowStyle(it) },
                 onSetAmbientGlowIntensity = { viewModel.setAmbientGlowIntensity(it) },
+                onSelectAtmospherePerformanceMode = { viewModel.setAtmospherePerformanceMode(it) },
 
                 onSelectWidgetThemeMode = { viewModel.setWidgetThemeMode(it) },
                 onSetWidgetOpacity = { viewModel.setWidgetOpacity(it) },

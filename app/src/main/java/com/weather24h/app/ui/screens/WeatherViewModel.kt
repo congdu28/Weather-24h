@@ -13,6 +13,7 @@ import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
 import com.weather24h.app.ui.theme.AmbientGlowStyle
+import com.weather24h.app.ui.theme.AtmospherePerformanceMode
 import com.weather24h.app.util.PeriodicWeatherWorker
 import com.weather24h.app.util.WeatherNotificationHelper
 import kotlinx.coroutines.Dispatchers
@@ -111,6 +112,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _ambientGlowIntensity = MutableStateFlow(repository.getAmbientGlowIntensity())
     val ambientGlowIntensity: StateFlow<Float> = _ambientGlowIntensity.asStateFlow()
 
+    private val _atmospherePerformanceMode = MutableStateFlow(repository.getAtmospherePerformanceMode())
+    val atmospherePerformanceMode: StateFlow<AtmospherePerformanceMode> = _atmospherePerformanceMode.asStateFlow()
+
     // Cài đặt Widget (Theme sáng/tối & Độ trong suốt)
     private val _widgetThemeMode = MutableStateFlow(repository.getWidgetThemeMode())
     val widgetThemeMode: StateFlow<com.weather24h.app.ui.theme.AppThemeMode> = _widgetThemeMode.asStateFlow()
@@ -188,6 +192,11 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         val clamped = intensity.coerceIn(0.0f, 1.0f)
         _ambientGlowIntensity.value = clamped
         repository.setAmbientGlowIntensity(clamped)
+    }
+
+    fun setAtmospherePerformanceMode(mode: AtmospherePerformanceMode) {
+        _atmospherePerformanceMode.value = mode
+        repository.setAtmospherePerformanceMode(mode)
     }
 
     // Nguồn dữ liệu thời tiết (WeatherAPI vs Google Weather vs Open-Meteo)
@@ -321,12 +330,25 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         currentCity = city
         repository.setLastActiveCity(city)
 
+        // Kiểm tra xem đã có dữ liệu cache (từ bộ nhớ hoặc pre-fetch) của thành phố này chưa
+        val cachedWeather = repository.getCachedWeatherForCity(city)
+
         loadWeatherJob = viewModelScope.launch {
-            val hasExistingData = _uiState.value is WeatherUiState.Success
-            if (!hasExistingData || (!isSameCity && !isBackgroundRefresh)) {
-                _uiState.value = WeatherUiState.Loading
-            } else {
+            if (cachedWeather != null) {
+                // CHUYỂN TAB TỨC THÌ 0S: Hiển thị ngay lập tức dữ liệu cache mà không cần xoay vòng loading
+                _uiState.value = WeatherUiState.Success(
+                    weather = cachedWeather,
+                    outfit = if (isSameCity) (_uiState.value as? WeatherUiState.Success)?.outfit else null,
+                    isOutfitLoading = true
+                )
                 _isRefreshing.value = true
+            } else {
+                val hasExistingData = _uiState.value is WeatherUiState.Success
+                if (!hasExistingData || (!isSameCity && !isBackgroundRefresh)) {
+                    _uiState.value = WeatherUiState.Loading
+                } else {
+                    _isRefreshing.value = true
+                }
             }
             try {
                 val weather = repository.getWeatherData(city)
@@ -461,6 +483,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 if (existing == null || now - existing.updatedAt > 20 * 60 * 1000L) {
                     try {
                         val weather = apiService.getFullWeather(city, repository.getForecastModel())
+                        // Lưu toàn bộ dữ liệu thời tiết để chuyển tab tức thì 0 giây
+                        repository.saveCachedWeatherForCity(weather)
+
                         currentMap[key] = CityWeatherSummary(
                             cityName = city.name,
                             tempC = weather.current.temperature.toInt(),

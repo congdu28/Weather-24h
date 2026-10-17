@@ -53,6 +53,30 @@
                 android:resource="@xml/compact_widget_info" />
         </receiver>
 
+        <!-- Home Screen 5-Day Daily Forecast Widget (4x1 / 4x2) -->
+        <receiver
+            android:name=".ui.widget.Forecast5DayWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/forecast_widget_info" />
+        </receiver>
+
+        <!-- Home Screen Mini Weather Gauge Widget (1x1) -->
+        <receiver
+            android:name=".ui.widget.MiniWeatherWidgetProvider"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/mini_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>

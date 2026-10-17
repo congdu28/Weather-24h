@@ -392,7 +392,7 @@ fun CitySearchDialog(
                             }
                         }
 
-                        // 2. Thành phố phổ biến gợi ý
+                        // 2. Thành phố & Tỉnh thành lớn tại Việt Nam
                         item {
                             Spacer(modifier = Modifier.height(4.dp))
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -404,7 +404,7 @@ fun CitySearchDialog(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "THÀNH PHỐ PHỔ BIẾN",
+                                    text = "TỈNH & THÀNH PHỐ VIỆT NAM",
                                     color = subtextColor,
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
@@ -417,7 +417,7 @@ fun CitySearchDialog(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                CityLocation.POPULAR_CITIES.forEach { city ->
+                                CityLocation.VIETNAM_MAJOR_CITIES.forEach { city ->
                                     val isFav = favoriteCities.any { it.name.equals(city.name, ignoreCase = true) }
                                     val isCurrent = city.name.equals(currentCityName, ignoreCase = true)
                                     Surface(
