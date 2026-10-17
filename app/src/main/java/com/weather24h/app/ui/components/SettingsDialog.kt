@@ -98,7 +98,7 @@ fun SettingsDialog(
     ambientGlowStyle: com.weather24h.app.ui.theme.AmbientGlowStyle,
     ambientGlowIntensity: Float,
     atmospherePerformanceMode: AtmospherePerformanceMode = AtmospherePerformanceMode.BALANCED,
-    cardOpacity: Float = 0.80f,
+    cardOpacity: Float = 0.25f,
     widgetThemeMode: com.weather24h.app.ui.theme.AppThemeMode = com.weather24h.app.ui.theme.AppThemeMode.SYSTEM,
     widgetOpacity: Float = 0.85f,
     widgetStyle: WidgetStyle = WidgetStyle.FROSTED_GLASS,

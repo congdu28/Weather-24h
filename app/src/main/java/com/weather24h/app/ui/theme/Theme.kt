@@ -48,7 +48,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun Weather24hTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
-    cardOpacity: Float = 0.80f,
+    cardOpacity: Float = 0.25f,
     content: @Composable () -> Unit
 ) {
     val isDark = when (themeMode) {

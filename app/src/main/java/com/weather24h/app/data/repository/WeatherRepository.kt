@@ -414,8 +414,8 @@ class WeatherRepository(
     // CÀI ĐẶT ĐỘ TỐI NỀN & AMBIENT LIGHT
     // ==========================================
     fun getBgDimmingLevel(): Float {
-        // Mức độ làm tối nền: 0.0f (sáng gốc) đến 0.8f (tối sâu), mặc định 0.15f
-        return prefs.getFloat("bg_dimming_level", 0.15f)
+        // Mức độ làm tối nền: 0.0f (sáng gốc) đến 0.8f (tối sâu), mặc định 0.0f
+        return prefs.getFloat("bg_dimming_level", 0.0f)
     }
 
     fun setBgDimmingLevel(level: Float) {
@@ -436,8 +436,8 @@ class WeatherRepository(
     }
 
     fun getAmbientGlowIntensity(): Float {
-        // Cường độ phát sáng: 0.0f (tắt) đến 1.0f (rực rỡ), mặc định 0.6f
-        return prefs.getFloat("ambient_glow_intensity", 0.6f)
+        // Cường độ phát sáng: 0.0f (tắt) đến 1.0f (rực rỡ), mặc định 1.0f
+        return prefs.getFloat("ambient_glow_intensity", 1.0f)
     }
 
     fun setAmbientGlowIntensity(intensity: Float) {
@@ -555,8 +555,8 @@ class WeatherRepository(
     // CÀI ĐẶT ĐỘ MỜ KHỐI THỜI TIẾT MÀN HÌNH CHÍNH (CARD OPACITY)
     // ==========================================
     fun getCardOpacity(): Float {
-        // Mặc định độ đục các thẻ thời tiết là 0.80f (80%), từ 0.20f (rất mờ/trong suốt) đến 1.0f (đặc hoàn toàn)
-        return prefs.getFloat("card_bg_opacity", 0.80f)
+        // Mặc định độ đục các thẻ thời tiết là 0.25f (25%), từ 0.20f (rất mờ/trong suốt) đến 1.0f (đặc hoàn toàn)
+        return prefs.getFloat("card_bg_opacity", 0.25f)
     }
 
     fun setCardOpacity(opacity: Float) {

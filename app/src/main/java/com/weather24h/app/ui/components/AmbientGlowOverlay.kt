@@ -66,8 +66,13 @@ fun AmbientGlowOverlay(
         when {
             weatherType == WeatherType.CLEAR && isDay -> Triple(Color(0xFFF59E0B), Color(0xFF38BDF8), Color(0xFFFBBF24))
             weatherType == WeatherType.CLEAR && !isDay -> Triple(Color(0xFF6366F1), Color(0xFF3B82F6), Color(0xFF1E1B4B))
+            weatherType == WeatherType.PARTLY_CLOUDY && isDay -> Triple(Color(0xFFFBBF24), Color(0xFF38BDF8), Color(0xFF93C5FD))
+            weatherType == WeatherType.PARTLY_CLOUDY && !isDay -> Triple(Color(0xFF818CF8), Color(0xFF38BDF8), Color(0xFF1E293B))
+            weatherType == WeatherType.CLOUDY -> Triple(Color(0xFF64748B), Color(0xFF38BDF8), Color(0xFF1E293B))
             weatherType == WeatherType.THUNDERSTORM -> Triple(Color(0xFF8B5CF6), Color(0xFF06B6D4), Color(0xFF4C1D95))
             weatherType == WeatherType.RAIN || weatherType == WeatherType.DRIZZLE -> Triple(Color(0xFF0284C7), Color(0xFF06B6D4), Color(0xFF1E3A5F))
+            weatherType == WeatherType.SNOW -> Triple(Color(0xFF38BDF8), Color(0xFFE0F2FE), Color(0xFF0284C7))
+            weatherType == WeatherType.FOG -> Triple(Color(0xFF94A3B8), Color(0xFF64748B), Color(0xFF38BDF8))
             else -> Triple(Color(0xFF38BDF8), Color(0xFF818CF8), Color(0xFF0284C7))
         }
     } else {
@@ -80,7 +85,7 @@ fun AmbientGlowOverlay(
         val w = size.width
         val h = size.height
 
-        val effectiveShiftX = if (isScrolling) 0f else shiftX
+        val effectiveShiftX = shiftX
 
         // Quầng sáng 1: Phía trên bên phải
         val center1 = Offset(w * 0.75f + effectiveShiftX, h * 0.22f)
