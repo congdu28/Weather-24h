@@ -24,6 +24,7 @@ class MiniWeatherWidgetProvider : AppWidgetProvider() {
         for (widgetId in appWidgetIds) {
             updateMiniWidget(context, appWidgetManager, widgetId, weather)
         }
+        WeatherWidgetProvider.refreshWidgetWeatherWithLocation(context, isSilent = true)
     }
 
     companion object {
@@ -101,7 +102,10 @@ class MiniWeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextColor(R.id.mini_widget_city, colorPrimary)
                 views.setTextColor(R.id.mini_widget_desc, colorAccent)
 
-                val intent = Intent(context, MainActivity::class.java)
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra(WeatherWidgetProvider.EXTRA_FORCE_GPS_REFRESH, true)
+                }
                 val pendingIntent = PendingIntent.getActivity(
                     context,
                     103,

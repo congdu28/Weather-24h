@@ -35,15 +35,47 @@ class PeriodicWeatherWorker(
                 return Result.success()
             }
 
-            val city = repository.getLastActiveCity()
-            val weather = repository.getWeatherData(city)
+            // Ưu tiên lấy vị trí thời gian thực hiện tại nếu máy có quyền vị trí
+            val currentLocation = LocationHelper.getCurrentLocation(context, timeoutMillis = 6000L)
+            val targetCity = if (currentLocation != null) {
+                try {
+                    val address = repository.getAddressFromCoordinates(
+                        currentLocation.latitude,
+                        currentLocation.longitude
+                    )
+                    com.weather24h.app.data.model.CityLocation(
+                        name = address.first,
+                        country = address.second,
+                        latitude = currentLocation.latitude,
+                        longitude = currentLocation.longitude,
+                        isCurrentLocation = true
+                    ).also {
+                        repository.setLastActiveCity(it)
+                    }
+                } catch (_: Exception) {
+                    com.weather24h.app.data.model.CityLocation(
+                        name = "Vị trí hiện tại",
+                        country = "Việt Nam",
+                        latitude = currentLocation.latitude,
+                        longitude = currentLocation.longitude,
+                        isCurrentLocation = true
+                    ).also {
+                        repository.setLastActiveCity(it)
+                    }
+                }
+            } else {
+                repository.getLastActiveCity()
+            }
+
+            val weather = repository.getWeatherData(targetCity)
+            val finalWeather = weather.copy(location = targetCity)
 
             // Luôn đồng bộ Widget màn hình chính với dữ liệu mới nhất
-            WeatherWidgetProvider.updateAllWidgets(context, weather)
+            WeatherWidgetProvider.updateAllWidgets(context, finalWeather)
 
             // Cập nhật thông báo hệ thống nếu người dùng bật thông báo định kỳ
             if (notifInterval > 0) {
-                WeatherNotificationHelper.showCurrentWeatherNotification(context, weather)
+                WeatherNotificationHelper.showCurrentWeatherNotification(context, finalWeather)
             } else {
                 WeatherNotificationHelper.cancelCurrentWeatherNotification(context)
             }

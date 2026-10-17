@@ -23,6 +23,7 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
         for (widgetId in appWidgetIds) {
             updateCompactWidget(context, appWidgetManager, widgetId, weather)
         }
+        WeatherWidgetProvider.refreshWidgetWeatherWithLocation(context, isSilent = true)
     }
 
     companion object {
@@ -122,7 +123,10 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 )
                 views.setOnClickPendingIntent(R.id.compact_widget_btn_refresh, refreshPendingIntent)
 
-                val intent = Intent(context, MainActivity::class.java)
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra(WeatherWidgetProvider.EXTRA_FORCE_GPS_REFRESH, true)
+                }
                 val pendingIntent = PendingIntent.getActivity(
                     context,
                     101,

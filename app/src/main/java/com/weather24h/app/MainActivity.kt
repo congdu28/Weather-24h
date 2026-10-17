@@ -19,9 +19,11 @@ import com.google.android.gms.location.CurrentLocationRequest
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import android.content.Intent
 import com.weather24h.app.ui.screens.WeatherScreen
 import com.weather24h.app.ui.screens.WeatherViewModel
 import com.weather24h.app.ui.theme.Weather24hTheme
+import com.weather24h.app.ui.widget.WeatherWidgetProvider
 import com.weather24h.app.util.WeatherNotificationHelper
 
 class MainActivity : ComponentActivity() {
@@ -83,12 +85,23 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Bản cài mới ưu tiên vị trí hiện tại. Xin quyền vị trí trước để tránh hai hộp thoại
-        // quyền hệ thống xuất hiện cùng lúc; quyền thông báo sẽ được hỏi sau khi định vị xong.
-        if (viewModel.isStartWithGps.value) {
+        // Kiểm tra nếu được mở từ Widget với yêu cầu cập nhật vị trí thời gian thực
+        val forceGps = intent?.getBooleanExtra(WeatherWidgetProvider.EXTRA_FORCE_GPS_REFRESH, false) == true
+        if (forceGps) {
+            checkLocationPermissions(isPullRefresh = true, isInitial = false)
+        } else if (viewModel.isStartWithGps.value) {
             checkLocationPermissions(isInitial = true)
         } else {
             requestNotificationPermissionIfNeeded()
+        }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val forceGps = intent.getBooleanExtra(WeatherWidgetProvider.EXTRA_FORCE_GPS_REFRESH, false)
+        if (forceGps) {
+            checkLocationPermissions(isPullRefresh = true, isInitial = false)
         }
     }
 

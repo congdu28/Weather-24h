@@ -31,6 +31,11 @@
         - *Nhiều mây u ám & Sương mù*: 4 tầng mây thể tích cuồn cuộn trôi nhịp nhàng; dải sương mù dập dềnh uốn sóng ngang mềm mại.
         - *Tuyết rơi lãng mạn*: Bông tuyết 3 tầng kích thước đung đưa lượn sóng theo gió cùng lớp sương giá mùa đông.
         - *Hệ màu bầu trời chuyển tiếp*: Nâng cấp bảng màu gradient sâu thẳm, rực rỡ và chân thực cho từng trạng thái khí quyển cả ngày và đêm.
+14. Từ v1.0.34, app nâng cấp cơ chế tự động định vị GPS thời gian thực cho Widget màn hình chính (Real-time GPS Location Auto-Detection):
+    - **Cập nhật theo vị trí thực tế hiện tại**: Khắc phục triệt để vấn đề widget lấy lại thành phố cũ của phiên trước. Khi người dùng di chuyển (ví dụ 1 tiếng trước ở Thanh Hóa, hiện tại đã đến Hà Nội), bấm nút làm mới trên bất kỳ Widget nào sẽ kích hoạt `LocationHelper` lấy tọa độ GPS thực tế của thiết bị, phân giải ngược địa chỉ (reverse geocoding) sang thành phố mới, tải thời tiết mới nhất và đồng bộ ngay lập tức cho toàn bộ các Widget (4x2, 2x1, 4x1, 1x1).
+    - **Chạm Widget mở ứng dụng tự động đồng bộ vị trí mới**: Chạm vào thân bất kỳ Widget nào để mở app sẽ gửi `EXTRA_FORCE_GPS_REFRESH`, kích hoạt `MainActivity` (cả cold-start lẫn warm-start qua `onNewIntent` với `launchMode="singleTask"`) kiểm tra và định vị ngay lập tức vị trí GPS hiện tại, cập nhật màn hình chính sang thành phố mới mà không cần thao tác thủ công.
+    - **Đồng bộ ngầm thông minh**: `PeriodicWeatherWorker` và chu kỳ `onUpdate` của Widget tự động kiểm tra vị trí GPS ngầm để phát hiện khi người dùng di chuyển sang tỉnh/thành phố khác, tự động chuyển vùng thời tiết và cập nhật thông báo/widget một cách liền mạch và tiết kiệm pin.
+    - **Dự phòng an toàn đa tầng**: Tự động ưu tiên `FusedLocationProviderClient` (High Accuracy / Balanced), có dự phòng nhiều tầng qua `lastLocation` và `LocationManager` gốc của hệ thống Android; nếu máy tắt GPS hoặc chưa cấp quyền vị trí, hệ thống tự động dự phòng về thành phố gần nhất mà không gây gián đoạn hay lỗi crash.
 
 ## Quy tắc hiển thị mưa
 

@@ -12,12 +12,15 @@ import android.widget.Toast
 import com.google.gson.Gson
 import com.weather24h.app.MainActivity
 import com.weather24h.app.R
+import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.WeatherCondition
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.data.model.WeatherType
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
+import com.weather24h.app.util.LocationHelper
+import com.weather24h.app.util.WeatherNotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,7 +31,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == ACTION_REFRESH_WIDGET) {
-            handleManualRefresh(context)
+            val pendingResult = goAsync()
+            refreshWidgetWeatherWithLocation(context, isSilent = false, pendingResult = pendingResult)
             return
         }
         super.onReceive(context, intent)
@@ -39,6 +43,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         for (widgetId in appWidgetIds) {
             updateWidget(context, appWidgetManager, widgetId, weather)
         }
+        // Tự động kiểm tra và làm mới vị trí thời gian thực ngầm nếu tới chu kỳ
+        refreshWidgetWeatherWithLocation(context, isSilent = true)
     }
 
     override fun onAppWidgetOptionsChanged(
@@ -52,83 +58,142 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         updateWidget(context, appWidgetManager, appWidgetId, weather)
     }
 
-    private fun handleManualRefresh(context: Context) {
-        val appContext = context.applicationContext
-        val appWidgetManager = AppWidgetManager.getInstance(appContext)
-
-        // 1. Phản hồi thị giác tức thì trên Widget: hiển thị "Đang làm mới..."
-        try {
-            val detailedViews = RemoteViews(appContext.packageName, R.layout.weather_widget)
-            detailedViews.setTextViewText(R.id.widget_updated, "Đang làm mới...")
-            val detailedComp = ComponentName(appContext, WeatherWidgetProvider::class.java)
-            val detailedIds = appWidgetManager.getAppWidgetIds(detailedComp)
-            if (detailedIds.isNotEmpty()) {
-                appWidgetManager.partiallyUpdateAppWidget(detailedIds, detailedViews)
-            }
-
-            val compactViews = RemoteViews(appContext.packageName, R.layout.weather_widget_compact)
-            compactViews.setTextViewText(R.id.compact_widget_desc, "Đang làm mới dữ liệu...")
-            val compactComp = ComponentName(appContext, CompactWeatherWidgetProvider::class.java)
-            val compactIds = appWidgetManager.getAppWidgetIds(compactComp)
-            if (compactIds.isNotEmpty()) {
-                appWidgetManager.partiallyUpdateAppWidget(compactIds, compactViews)
-            }
-
-            val forecastViews = RemoteViews(appContext.packageName, R.layout.weather_widget_forecast)
-            forecastViews.setTextViewText(R.id.forecast_widget_desc, "Đang làm mới dữ liệu...")
-            val forecastComp = ComponentName(appContext, Forecast5DayWidgetProvider::class.java)
-            val forecastIds = appWidgetManager.getAppWidgetIds(forecastComp)
-            if (forecastIds.isNotEmpty()) {
-                appWidgetManager.partiallyUpdateAppWidget(forecastIds, forecastViews)
-            }
-
-            val miniViews = RemoteViews(appContext.packageName, R.layout.weather_widget_mini)
-            miniViews.setTextViewText(R.id.mini_widget_desc, "Đang tải...")
-            val miniComp = ComponentName(appContext, MiniWeatherWidgetProvider::class.java)
-            val miniIds = appWidgetManager.getAppWidgetIds(miniComp)
-            if (miniIds.isNotEmpty()) {
-                appWidgetManager.partiallyUpdateAppWidget(miniIds, miniViews)
-            }
-        } catch (e: Exception) {}
-
-        // 2. Chạy ngầm bằng Coroutine với BroadcastReceiver.goAsync()
-        val pendingResult = goAsync()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val repository = WeatherRepository(
-                    context = appContext,
-                    apiService = WeatherApiService(),
-                    stylistService = GeminiStylistService(appContext)
-                )
-                val city = repository.getLastActiveCity()
-                val fresh = repository.getWeatherData(city)
-
-                withContext(Dispatchers.Main) {
-                    updateAllWidgets(appContext, fresh)
-                    Toast.makeText(
-                        appContext,
-                        "Đã cập nhật: ${fresh.location.name} (${fresh.current.temperature.roundToInt()}°C)",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    // Phục hồi lại dữ liệu đã lưu
-                    updateAllWidgets(appContext)
-                    Toast.makeText(
-                        appContext,
-                        "Không thể kết nối mạng để làm mới thời tiết",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            } finally {
-                pendingResult.finish()
-            }
-        }
-    }
-
     companion object {
         const val ACTION_REFRESH_WIDGET = "com.weather24h.app.ACTION_REFRESH_WIDGET"
+        const val EXTRA_FORCE_GPS_REFRESH = "EXTRA_FORCE_GPS_REFRESH"
+        private var lastAutoRefreshTime = 0L
+
+        /**
+         * Tự động xác định vị trí GPS thời gian thực và cập nhật thời tiết cho tất cả Widget
+         * Nếu có vị trí mới (ví dụ vừa di chuyển từ tỉnh này sang tỉnh khác), widget sẽ lấy thời tiết vị trí mới đó.
+         */
+        fun refreshWidgetWeatherWithLocation(
+            context: Context,
+            isSilent: Boolean = false,
+            pendingResult: android.content.BroadcastReceiver.PendingResult? = null
+        ) {
+            val appContext = context.applicationContext
+            val now = System.currentTimeMillis()
+            if (isSilent && now - lastAutoRefreshTime < 60_000L) {
+                pendingResult?.finish()
+                return
+            }
+            lastAutoRefreshTime = now
+
+            // Phản hồi giao diện tức thì nếu người dùng bấm nút làm mới trực tiếp trên Widget
+            if (!isSilent) {
+                try {
+                    val appWidgetManager = AppWidgetManager.getInstance(appContext)
+
+                    val detailedViews = RemoteViews(appContext.packageName, R.layout.weather_widget)
+                    detailedViews.setTextViewText(R.id.widget_updated, "Đang định vị & làm mới...")
+                    val detailedComp = ComponentName(appContext, WeatherWidgetProvider::class.java)
+                    val detailedIds = appWidgetManager.getAppWidgetIds(detailedComp)
+                    if (detailedIds.isNotEmpty()) {
+                        appWidgetManager.partiallyUpdateAppWidget(detailedIds, detailedViews)
+                    }
+
+                    val compactViews = RemoteViews(appContext.packageName, R.layout.weather_widget_compact)
+                    compactViews.setTextViewText(R.id.compact_widget_desc, "Đang lấy vị trí mới...")
+                    val compactComp = ComponentName(appContext, CompactWeatherWidgetProvider::class.java)
+                    val compactIds = appWidgetManager.getAppWidgetIds(compactComp)
+                    if (compactIds.isNotEmpty()) {
+                        appWidgetManager.partiallyUpdateAppWidget(compactIds, compactViews)
+                    }
+
+                    val forecastViews = RemoteViews(appContext.packageName, R.layout.weather_widget_forecast)
+                    forecastViews.setTextViewText(R.id.forecast_widget_desc, "Đang lấy vị trí mới...")
+                    val forecastComp = ComponentName(appContext, Forecast5DayWidgetProvider::class.java)
+                    val forecastIds = appWidgetManager.getAppWidgetIds(forecastComp)
+                    if (forecastIds.isNotEmpty()) {
+                        appWidgetManager.partiallyUpdateAppWidget(forecastIds, forecastViews)
+                    }
+
+                    val miniViews = RemoteViews(appContext.packageName, R.layout.weather_widget_mini)
+                    miniViews.setTextViewText(R.id.mini_widget_desc, "Đang tải...")
+                    val miniComp = ComponentName(appContext, MiniWeatherWidgetProvider::class.java)
+                    val miniIds = appWidgetManager.getAppWidgetIds(miniComp)
+                    if (miniIds.isNotEmpty()) {
+                        appWidgetManager.partiallyUpdateAppWidget(miniIds, miniViews)
+                    }
+                } catch (_: Exception) {}
+            }
+
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val repository = WeatherRepository(
+                        context = appContext,
+                        apiService = WeatherApiService(),
+                        stylistService = GeminiStylistService(appContext)
+                    )
+
+                    // 1. Lấy vị trí GPS thực tế hiện tại của người dùng
+                    val currentLocation = LocationHelper.getCurrentLocation(appContext, timeoutMillis = 7000L)
+
+                    val targetCity = if (currentLocation != null) {
+                        try {
+                            val address = repository.getAddressFromCoordinates(
+                                currentLocation.latitude,
+                                currentLocation.longitude
+                            )
+                            CityLocation(
+                                name = address.first,
+                                country = address.second,
+                                latitude = currentLocation.latitude,
+                                longitude = currentLocation.longitude,
+                                isCurrentLocation = true
+                            ).also {
+                                repository.setLastActiveCity(it)
+                            }
+                        } catch (_: Exception) {
+                            CityLocation(
+                                name = "Vị trí hiện tại",
+                                country = "Việt Nam",
+                                latitude = currentLocation.latitude,
+                                longitude = currentLocation.longitude,
+                                isCurrentLocation = true
+                            ).also {
+                                repository.setLastActiveCity(it)
+                            }
+                        }
+                    } else {
+                        repository.getLastActiveCity()
+                    }
+
+                    val fresh = repository.getWeatherData(targetCity)
+                    val finalWeather = fresh.copy(location = targetCity)
+
+                    withContext(Dispatchers.Main) {
+                        updateAllWidgets(appContext, finalWeather)
+                        if (!isSilent) {
+                            Toast.makeText(
+                                appContext,
+                                "Đã cập nhật: ${targetCity.name} (${finalWeather.current.temperature.roundToInt()}°C)",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+
+                    // Đồng bộ bản tin thông báo nhiệt độ hệ thống nếu có bật
+                    if (repository.getPeriodicNotifIntervalHours() > 0) {
+                        WeatherNotificationHelper.showCurrentWeatherNotification(appContext, finalWeather)
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        updateAllWidgets(appContext)
+                        if (!isSilent) {
+                            Toast.makeText(
+                                appContext,
+                                "Không thể kết nối mạng để làm mới thời tiết",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                } finally {
+                    pendingResult?.finish()
+                }
+            }
+        }
 
         fun updateAllWidgets(context: Context, weather: WeatherData? = null, aiTip: String? = null) {
             val appWidgetManager = AppWidgetManager.getInstance(context) ?: return
@@ -243,8 +308,11 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_btn_refresh, refreshPendingIntent)
                 views.setOnClickPendingIntent(R.id.widget_updated, refreshPendingIntent)
 
-                // Click vào toàn bộ khối widget mở ứng dụng
-                val intent = Intent(context, MainActivity::class.java)
+                // Click vào toàn bộ khối widget mở ứng dụng và tự động cập nhật vị trí GPS mới
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra(EXTRA_FORCE_GPS_REFRESH, true)
+                }
                 val pendingIntent = PendingIntent.getActivity(
                     context,
                     0,

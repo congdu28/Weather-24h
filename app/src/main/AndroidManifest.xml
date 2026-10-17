@@ -20,6 +20,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:hardwareAccelerated="true"
             android:theme="@style/Theme.Weather24h">
             <intent-filter>
