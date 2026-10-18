@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +39,7 @@ fun HourlyForecastSection(
 
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
-    val temps = hourlyList.map { it.temperature }
+    val temps = remember(hourlyList) { hourlyList.map { it.temperature } }
     val itemWidth = 68.dp
 
     Box(

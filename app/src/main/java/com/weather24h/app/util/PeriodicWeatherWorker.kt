@@ -43,14 +43,15 @@ class PeriodicWeatherWorker(
 
             // Cập nhật thông báo hệ thống nếu người dùng bật thông báo định kỳ
             if (notifInterval > 0) {
-                WeatherNotificationHelper.showCurrentWeatherNotification(context, weather)
+                WeatherNotificationHelper.showCurrentWeatherNotification(context, weather, force = false)
             } else {
                 WeatherNotificationHelper.cancelCurrentWeatherNotification(context)
             }
 
             Result.success()
         } catch (e: Exception) {
-            Result.retry()
+            // Tránh Result.retry() gây spam thông báo liên tục mỗi vài phút khi gặp lỗi mạng tạm thời
+            Result.success()
         }
     }
 

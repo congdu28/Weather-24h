@@ -186,26 +186,41 @@ fun WeatherRadarCard(
                         )
                     }
                 } else {
-                    key(selectedLayer, lat, lon) {
-                        val embedUrl = "https://www.rainviewer.com/map.html?loc=$lat,$lon,8&oFa=0&oC=1&oU=0&oCS=1&oF=0&oAP=1&c=3&o=83&lm=1&layer=$selectedLayer&sm=1&sn=1"
-                        AndroidView(
-                            factory = { ctx ->
-                                WebView(ctx).apply {
-                                    layoutParams = ViewGroup.LayoutParams(
-                                        ViewGroup.LayoutParams.MATCH_PARENT,
-                                        ViewGroup.LayoutParams.MATCH_PARENT
-                                    )
-                                    settings.javaScriptEnabled = true
-                                    settings.domStorageEnabled = true
-                                    settings.cacheMode = WebSettings.LOAD_DEFAULT
-                                    webViewClient = WebViewClient()
-                                    webChromeClient = WebChromeClient()
-                                    loadUrl(embedUrl)
-                                }
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
+                    val embedUrl = "https://www.rainviewer.com/map.html?loc=$lat,$lon,8&oFa=0&oC=1&oU=0&oCS=1&oF=0&oAP=1&c=3&o=83&lm=1&layer=$selectedLayer&sm=1&sn=1"
+                    AndroidView(
+                        factory = { ctx ->
+                            WebView(ctx).apply {
+                                layoutParams = ViewGroup.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                                isClickable = false
+                                isFocusable = false
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                settings.cacheMode = WebSettings.LOAD_DEFAULT
+                                settings.setSupportZoom(false)
+                                webViewClient = WebViewClient()
+                                webChromeClient = WebChromeClient()
+                                tag = embedUrl
+                                loadUrl(embedUrl)
+                            }
+                        },
+                        update = { webView ->
+                            if (webView.tag != embedUrl) {
+                                webView.tag = embedUrl
+                                webView.loadUrl(embedUrl)
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+
+                    // Lớp chắn cảm ứng trong suốt: Chặn WebView can thiệp vào cử chỉ cuộn trang chính, chạm vào bất kỳ đâu sẽ mở phóng to
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable { showFullscreenDialog = true }
+                    )
                 }
 
                 // Nút chạm để tương tác hoặc mở rộng

@@ -2,17 +2,23 @@ package com.weather24h.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -216,46 +222,51 @@ fun AirQualityCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // Thước đo dải màu đa mức độ PM2.5 (Visual Gradient Scale Gauge)
+            // Thước đo dải màu đa mức độ PM2.5 (Visual Gradient Scale Gauge bằng Canvas không subcomposition)
             Column(modifier = Modifier.fillMaxWidth()) {
-                BoxWithConstraints(
+                val progressRatio = remember(pm25) { (pm25.toFloat() / 150f).coerceIn(0.03f, 0.97f) }
+                val levelColor = level.color
+
+                Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(16.dp)
                 ) {
-                    val barWidth = maxWidth
-                    // Vị trí con trỏ tỉ lệ theo pm25 (tối đa 150 µg/m³)
-                    val progressRatio = (pm25.toFloat() / 150f).coerceIn(0.03f, 0.97f)
-                    val indicatorOffset = barWidth * progressRatio
+                    val trackHeight = 6.dp.toPx()
+                    val trackY = (size.height - trackHeight) / 2f
+                    val cornerRadius = CornerRadius(3.dp.toPx(), 3.dp.toPx())
 
-                    // Dải màu gradient nền
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .align(Alignment.Center)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Color(0xFF10B981), // Tuyệt vời
-                                        Color(0xFF06D6A0), // Tốt
-                                        Color(0xFFFBBF24), // Trung bình
-                                        Color(0xFFF97316), // Kém
-                                        Color(0xFFEF4444)  // Nguy hại
-                                    )
-                                )
+                    // Thanh dải màu gradient nền
+                    drawRoundRect(
+                        brush = Brush.horizontalGradient(
+                            colors = listOf(
+                                Color(0xFF10B981), // Tuyệt vời
+                                Color(0xFF06D6A0), // Tốt
+                                Color(0xFFFBBF24), // Trung bình
+                                Color(0xFFF97316), // Kém
+                                Color(0xFFEF4444)  // Nguy hại
                             )
+                        ),
+                        topLeft = Offset(0f, trackY),
+                        size = Size(size.width, trackHeight),
+                        cornerRadius = cornerRadius
                     )
 
                     // Điểm mốc chỉ số hiện tại
-                    Box(
-                        modifier = Modifier
-                            .offset(x = indicatorOffset - 6.dp)
-                            .size(12.dp)
-                            .align(Alignment.CenterStart)
-                            .background(Color.White, CircleShape)
-                            .border(2.dp, level.color, CircleShape)
+                    val indicatorX = size.width * progressRatio
+                    val centerY = size.height / 2f
+                    val outerRadius = 6.dp.toPx()
+
+                    drawCircle(
+                        color = Color.White,
+                        radius = outerRadius,
+                        center = Offset(indicatorX, centerY)
+                    )
+                    drawCircle(
+                        color = levelColor,
+                        radius = outerRadius,
+                        center = Offset(indicatorX, centerY),
+                        style = Stroke(width = 2.dp.toPx())
                     )
                 }
 
