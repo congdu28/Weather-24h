@@ -194,9 +194,13 @@ fun HourlyForecastSection(
                                         )
                                     }
                                     Spacer(modifier = Modifier.height(2.dp))
+                                    val rainNote = if (selectedItem.precipitationProbability in 40..70 && selectedItem.condition.type in listOf(com.weather24h.app.data.model.WeatherType.CLEAR, com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)) {
+                                        " • Khả năng mưa rào rải rác"
+                                    } else ""
                                     Text(
                                         text = "Xác suất mưa: ${selectedItem.rainProbabilityText}" +
                                                 (if (selectedItem.precipitationMm != null && selectedItem.precipitationMm > 0) " (${selectedItem.precipitationMm} mm)" else "") +
+                                                rainNote +
                                                 " • Gió: ${selectedItem.windSpeed.roundToInt()} km/h" +
                                                 " • Độ ẩm: ${selectedItem.humidity}%",
                                         color = contentColor.copy(alpha = 0.85f),

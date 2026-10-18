@@ -85,35 +85,50 @@ object SevereWeatherDetector {
             )
         }
 
-        // 3. CẢNH BÁO TIA CỰC TÍM (UV) NGUY HẠI (UV >= 8.0)
-        val maxUv = maxOf(current.uvIndex, daily?.uvIndexMax ?: 0.0)
-        if (maxUv >= 8.0) {
-            val isExtreme = maxUv >= 11.0
-            alerts.add(
-                SevereWeatherAlert(
-                    id = "alert_uv",
-                    title = if (isExtreme) "BỨC XẠ UV CỰC ĐỘ (MỨC TÍM)" else "CẢNH BÁO TIA UV NGUY HẠI",
-                    headline = "Chỉ số UV đạt đỉnh ${kotlin.math.round(maxUv * 10) / 10.0}, bức xạ mặt trời có thể gây cháy nắng và tổn thương mắt nhanh chóng.",
-                    severity = if (isExtreme) AlertSeverity.DANGER else AlertSeverity.WARNING,
-                    iconEmoji = "☀️",
-                    timeInfo = "10:30 - 14:30",
-                    safetyTips = listOf(
-                        "Bôi kem chống nắng phổ rộng SPF 50+ trước khi ra ngoài 20 phút.",
-                        "Mặc áo chống nắng sợi dày, đội mũ rộng vành và đeo kính râm chống tia UV.",
-                        "Tìm bóng râm trú mát khi ở ngoài trời vào buổi trưa."
+        // 3. CẢNH BÁO TIA CỰC TÍM (UV) NGUY HẠI (Chỉ cảnh báo ban ngày khi chỉ số UV cao hoặc sắp tới giờ đỉnh điểm)
+        if (current.isDay) {
+            val currentHour = try {
+                val timeStr = current.time
+                if (timeStr.contains(":")) timeStr.substringBefore(":").toIntOrNull() ?: 12 else 12
+            } catch (_: Exception) { 12 }
+
+            val isUvTimeWindow = currentHour in 9..15
+            val maxUv = if (isUvTimeWindow) maxOf(current.uvIndex, daily?.uvIndexMax ?: 0.0) else current.uvIndex
+
+            if (maxUv >= 8.0) {
+                val isExtreme = maxUv >= 11.0
+                alerts.add(
+                    SevereWeatherAlert(
+                        id = "alert_uv",
+                        title = if (isExtreme) "BỨC XẠ UV CỰC ĐỘ (MỨC TÍM)" else "CẢNH BÁO TIA UV NGUY HẠI",
+                        headline = "Chỉ số UV đạt đỉnh ${kotlin.math.round(maxUv * 10) / 10.0}, bức xạ mặt trời có thể gây cháy nắng và tổn thương mắt nhanh chóng.",
+                        severity = if (isExtreme) AlertSeverity.DANGER else AlertSeverity.WARNING,
+                        iconEmoji = "☀️",
+                        timeInfo = "10:30 - 14:30",
+                        safetyTips = listOf(
+                            "Bôi kem chống nắng phổ rộng SPF 50+ trước khi ra ngoài 20 phút.",
+                            "Mặc áo chống nắng sợi dày, đội mũ rộng vành và đeo kính râm chống tia UV.",
+                            "Tìm bóng râm trú mát khi ở ngoài trời vào buổi trưa."
+                        )
                     )
                 )
-            )
+            }
         }
 
-        // 4. CẢNH BÁO NẮNG NÓNG GAY GẮT / SỐC NHIỆT (Temp >= 37°C hoặc FeelsLike >= 40°C)
+        // 4. CẢNH BÁO NẮNG NÓNG GAY GẮT / SỐC NHIỆT (Chỉ cảnh báo khi nhiệt độ thực sự gay gắt ban ngày)
         val maxTemp = weather.maxTemp24h
-        if (maxTemp >= 37.0 || current.feelsLike >= 40.0) {
+        val isSevereHeat = current.feelsLike >= 40.0 || (current.isDay && (current.feelsLike >= 37.0 || (maxTemp >= 37.0 && current.feelsLike >= 33.0)))
+        if (isSevereHeat) {
+            val headlineText = if (current.feelsLike >= 37.0) {
+                "Nhiệt độ cảm giác thật lên đến ${current.feelsLike.toInt()}°C. Nguy cơ say nắng, kiệt sức vì nhiệt cao."
+            } else {
+                "Dự báo nhiệt độ cao nhất đạt ${maxTemp.toInt()}°C. Cẩn trọng say nắng và mất nước vào buổi trưa và chiều."
+            }
             alerts.add(
                 SevereWeatherAlert(
                     id = "alert_heat",
                     title = "CẢNH BÁO NẮNG NÓNG GAY GẮT",
-                    headline = "Nhiệt độ cảm giác thật lên đến ${current.feelsLike.toInt()}°C. Nguy cơ say nắng, kiệt sức vì nhiệt cao.",
+                    headline = headlineText,
                     severity = AlertSeverity.WARNING,
                     iconEmoji = "🌡️",
                     timeInfo = "Trưa & chiều",

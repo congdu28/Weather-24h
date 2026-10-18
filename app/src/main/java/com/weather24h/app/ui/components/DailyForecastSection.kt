@@ -94,7 +94,14 @@ fun DailyForecastSection(
 
             // 7 Days List
             dailyList.forEachIndexed { index, day ->
-                val condition = WeatherCondition.fromWmoCode(day.weatherCode)
+                val baseCondition = WeatherCondition.fromWmoCode(day.weatherCode)
+                val condition = if (day.precipitationProbability >= 60 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
+                    WeatherCondition("Nắng gián đoạn, có lúc mưa rào", com.weather24h.app.data.model.WeatherType.DRIZZLE)
+                } else if (day.precipitationProbability >= 40 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
+                    WeatherCondition("Nắng xen mây, có thể có mưa", com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)
+                } else {
+                    baseCondition
+                }
                 val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
                 val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
 
@@ -239,7 +246,14 @@ fun DayForecastDetailDialog(
     day: DailyForecast,
     onDismiss: () -> Unit
 ) {
-    val condition = WeatherCondition.fromWmoCode(day.weatherCode)
+    val baseCondition = WeatherCondition.fromWmoCode(day.weatherCode)
+    val condition = if (day.precipitationProbability >= 60 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
+        WeatherCondition("Nắng gián đoạn, có lúc mưa rào", com.weather24h.app.data.model.WeatherType.DRIZZLE)
+    } else if (day.precipitationProbability >= 40 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
+        WeatherCondition("Nắng xen mây, có thể có mưa", com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)
+    } else {
+        baseCondition
+    }
     val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
     val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
     val isDark = LocalIsDarkTheme.current
