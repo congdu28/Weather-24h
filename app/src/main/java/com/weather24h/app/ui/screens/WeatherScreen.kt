@@ -348,70 +348,15 @@ fun WeatherScreen(
                             .fillMaxSize()
                             .nestedScroll(nestedScrollConnection)
                     ) {
-                        // Floating badge indicator khi kéo hoặc đang cập nhật
-                        val showPullIndicator = pullOffset > 10f || isRefreshing
-                        val pullProgress = (pullOffset / pullThreshold).coerceIn(0f, 1f)
-
-                        val indicatorAlpha by animateFloatAsState(
-                            targetValue = if (showPullIndicator) 1f else 0f,
-                            animationSpec = tween(200),
-                            label = "PullAlpha"
+                        PullRefreshBadge(
+                            pullOffset = pullOffset,
+                            pullThreshold = pullThreshold,
+                            isRefreshing = isRefreshing,
+                            isDarkTheme = isDarkTheme,
+                            modifier = Modifier.align(Alignment.TopCenter)
                         )
 
-                        if (indicatorAlpha > 0.01f) {
-                            Surface(
-                                shape = RoundedCornerShape(20.dp),
-                                color = if (isDarkTheme) Color(0xFF1E293B).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.95f),
-                                border = BorderStroke(
-                                    1.dp,
-                                    if (isDarkTheme) Color.White.copy(alpha = 0.2f) else Color(0xFF0F172A).copy(alpha = 0.15f)
-                                ),
-                                shadowElevation = 6.dp,
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .zIndex(10f)
-                                    .padding(top = 8.dp)
-                                    .graphicsLayer(alpha = indicatorAlpha)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
-                                ) {
-                                    if (isRefreshing) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(15.dp),
-                                            color = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                            strokeWidth = 2.dp
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "Đang cập nhật thời tiết mới nhất...",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = if (isDarkTheme) Color.White else Color(0xFF0F172A),
-                                            maxLines = 1,
-                                            softWrap = false
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Default.ArrowDownward,
-                                            contentDescription = null,
-                                            tint = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                            modifier = Modifier
-                                                .size(15.dp)
-                                                .graphicsLayer(rotationZ = pullProgress * 180f)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = if (pullOffset >= pullThreshold) "Thả tay để cập nhật" else "Vuốt xuống để cập nhật",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = if (isDarkTheme) Color.White else Color(0xFF0F172A)
-                                        )
-                                    }
-                                }
-                            }
-                        }
+                        val listState = rememberLazyListState()
 
                         LazyColumn(
                             state = listState,
@@ -421,7 +366,7 @@ fun WeatherScreen(
                         ) {
                             // 0. Thanh chuyển đổi nhanh Địa điểm Yêu thích & GPS
                             if (favoriteCities.isNotEmpty()) {
-                                item {
+                                item(key = "favorite_quick_bar", contentType = "quickbar") {
                                     FavoriteCitiesQuickBar(
                                         currentCityName = weather.location.name,
                                         isCurrentGps = weather.location.isCurrentLocation,
@@ -435,7 +380,7 @@ fun WeatherScreen(
                             }
 
                             // 1. Current Weather Hero Card (With Favorite Star ⭐)
-                            item {
+                            item(key = "current_weather_hero", contentType = "hero") {
                                 val isFav = remember(favoriteCities, weather.location.name) {
                                     favoriteCities.any { it.name.equals(weather.location.name, ignoreCase = true) }
                                 }
@@ -449,18 +394,18 @@ fun WeatherScreen(
 
                             // 1b. Cảnh báo thời tiết nguy hiểm / cực đoan (Nếu có)
                             if (severeAlerts.isNotEmpty()) {
-                                item {
+                                item(key = "severe_weather_alerts", contentType = "alert") {
                                     SevereWeatherAlertCard(alerts = severeAlerts)
                                 }
                             }
 
                             // 2. Hourly 24h Forecast Section
-                            item {
+                            item(key = "hourly_forecast_section", contentType = "hourly") {
                                 HourlyForecastSection(hourlyList = weather.hourly24h)
                             }
 
-                            // 3. AI Smart Outfit Stylist Card (Renders shimmer skeleton when loading)
-                            item {
+                            // 3. AI Smart Stylist Card (Renders shimmer skeleton when loading)
+                            item(key = "outfit_stylist_card", contentType = "stylist") {
                                 OutfitStylistCard(
                                     outfit = state.outfit,
                                     isLoading = state.isOutfitLoading,
@@ -470,30 +415,31 @@ fun WeatherScreen(
                             }
 
                             // 4. Bản đồ Radar Mưa & Mây động trực tiếp (RainViewer / Satellite)
-                            item {
+                            item(key = "weather_radar_card", contentType = "radar") {
                                 WeatherRadarCard(weather = weather)
                             }
 
                             // 5. Chất lượng không khí & Bụi mịn PM2.5 / PM10 (AQI chuyên sâu)
-                            item {
+                            item(key = "air_quality_card", contentType = "aqi") {
                                 AirQualityCard(weather = weather)
                             }
 
                             // 6. 7-Day Forecast Section
-                            item {
+                            item(key = "daily_forecast_section", contentType = "daily") {
                                 DailyForecastSection(dailyList = weather.daily7Days)
                             }
 
-                            // 6. Chỉ số Sức khỏe & Hoạt động Ngoài trời (Phơi đồ, Rửa xe, Nồm ẩm, v.v.)
-                            item {
+                            // 7. Chỉ số Sức khỏe & Hoạt động Ngoài trời (Phơi đồ, Rửa xe, Nồm ẩm, v.v.)
+                            item(key = "lifestyle_index_card", contentType = "lifestyle") {
                                 LifestyleIndexCard(weather = weather)
                             }
 
-                            // 7. Detailed Weather Metrics Grid
-                            item {
+                            // 8. Detailed Weather Metrics Grid
+                            item(key = "weather_metrics_grid", contentType = "metrics") {
                                 WeatherMetricsGrid(weather = weather)
                             }
 
+<<<<<<< HEAD
                             item {
                                 Text(
                                     text = "Nguồn: ${weather.providerName}${if (weather.isOffline) " • Dữ liệu ngoại tuyến" else ""}",
@@ -502,6 +448,25 @@ fun WeatherScreen(
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.End
                                 )
+=======
+                            // Footer Updated Time
+                            item(key = "weather_footer", contentType = "footer") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = if (weather.isOffline)
+                                            "Dữ liệu ngoại tuyến • ${weather.forecastModel.title} • Lưu lúc ${weather.lastUpdated}"
+                                        else
+                                            "Nguồn: ${weather.forecastModel.title} • Cập nhật lúc ${weather.lastUpdated}",
+                                        color = if (isDarkTheme) Color.White.copy(alpha = 0.55f) else Color(0xFF475569),
+                                        fontSize = 12.sp
+                                    )
+                                }
+>>>>>>> 9e4a298 (fix(notification-scroll): Fix weather notification interval spam and optimize 120fps smooth scrolling (v1.0.19))
                             }
 
                         }
@@ -620,6 +585,76 @@ fun WeatherScreen(
                     viewModel.toggleFavoriteCity(city)
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun PullRefreshBadge(
+    pullOffset: Float,
+    pullThreshold: Float,
+    isRefreshing: Boolean,
+    isDarkTheme: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val showPullIndicator = pullOffset > 10f || isRefreshing
+    val pullProgress = (pullOffset / pullThreshold).coerceIn(0f, 1f)
+
+    val indicatorAlpha by animateFloatAsState(
+        targetValue = if (showPullIndicator) 1f else 0f,
+        animationSpec = tween(200),
+        label = "PullAlpha"
+    )
+
+    if (indicatorAlpha > 0.01f) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = if (isDarkTheme) Color(0xFF1E293B).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.95f),
+            border = BorderStroke(
+                1.dp,
+                if (isDarkTheme) Color.White.copy(alpha = 0.2f) else Color(0xFF0F172A).copy(alpha = 0.15f)
+            ),
+            shadowElevation = 6.dp,
+            modifier = modifier
+                .zIndex(10f)
+                .padding(top = 8.dp)
+                .graphicsLayer(alpha = indicatorAlpha)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+            ) {
+                if (isRefreshing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(15.dp),
+                        color = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Đang cập nhật thời tiết...",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.ArrowDownward,
+                        contentDescription = null,
+                        tint = if (isDarkTheme) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                        modifier = Modifier
+                            .size(15.dp)
+                            .graphicsLayer(rotationZ = pullProgress * 180f)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (pullOffset >= pullThreshold) "Thả tay để cập nhật" else "Vuốt xuống để cập nhật",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isDarkTheme) Color.White else Color(0xFF0F172A)
+                    )
+                }
+            }
         }
     }
 }

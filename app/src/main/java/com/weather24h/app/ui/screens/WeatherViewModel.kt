@@ -540,7 +540,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         if (hours > 0) {
             val currentState = _uiState.value
             if (currentState is WeatherUiState.Success) {
-                WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), currentState.weather)
+                WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), currentState.weather, force = true)
             }
         } else {
             WeatherNotificationHelper.cancelCurrentWeatherNotification(getApplication())
@@ -550,11 +550,11 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     fun sendCurrentWeatherNotification() {
         val currentState = _uiState.value
         if (currentState is WeatherUiState.Success) {
-            WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), currentState.weather)
+            WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), currentState.weather, force = true)
         } else {
             val cached = repository.getCachedWeather()
             if (cached != null) {
-                WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), cached)
+                WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), cached, force = true)
             }
         }
     }

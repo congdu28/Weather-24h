@@ -360,9 +360,16 @@ fun WeatherRadarCard(
                                     )
                                 }
                             },
+                            update = { webView ->
+                                if (webView.tag != previewUrl) {
+                                    webView.tag = previewUrl
+                                    webView.loadUrl(previewUrl)
+                                }
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
+                }
 
                     // Lớp phủ chờ tải màu tối (Dark loading placeholder chống nhấp nháy)
                     if (isPreviewLoading) {

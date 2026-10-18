@@ -43,7 +43,7 @@ fun HourlyForecastSection(
     val isDark = LocalIsDarkTheme.current
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
-    val temps = hourlyList.map { it.temperature }
+    val temps = remember(hourlyList) { hourlyList.map { it.temperature } }
     val itemWidth = 68.dp
 
     // Trạng thái chế độ xem biểu đồ (Tổng hợp / Nhiệt độ / Lượng mưa)

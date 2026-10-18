@@ -107,14 +107,28 @@ object WeatherNotificationHelper {
 
     /**
      * Tự động kiểm tra và gửi cảnh báo khẩn nếu có sấm sét, mưa lớn hoặc UV nguy hại
+     * (Kèm cơ chế cooldown 4 tiếng cho mỗi loại cảnh báo để tránh spam khi cập nhật thời tiết thường xuyên)
      */
     fun checkAndSendSevereAlerts(context: Context, weather: WeatherData) {
-        initChannels(context)
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+        val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("severe_alerts_enabled", true)) return
 
         val detectedAlerts = SevereWeatherDetector.detectAlerts(weather)
         val severeAlert = detectedAlerts.firstOrNull { it.severity == AlertSeverity.DANGER || it.severity == AlertSeverity.WARNING }
             ?: return
+
+        val now = System.currentTimeMillis()
+        val lastAlertTime = prefs.getLong("last_severe_alert_${severeAlert.id}", 0L)
+        // Cooldown tối thiểu 4 giờ cho cùng một loại cảnh báo
+        if (now - lastAlertTime < 4 * 3600 * 1000L) {
+            return
+        }
+
+        initChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        // Lưu thời điểm gửi cảnh báo
+        prefs.edit().putLong("last_severe_alert_${severeAlert.id}", now).apply()
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -140,6 +154,7 @@ object WeatherNotificationHelper {
                     .bigText("${severeAlert.headline} (${severeAlert.timeInfo})\n\n🛡️ Khuyến cáo an toàn:\n$tipsSummary")
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOnlyAlertOnce(true)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()
@@ -187,11 +202,38 @@ object WeatherNotificationHelper {
     }
 
     /**
-     * Gửi thông báo thời tiết hiện tại lên thanh thông báo theo chu kỳ đã chọn
+     * Gửi thông báo thời tiết hiện tại lên thanh thông báo theo chu kỳ đã chọn (mặc định 2h/lần).
+     * @param force Nếu là true (khi bấm thử nghiệm hoặc đổi cài đặt), bỏ qua kiểm tra chu kỳ thời gian.
      */
-    fun showCurrentWeatherNotification(context: Context, weather: WeatherData) {
+    fun showCurrentWeatherNotification(
+        context: Context,
+        weather: WeatherData,
+        force: Boolean = false
+    ) {
+        val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+        val notifIntervalHours = prefs.getInt("periodic_notif_hours", 2)
+
+        // Nếu tắt thông báo định kỳ (0h) và không phải bấm gửi thủ công (force)
+        if (notifIntervalHours <= 0 && !force) {
+            cancelCurrentWeatherNotification(context)
+            return
+        }
+
+        val now = System.currentTimeMillis()
+        val lastSent = prefs.getLong("last_periodic_notif_sent_time", 0L)
+        // Chu kỳ tối thiểu tính bằng ms (trừ 5 phút dung sai cho scheduler hệ điều hành)
+        val minIntervalMs = if (notifIntervalHours <= 1) 55 * 60 * 1000L else (notifIntervalHours * 60 - 5) * 60 * 1000L
+
+        if (!force && (now - lastSent < minIntervalMs)) {
+            // Chưa đủ chu kỳ thời gian người dùng cài đặt, bỏ qua để tránh spam liên tục
+            return
+        }
+
         initChannels(context)
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        // Lưu lại mốc thời gian vừa gửi thành công
+        prefs.edit().putLong("last_periodic_notif_sent_time", now).apply()
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -224,6 +266,7 @@ object WeatherNotificationHelper {
             .setContentText(content)
             .setStyle(NotificationCompat.BigTextStyle().bigText(expandedText))
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOnlyAlertOnce(true) // Giữ cập nhật êm ái, không rung/chuông làm phiền
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()

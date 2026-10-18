@@ -47,9 +47,9 @@ fun DailyForecastSection(
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
 
-    val globalMin = dailyList.minOfOrNull { it.minTemp } ?: 20.0
-    val globalMax = dailyList.maxOfOrNull { it.maxTemp } ?: 35.0
-    val tempSpan = if (globalMax - globalMin <= 0.0) 1.0 else (globalMax - globalMin)
+    val globalMin = remember(dailyList) { dailyList.minOfOrNull { it.minTemp } ?: 20.0 }
+    val globalMax = remember(dailyList) { dailyList.maxOfOrNull { it.maxTemp } ?: 35.0 }
+    val tempSpan = remember(globalMin, globalMax) { if (globalMax - globalMin <= 0.0) 1.0 else (globalMax - globalMin) }
 
     Box(
         modifier = modifier
