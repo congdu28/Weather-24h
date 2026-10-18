@@ -92,8 +92,14 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew || true
 
-      - name: Build APK with Gradle
-        run: ./gradlew testDebugUnitTest assembleRelease -PversionName="${{ steps.versioning.outputs.version_name }}" -PversionCode="${{ steps.versioning.outputs.version_code }}" --stacktrace
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest --stacktrace
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+
+      - name: Build Release APK with Gradle
+        run: ./gradlew assembleRelease -PversionName="${{ steps.versioning.outputs.version_name }}" -PversionCode="${{ steps.versioning.outputs.version_code }}" --stacktrace
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}

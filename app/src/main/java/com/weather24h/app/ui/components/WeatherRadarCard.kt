@@ -369,7 +369,6 @@ fun WeatherRadarCard(
                             modifier = Modifier.fillMaxSize()
                         )
                     }
-                }
 
                     // Lớp phủ chờ tải màu tối (Dark loading placeholder chống nhấp nháy)
                     if (isPreviewLoading) {
