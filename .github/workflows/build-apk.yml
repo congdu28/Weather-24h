@@ -104,10 +104,24 @@ jobs:
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
 
       - name: Build Release APK with Gradle
-        run: ./gradlew assembleRelease -PversionName="${{ steps.versioning.outputs.version_name }}" -PversionCode="${{ steps.versioning.outputs.version_code }}" --stacktrace
+        run: |
+          ./gradlew assembleRelease -PversionName="${{ steps.versioning.outputs.version_name }}" -PversionCode="${{ steps.versioning.outputs.version_code }}" --stacktrace 2>&1 | tee gradle_build.log || {
+            echo "## ❌ Gradle Build Failed" >> $GITHUB_STEP_SUMMARY
+            echo '```text' >> $GITHUB_STEP_SUMMARY
+            tail -n 120 gradle_build.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            exit 1
+          }
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
+
+      - name: Upload Build Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-build-log
+          path: gradle_build.log
 
 
       - name: Rename APK file
