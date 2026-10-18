@@ -43,6 +43,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.ui.theme.LocalCardOpacity
+import com.weather24h.app.ui.theme.LocalCardBorder
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
 import com.weather24h.app.ui.theme.LocalSubtextColor
 import java.util.Locale

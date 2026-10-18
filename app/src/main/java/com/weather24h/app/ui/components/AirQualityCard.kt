@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.AirQuality
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.ui.theme.LocalCardOpacity
+import com.weather24h.app.ui.theme.LocalCardBorder
 import com.weather24h.app.ui.theme.LocalCardGlassBg
 import com.weather24h.app.ui.theme.LocalContentTextColor
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
