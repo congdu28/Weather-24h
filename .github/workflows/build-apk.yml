@@ -127,9 +127,23 @@ jobs:
       - name: Rename APK file
         run: |
           mkdir -p release-apk
-          APK_FILE=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
-          [ -z "$APK_FILE" ] && APK_FILE=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
-          cp "$APK_FILE" "release-apk/Weather24h-${{ steps.versioning.outputs.tag_name }}.apk"
+          echo "Listing all built APKs in app/build:"
+          find app/build -name "*.apk" -ls || true
+
+          APK_FILE=$(find app/build -name "*.apk" | grep -i "release" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            APK_FILE=$(find app/build -name "*.apk" | head -n 1)
+          fi
+
+          echo "Selected APK: $APK_FILE"
+          if [ -z "$APK_FILE" ] || [ ! -f "$APK_FILE" ]; then
+            echo "❌ No APK found in app/build!"
+            exit 1
+          fi
+
+          TARGET_NAME="Weather24h-${{ steps.versioning.outputs.tag_name }}.apk"
+          cp -v "$APK_FILE" "release-apk/$TARGET_NAME"
+          echo "Successfully created release-apk/$TARGET_NAME"
 
       - name: Upload APK as Workflow Artifact
         uses: actions/upload-artifact@v4
