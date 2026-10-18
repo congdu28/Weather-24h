@@ -197,7 +197,7 @@ fun MetricCard(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
             .background(LocalCardGlassBg.current)
-            .border(1.dp, LocalCardBorder.current, RoundedCornerShape(20.dp))
+            .border(0.5.dp, LocalCardBorder.current, RoundedCornerShape(20.dp))
             .padding(14.dp)
     ) {
         Column(

@@ -23,10 +23,10 @@ val DarkNavy = Color(0xFF0F172A)
 
 // Card glass background with solid backing to prevent contrast issues
 val CardGlassBgDark = Color(0xB80F172A) // Deep frosted navy (high contrast against sky)
-val CardBorderDark = Color(0x38FFFFFF)
+val CardBorderDark = Color(0x18FFFFFF)
 
 val CardGlassBgLight = Color(0xF2FFFFFF) // Frosted pure white
-val CardBorderLight = Color(0x1F0F172A)
+val CardBorderLight = Color(0x100F172A)
 
 // Default fallbacks
 val CardGlassBg = CardGlassBgDark

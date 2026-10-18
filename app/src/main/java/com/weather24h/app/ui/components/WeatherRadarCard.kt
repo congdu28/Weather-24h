@@ -105,7 +105,7 @@ fun WeatherRadarCard(
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = if (isDark) Color(0xFF0F172A).copy(alpha = 0.65f * cardOpacity) else Color.White.copy(alpha = 0.85f * cardOpacity),
-        border = BorderStroke(1.dp, if (isDark) Color.White.copy(alpha = 0.15f * cardOpacity) else Color(0xFF38BDF8).copy(alpha = 0.35f * cardOpacity)),
+        border = BorderStroke(0.5.dp, LocalCardBorder.current),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
@@ -164,8 +164,8 @@ fun WeatherRadarCard(
                         shape = RoundedCornerShape(10.dp),
                         color = if (isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFF1F5F9),
                         border = BorderStroke(
-                            1.dp,
-                            if (isDark) Color.White.copy(alpha = 0.12f) else Color(0xFFCBD5E1)
+                            0.5.dp,
+                            if (isDark) Color.White.copy(alpha = 0.08f) else Color(0x150F172A)
                         ),
                         modifier = Modifier.clickable { reloadKey++ }
                     ) {
@@ -187,8 +187,8 @@ fun WeatherRadarCard(
                         shape = RoundedCornerShape(10.dp),
                         color = if (isDark) Color(0xFF38BDF8).copy(alpha = 0.18f) else Color(0xFFE0F2FE),
                         border = BorderStroke(
-                            1.dp,
-                            if (isDark) Color(0xFF38BDF8).copy(alpha = 0.45f) else Color(0xFF0284C7).copy(alpha = 0.4f)
+                            0.5.dp,
+                            if (isDark) Color(0xFF38BDF8).copy(alpha = 0.25f) else Color(0xFF0284C7).copy(alpha = 0.20f)
                         ),
                         modifier = Modifier.clickable { showFullscreenDialog = true }
                     ) {
@@ -256,7 +256,7 @@ fun WeatherRadarCard(
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = Color(0xFFF59E0B).copy(alpha = if (isDark) 0.18f else 0.12f),
-                    border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.4f)),
+                    border = BorderStroke(0.5.dp, Color(0xFFF59E0B).copy(alpha = 0.25f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
@@ -782,8 +782,8 @@ private fun LayerPill(
             if (isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFF1F5F9)
         },
         border = BorderStroke(
-            1.dp,
-            if (isSelected) activeColor else (if (isDark) Color.White.copy(alpha = 0.12f) else Color(0xFFCBD5E1))
+            if (isSelected) 1.dp else 0.5.dp,
+            if (isSelected) activeColor.copy(alpha = 0.45f) else (if (isDark) Color.White.copy(alpha = 0.08f) else Color(0x150F172A))
         ),
         modifier = modifier.clickable { onClick() }
     ) {

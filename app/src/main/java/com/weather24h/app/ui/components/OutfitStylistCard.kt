@@ -57,9 +57,9 @@ fun OutfitStylistCard(
         )
     }
     val cardBorderColor = if (isDark) {
-        if (isLoading) Color(0xFFF472B6).copy(alpha = 0.6f) else Color(0xFFA855F7).copy(alpha = 0.4f)
+        if (isLoading) Color(0xFFF472B6).copy(alpha = 0.25f) else Color(0xFFA855F7).copy(alpha = 0.15f)
     } else {
-        if (isLoading) Color(0xFFF472B6).copy(alpha = 0.8f) else Color(0xFFD8B4FE)
+        if (isLoading) Color(0xFFF472B6).copy(alpha = 0.25f) else Color(0xFFC084FC).copy(alpha = 0.18f)
     }
 
     val actionButtonTint = if (isDark) Color.White.copy(alpha = 0.75f) else Color(0xFF6B21A8)
@@ -74,7 +74,7 @@ fun OutfitStylistCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
             .background(cardGradient)
-            .border(1.4.dp, cardBorderColor, RoundedCornerShape(26.dp))
+            .border(0.5.dp, cardBorderColor, RoundedCornerShape(26.dp))
             .padding(18.dp)
     ) {
         Column {
@@ -249,11 +249,11 @@ fun OutfitStylistCard(
                             else Color(0xFFF1F5F9)
                         }
                         val accBorder = if (isDark) {
-                            if (isProtection) Color(0xFFA855F7).copy(alpha = 0.6f)
-                            else Color.White.copy(alpha = 0.2f)
+                            if (isProtection) Color(0xFFA855F7).copy(alpha = 0.35f)
+                            else Color.White.copy(alpha = 0.08f)
                         } else {
-                            if (isProtection) Color(0xFFD8B4FE)
-                            else Color(0xFFCBD5E1)
+                            if (isProtection) Color(0xFFD8B4FE).copy(alpha = 0.5f)
+                            else Color(0x150F172A)
                         }
                         val accTextColor = if (isDark) {
                             Color.White
@@ -265,7 +265,7 @@ fun OutfitStylistCard(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(accBg)
-                                .border(1.dp, accBorder, RoundedCornerShape(12.dp))
+                                .border(0.5.dp, accBorder, RoundedCornerShape(12.dp))
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
@@ -283,7 +283,7 @@ fun OutfitStylistCard(
             if (!outfit.warningAlert.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(14.dp))
                 val alertBg = if (isDark) Color(0xFFF59E0B).copy(alpha = 0.20f) else Color(0xFFFEF3C7)
-                val alertBorder = if (isDark) Color(0xFFF59E0B).copy(alpha = 0.45f) else Color(0xFFFDE68A)
+                val alertBorder = if (isDark) Color(0xFFF59E0B).copy(alpha = 0.25f) else Color(0xFFFDE68A).copy(alpha = 0.6f)
                 val alertTextColor = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
 
                 Row(
@@ -292,7 +292,7 @@ fun OutfitStylistCard(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
                         .background(alertBg)
-                        .border(1.dp, alertBorder, RoundedCornerShape(14.dp))
+                        .border(0.5.dp, alertBorder, RoundedCornerShape(14.dp))
                         .padding(12.dp)
                 ) {
                     Icon(
@@ -414,7 +414,7 @@ fun OutfitStylistSkeletonCard(
             )
         )
     }
-    val skeletonBorder = if (isDark) Color(0xFFA855F7).copy(alpha = 0.25f) else Color(0xFFD8B4FE)
+    val skeletonBorder = if (isDark) Color(0xFFA855F7).copy(alpha = 0.15f) else Color(0xFFD8B4FE).copy(alpha = 0.35f)
     val clothesBoxPlaceholderBg = if (isDark) Color.Black.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.65f)
 
     Box(
@@ -422,7 +422,7 @@ fun OutfitStylistSkeletonCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(26.dp))
             .background(skeletonBg)
-            .border(1.2.dp, skeletonBorder, RoundedCornerShape(26.dp))
+            .border(0.5.dp, skeletonBorder, RoundedCornerShape(26.dp))
             .padding(18.dp)
     ) {
         Column {

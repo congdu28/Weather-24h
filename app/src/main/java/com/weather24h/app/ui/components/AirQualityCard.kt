@@ -93,10 +93,7 @@ fun AirQualityCard(
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = if (isDark) Color(0xFF0F172A).copy(alpha = 0.65f * cardOpacity) else Color.White.copy(alpha = 0.85f * cardOpacity),
-        border = BorderStroke(
-            1.dp,
-            if (isDark) Color.White.copy(alpha = 0.15f * cardOpacity) else level.color.copy(alpha = 0.35f * cardOpacity)
-        ),
+        border = BorderStroke(0.5.dp, LocalCardBorder.current),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
@@ -147,7 +144,7 @@ fun AirQualityCard(
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = level.color.copy(alpha = if (isDark) 0.20f else 0.15f),
-                    border = BorderStroke(1.dp, level.color.copy(alpha = 0.5f))
+                    border = BorderStroke(0.5.dp, level.color.copy(alpha = 0.25f))
                 ) {
                     Text(
                         text = level.label,
@@ -196,8 +193,8 @@ fun AirQualityCard(
                     shape = RoundedCornerShape(10.dp),
                     color = if (isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFF1F5F9),
                     border = BorderStroke(
-                        1.dp,
-                        if (isDark) Color.White.copy(alpha = 0.12f) else Color(0xFFCBD5E1)
+                        0.5.dp,
+                        if (isDark) Color.White.copy(alpha = 0.08f) else Color(0x150F172A)
                     )
                 ) {
                     Row(
@@ -328,7 +325,7 @@ fun AirQualityCard(
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = level.color.copy(alpha = if (isDark) 0.12f else 0.08f),
-                border = BorderStroke(1.dp, level.color.copy(alpha = 0.25f)),
+                border = BorderStroke(0.5.dp, level.color.copy(alpha = 0.20f)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -378,8 +375,8 @@ private fun SubMetricBox(
         shape = RoundedCornerShape(12.dp),
         color = if (isDark) Color.White.copy(alpha = 0.05f) else Color(0xFFF8FAFC),
         border = BorderStroke(
-            1.dp,
-            if (isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFE2E8F0)
+            0.5.dp,
+            if (isDark) Color.White.copy(alpha = 0.08f) else Color(0x150F172A)
         ),
         modifier = modifier
     ) {

@@ -56,7 +56,7 @@ fun DailyForecastSection(
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(LocalCardGlassBg.current)
-            .border(1.dp, LocalCardBorder.current, RoundedCornerShape(24.dp))
+            .border(0.5.dp, LocalCardBorder.current, RoundedCornerShape(24.dp))
             .padding(18.dp)
     ) {
         Column {
@@ -260,7 +260,7 @@ fun DayForecastDetailDialog(
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
     val cardBg = if (isDark) Color(0xFF131A2A) else Color.White
-    val cardBorderColor = if (isDark) LocalCardBorder.current else Color(0x1F000000)
+    val cardBorderColor = if (isDark) LocalCardBorder.current else Color(0x100F172A)
     val dialogBg = if (isDark) Color(0xFF0B132B) else Color(0xFFF1F5F9)
     val buttonBg = if (isDark) Color(0xFF1E293B) else Color(0xFFE2E8F0)
 
@@ -352,7 +352,7 @@ fun DayForecastDetailDialog(
                     Surface(
                         shape = RoundedCornerShape(24.dp),
                         color = cardBg,
-                        border = BorderStroke(1.dp, cardBorderColor),
+                        border = BorderStroke(0.5.dp, cardBorderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -423,7 +423,7 @@ fun DayForecastDetailDialog(
                         Surface(
                             shape = RoundedCornerShape(20.dp),
                             color = cardBg,
-                            border = BorderStroke(1.dp, cardBorderColor),
+                            border = BorderStroke(0.5.dp, cardBorderColor),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(
@@ -556,7 +556,7 @@ fun DayForecastDetailDialog(
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = cardBg,
-                        border = BorderStroke(1.dp, cardBorderColor),
+                        border = BorderStroke(0.5.dp, cardBorderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
@@ -631,7 +631,7 @@ fun DayForecastDetailDialog(
                     Surface(
                         shape = RoundedCornerShape(20.dp),
                         color = cardBg,
-                        border = BorderStroke(1.dp, cardBorderColor),
+                        border = BorderStroke(0.5.dp, cardBorderColor),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(

@@ -54,7 +54,7 @@ fun CurrentWeatherCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
             .background(cardBg)
-            .border(1.dp, cardBorder, RoundedCornerShape(28.dp))
+            .border(0.5.dp, cardBorder, RoundedCornerShape(28.dp))
             .padding(vertical = 22.dp, horizontal = 20.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -133,13 +133,13 @@ fun CurrentWeatherCard(
             if (weather.isOffline) {
                 Spacer(modifier = Modifier.height(6.dp))
                 val offlineBg = if (isDark) Color(0xFFEF4444).copy(alpha = 0.25f) else Color(0xFFFEE2E2)
-                val offlineBorder = if (isDark) Color(0xFFEF4444).copy(alpha = 0.5f) else Color(0xFFFCA5A5)
+                val offlineBorder = if (isDark) Color(0xFFEF4444).copy(alpha = 0.25f) else Color(0xFFFCA5A5).copy(alpha = 0.5f)
                 val offlineTextColor = if (isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C)
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(offlineBg)
-                        .border(1.dp, offlineBorder, RoundedCornerShape(8.dp))
+                        .border(0.5.dp, offlineBorder, RoundedCornerShape(8.dp))
                         .padding(horizontal = 10.dp, vertical = 3.dp)
                 ) {
                     Text(
@@ -203,11 +203,11 @@ fun CurrentWeatherCard(
                     else Color(0xFFEEF2FF)
                 }
                 val tagBorder = if (isDark) {
-                    if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.45f)
-                    else Color(0xFF6366F1).copy(alpha = 0.45f)
+                    if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.25f)
+                    else Color(0xFF6366F1).copy(alpha = 0.25f)
                 } else {
-                    if (weather.current.isDay) Color(0xFFFDE68A)
-                    else Color(0xFFC7D2FE)
+                    if (weather.current.isDay) Color(0xFFFDE68A).copy(alpha = 0.6f)
+                    else Color(0xFFC7D2FE).copy(alpha = 0.6f)
                 }
                 val tagTextColor = if (isDark) {
                     if (weather.current.isDay) Color(0xFFFFD166)
@@ -221,7 +221,7 @@ fun CurrentWeatherCard(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
                         .background(tagBg)
-                        .border(1.dp, tagBorder, RoundedCornerShape(6.dp))
+                        .border(0.5.dp, tagBorder, RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Text(

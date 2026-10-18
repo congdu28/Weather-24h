@@ -598,8 +598,8 @@ private fun PullRefreshBadge(
             shape = RoundedCornerShape(20.dp),
             color = if (isDarkTheme) Color(0xFF1E293B).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.95f),
             border = BorderStroke(
-                1.dp,
-                if (isDarkTheme) Color.White.copy(alpha = 0.2f) else Color(0xFF0F172A).copy(alpha = 0.15f)
+                0.5.dp,
+                if (isDarkTheme) Color.White.copy(alpha = 0.12f) else Color(0xFF0F172A).copy(alpha = 0.08f)
             ),
             shadowElevation = 6.dp,
             modifier = modifier

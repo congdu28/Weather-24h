@@ -63,12 +63,12 @@ fun SevereWeatherAlertCard(
         AlertSeverity.INFO -> if (isDark) Color(0xFF0C4A6E).copy(alpha = 0.30f * cardOpacity) else Color(0xFFE0F2FE)
     }
 
-    val bannerBorder = primaryColor.copy(alpha = if (isDark) 0.55f else 0.65f)
+    val bannerBorder = primaryColor.copy(alpha = if (isDark) 0.25f else 0.30f)
 
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = bannerBg,
-        border = BorderStroke(1.dp, bannerBorder),
+        border = BorderStroke(0.5.dp, bannerBorder),
         modifier = modifier
             .fillMaxWidth()
             .wrapContentHeight()

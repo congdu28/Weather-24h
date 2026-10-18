@@ -157,7 +157,7 @@ fun CitySearchDialog(
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = Color(0xFF0284C7).copy(alpha = if (isDark) 0.22f else 0.12f),
-                    border = BorderStroke(1.dp, Color(0xFF0284C7).copy(alpha = 0.35f)),
+                    border = BorderStroke(0.5.dp, Color(0xFF0284C7).copy(alpha = 0.25f)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
@@ -338,8 +338,8 @@ fun CitySearchDialog(
                                     shape = RoundedCornerShape(16.dp),
                                     color = cardBg,
                                     border = BorderStroke(
-                                        1.dp,
-                                        if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.06f)
+                                        0.5.dp,
+                                        if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
                                     ),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
@@ -428,10 +428,10 @@ fun CitySearchDialog(
                                             else -> chipBg
                                         },
                                         border = BorderStroke(
-                                            1.dp,
+                                            0.5.dp,
                                             when {
-                                                isCurrent -> Color(0xFF38BDF8).copy(alpha = 0.5f)
-                                                isFav -> Color(0xFFFFD166).copy(alpha = 0.4f)
+                                                isCurrent -> Color(0xFF38BDF8).copy(alpha = 0.35f)
+                                                isFav -> Color(0xFFFFD166).copy(alpha = 0.25f)
                                                 else -> Color.Transparent
                                             }
                                         ),
@@ -497,7 +497,7 @@ private fun FavoriteCityCardItem(
     onRemove: () -> Unit
 ) {
     val activeBorder = Color(0xFF38BDF8)
-    val normalBorder = if (isDark) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.08f)
+    val normalBorder = if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
     val surfaceBg = if (isCurrent) {
         Color(0xFF0284C7).copy(alpha = if (isDark) 0.18f else 0.10f)
     } else {
@@ -507,7 +507,7 @@ private fun FavoriteCityCardItem(
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = surfaceBg,
-        border = BorderStroke(if (isCurrent) 1.5.dp else 1.dp, if (isCurrent) activeBorder else normalBorder),
+        border = BorderStroke(if (isCurrent) 1.dp else 0.5.dp, if (isCurrent) activeBorder else normalBorder),
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))

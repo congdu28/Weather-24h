@@ -47,7 +47,7 @@ fun LifestyleIndexCard(
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = LocalCardGlassBg.current,
-        border = BorderStroke(1.dp, LocalCardBorder.current),
+        border = BorderStroke(0.5.dp, LocalCardBorder.current),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(20.dp))
@@ -118,7 +118,7 @@ fun LifestyleIndexCard(
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, LocalCardBorder.current),
+                border = BorderStroke(0.5.dp, LocalCardBorder.current),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -216,7 +216,7 @@ private fun LifestyleGridTile(
         shape = RoundedCornerShape(14.dp),
         color = (if (isDark) Color.White else Color(0xFF0F172A))
             .copy(alpha = 0.05f * LocalCardOpacity.current),
-        border = BorderStroke(1.dp, LocalCardBorder.current),
+        border = BorderStroke(0.5.dp, LocalCardBorder.current),
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .clickable { onClick() }

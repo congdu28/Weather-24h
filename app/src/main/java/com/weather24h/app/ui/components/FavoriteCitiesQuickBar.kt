@@ -54,7 +54,7 @@ fun FavoriteCitiesQuickBar(
 
     val activeColor = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
     val inactiveBg = if (isDark) Color(0xFF0F172A).copy(alpha = 0.55f * cardOpacity) else Color.White.copy(alpha = 0.70f * cardOpacity)
-    val inactiveBorder = if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+    val inactiveBorder = if (isDark) Color.White.copy(alpha = 0.08f) else Color.Black.copy(alpha = 0.05f)
     val textPrimary = if (isDark) Color.White else Color(0xFF0F172A)
 
     LazyRow(
@@ -79,7 +79,7 @@ fun FavoriteCitiesQuickBar(
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = gpsBg,
-                border = BorderStroke(if (isGpsActive) 1.5.dp else 1.dp, gpsBorder),
+                border = BorderStroke(if (isGpsActive) 1.dp else 0.5.dp, gpsBorder),
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .clickable { onSelectGps() }
@@ -126,7 +126,7 @@ fun FavoriteCitiesQuickBar(
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = chipBg,
-                border = BorderStroke(if (isActive) 1.5.dp else 1.dp, chipBorder),
+                border = BorderStroke(if (isActive) 1.dp else 0.5.dp, chipBorder),
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .clickable { onSelectCity(city) }
@@ -177,7 +177,7 @@ fun FavoriteCitiesQuickBar(
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = inactiveBg,
-                border = BorderStroke(1.dp, inactiveBorder),
+                border = BorderStroke(0.5.dp, inactiveBorder),
                 modifier = Modifier
                     .clip(RoundedCornerShape(20.dp))
                     .clickable { onOpenSearch() }

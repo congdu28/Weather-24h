@@ -2299,7 +2299,7 @@ fun SettingsDialog(
                                         Surface(
                                             shape = RoundedCornerShape(12.dp),
                                             color = Color(0xFF38BDF8).copy(alpha = if (isDark) 0.15f else 0.10f),
-                                            border = BorderStroke(1.dp, Color(0xFF38BDF8).copy(alpha = 0.35f)),
+                                            border = BorderStroke(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.20f)),
                                             modifier = Modifier.fillMaxWidth()
                                         ) {
                                             Row(
@@ -2326,7 +2326,7 @@ fun SettingsDialog(
 
                                         Spacer(modifier = Modifier.height(14.dp))
                                         Text(
-                                            text = "Ứng dụng thời tiết cao cấp được phát triển 100% bằng Native Android Kotlin & Jetpack Compose, tích hợp trí tuệ nhân tạo Google Gemini 3.8 Flash và API Open-Meteo.",
+                                            text = "Tính năng: Dự báo thời tiết 24h & 7 ngày, bản đồ radar lượng mưa trực tiếp, chất lượng không khí AQI, AI Stylist gợi ý trang phục và tiện ích widget màn hình chính.\n\nNguồn dữ liệu: Open-Meteo, WeatherAPI.com, Google Weather & RainViewer.",
                                             color = subtextColor,
                                             fontSize = 12.5.sp,
                                             lineHeight = 18.sp,
@@ -2353,7 +2353,7 @@ private fun InsetGroupCard(
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = cardBg,
-        border = BorderStroke(1.dp, cardBorder),
+        border = BorderStroke(0.5.dp, cardBorder),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(

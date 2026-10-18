@@ -62,7 +62,7 @@ fun HourlyForecastSection(
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
             .background(LocalCardGlassBg.current)
-            .border(1.dp, LocalCardBorder.current, RoundedCornerShape(24.dp))
+            .border(0.5.dp, LocalCardBorder.current, RoundedCornerShape(24.dp))
             .padding(vertical = 16.dp)
     ) {
         Column {
@@ -121,7 +121,7 @@ fun HourlyForecastSection(
                     } else {
                         Color.Transparent
                     }
-                    val pillBorder = if (isSelected) Color(0xFF0284C7) else subtextColor.copy(alpha = 0.25f)
+                    val pillBorder = if (isSelected) Color(0xFF0284C7).copy(alpha = 0.5f) else subtextColor.copy(alpha = 0.15f)
                     val pillTextColor = if (isSelected) {
                         if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
                     } else {
@@ -132,7 +132,7 @@ fun HourlyForecastSection(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
                             .background(pillBg)
-                            .border(1.dp, pillBorder, RoundedCornerShape(20.dp))
+                            .border(if (isSelected) 1.dp else 0.5.dp, pillBorder, RoundedCornerShape(20.dp))
                             .clickable { displayMode = mode }
                             .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
@@ -163,8 +163,8 @@ fun HourlyForecastSection(
                             shape = RoundedCornerShape(12.dp),
                             color = (if (isDark) Color(0xFF0C4A6E) else Color(0xFFE0F2FE)).copy(alpha = 0.55f),
                             border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                Color(0xFF0284C7).copy(alpha = 0.45f)
+                                0.5.dp,
+                                Color(0xFF0284C7).copy(alpha = 0.25f)
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
