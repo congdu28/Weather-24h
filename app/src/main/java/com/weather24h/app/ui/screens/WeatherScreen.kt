@@ -439,34 +439,21 @@ fun WeatherScreen(
                                 WeatherMetricsGrid(weather = weather)
                             }
 
-<<<<<<< HEAD
-                            item {
-                                Text(
-                                    text = "Nguồn: ${weather.providerName}${if (weather.isOffline) " • Dữ liệu ngoại tuyến" else ""}",
-                                    color = com.weather24h.app.ui.theme.LocalSubtextColor.current,
-                                    fontSize = 9.sp,
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.End
-                                )
-=======
-                            // Footer Updated Time
+                            // Footer Updated Time & Nguồn dữ liệu
                             item(key = "weather_footer", contentType = "footer") {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 16.dp),
+                                        .padding(vertical = 14.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = if (weather.isOffline)
-                                            "Dữ liệu ngoại tuyến • ${weather.forecastModel.title} • Lưu lúc ${weather.lastUpdated}"
-                                        else
-                                            "Nguồn: ${weather.forecastModel.title} • Cập nhật lúc ${weather.lastUpdated}",
+                                        text = "Nguồn: ${weather.providerName}${if (weather.isOffline) " • Dữ liệu ngoại tuyến" else ""} • Cập nhật lúc ${weather.lastUpdated}",
                                         color = if (isDarkTheme) Color.White.copy(alpha = 0.55f) else Color(0xFF475569),
-                                        fontSize = 12.sp
+                                        fontSize = 11.5.sp,
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
                                 }
->>>>>>> 9e4a298 (fix(notification-scroll): Fix weather notification interval spam and optimize 120fps smooth scrolling (v1.0.19))
                             }
 
                         }
