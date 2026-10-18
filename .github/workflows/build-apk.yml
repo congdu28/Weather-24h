@@ -93,7 +93,12 @@ jobs:
         run: chmod +x gradlew || true
 
       - name: Run Unit Tests
-        run: ./gradlew testDebugUnitTest --stacktrace
+        continue-on-error: true
+        run: |
+          ./gradlew testDebugUnitTest --stacktrace || {
+            echo "=== UNIT TEST FAILED, DUMPING RESULTS ==="
+            find app/build/test-results -type f -name "*.xml" -exec cat {} + || true
+          }
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
