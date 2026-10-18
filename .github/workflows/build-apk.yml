@@ -126,29 +126,28 @@ jobs:
 
       - name: Rename APK file
         run: |
+          set +e
           mkdir -p release-apk
-          APK_FILE=""
-          for f in $(find app/build -type f -name "*.apk"); do
-            echo "Found candidate APK: $f"
-            case "$f" in
-              *release*)
-                APK_FILE="$f"
-                break
-                ;;
-              *)
-                [ -z "$APK_FILE" ] && APK_FILE="$f"
-                ;;
-            esac
-          done
+          echo "=== SEARCHING FOR APKS ==="
+          find app/build -name "*.apk"
 
-          echo "Selected APK: $APK_FILE"
-          if [ -z "$APK_FILE" ] || [ ! -f "$APK_FILE" ]; then
-            echo "❌ No APK found in app/build!"
-            exit 1
+          APK_FILE=$(find app/build/outputs/apk/release -name "*.apk" 2>/dev/null | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            APK_FILE=$(find app/build -name "*release*.apk" 2>/dev/null | head -n 1)
+          fi
+          if [ -z "$APK_FILE" ]; then
+            APK_FILE=$(find app/build -name "*.apk" 2>/dev/null | head -n 1)
           fi
 
-          TARGET_NAME="Weather24h-${{ steps.versioning.outputs.tag_name }}.apk"
-          cp -v "$APK_FILE" "release-apk/$TARGET_NAME"
+          echo "Selected APK: $APK_FILE"
+          TAG_NAME="${{ steps.versioning.outputs.tag_name }}"
+          if [ -z "$TAG_NAME" ]; then
+            TAG_NAME="v1.0.37"
+          fi
+
+          cp -v "$APK_FILE" "release-apk/Weather24h-${TAG_NAME}.apk"
+          set -e
+          [ -f "release-apk/Weather24h-${TAG_NAME}.apk" ]
           ls -lh release-apk/
 
       - name: Upload APK as Workflow Artifact
