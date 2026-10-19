@@ -17,8 +17,8 @@ class WeatherShareHelperTest {
         rainProbability: Int = 30
     ): WeatherData {
         val hour = HourlyForecast(
-            time = "2026-10-19T10:00:00",
-            displayTime = "10:00",
+            timeString = "2026-10-19T10:00:00",
+            hourLabel = "10:00",
             temperature = 28.0,
             weatherCode = 1,
             precipitationProbability = rainProbability,
@@ -35,11 +35,11 @@ class WeatherShareHelperTest {
                 windSpeed = 14.5,
                 windDirection = 120,
                 uvIndex = 5.0,
-                pressure = 1012.0,
-                visibility = 10.0,
+                surfacePressure = 1012.0,
+                visibilityKm = 10.0,
                 precipitation = 0.0,
                 isDay = true,
-                lastUpdated = "10:00"
+                time = "10:00"
             ),
             hourly24h = listOf(hour),
             daily7Days = emptyList(),
@@ -73,8 +73,10 @@ class WeatherShareHelperTest {
             summary = "Trang phục thoáng mát năng động",
             top = "Áo phông cotton",
             bottom = "Quần shorts hoặc kaki mỏng",
+            footwear = "Giày thể thao",
             accessories = listOf("Kính râm", "Nón lưỡi trai"),
-            note = "Thời tiết ấm áp dễ chịu"
+            activityTip = "Thích hợp dạo phố",
+            styleVibe = "Năng động"
         )
         val weather = createSampleWeather(airQuality = aqi)
         val text = WeatherShareHelper.buildForecastShareText(weather, outfit)
