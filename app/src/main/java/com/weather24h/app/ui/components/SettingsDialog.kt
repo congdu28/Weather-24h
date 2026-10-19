@@ -136,7 +136,8 @@ fun SettingsDialog(
     onSetSevereAlerts: (Boolean) -> Unit,
     onSendTestNotif: (Boolean) -> Unit,
     onClearCache: () -> Unit,
-    onRemoveFavorite: (CityLocation) -> Unit
+    onRemoveFavorite: (CityLocation) -> Unit,
+    onCheckForUpdates: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
@@ -386,13 +387,23 @@ fun SettingsDialog(
                                     )
                                 }
 
-                                // NHÓM 5: CHIA SẺ & VỀ ỨNG DỤNG
+                                // NHÓM 5: CẬP NHẬT & VỀ ỨNG DỤNG
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    SettingsRowItem(
+                                        icon = Icons.Default.SystemUpdate,
+                                        iconTint = Color(0xFF38BDF8),
+                                        title = "Kiểm tra bản cập nhật",
+                                        subtitle = "Phiên bản hiện tại v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
+                                        titleColor = contentColor,
+                                        subtitleColor = subtextColor,
+                                        onClick = { onCheckForUpdates() }
+                                    )
+                                    ItemDivider(dividerColor = dividerColor)
                                     SettingsRowItem(
                                         icon = Icons.Default.Share,
                                         iconTint = Color(0xFF10B981),
                                         title = "Chia sẻ ứng dụng",
-                                        subtitle = "Gửi link tải Weather 24h cho bạn bè",
+                                        subtitle = "Giới thiệu Weather 24h với người thân & bạn bè",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { WeatherShareHelper.shareApp(context) }
@@ -402,7 +413,7 @@ fun SettingsDialog(
                                         icon = Icons.Default.Info,
                                         iconTint = Color(0xFF94A3B8),
                                         title = "Về ứng dụng",
-                                        subtitle = "Phiên bản v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})",
+                                        subtitle = "Thông tin bản quyền & tính năng",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.ABOUT }
@@ -2303,6 +2314,18 @@ fun SettingsDialog(
                                         Spacer(modifier = Modifier.height(12.dp))
                                         Text("Weather 24h", color = contentColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                         Text("Phiên bản v${BuildConfig.VERSION_NAME} (Build ${BuildConfig.VERSION_CODE})", color = subtextColor, fontSize = 12.sp)
+
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Button(
+                                            onClick = onCheckForUpdates,
+                                            shape = RoundedCornerShape(10.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0284C7)),
+                                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
+                                        ) {
+                                            Icon(Icons.Default.SystemUpdate, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Kiểm tra bản cập nhật", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                        }
 
                                         Spacer(modifier = Modifier.height(14.dp))
 

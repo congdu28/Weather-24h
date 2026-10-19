@@ -59,6 +59,7 @@ fun WeatherScreen(
 ) {
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
+    val updateState by viewModel.updateUiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
@@ -592,9 +593,21 @@ fun WeatherScreen(
                 },
                 onRemoveFavorite = { city ->
                     viewModel.toggleFavoriteCity(city)
+                },
+                onCheckForUpdates = {
+                    viewModel.checkForUpdates(silent = false)
                 }
             )
         }
+
+        // Hộp thoại tự động cập nhật ứng dụng (In-App Self-Update)
+        AppUpdateDialog(
+            state = updateState,
+            onDismiss = { viewModel.dismissUpdateDialog() },
+            onStartDownload = { info -> viewModel.startDownloadUpdate(info) },
+            onInstall = { file -> viewModel.installDownloadedApk(file) },
+            onRetry = { viewModel.checkForUpdates(silent = false) }
+        )
     }
 }
 

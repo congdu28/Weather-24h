@@ -32,6 +32,7 @@
 -keep class com.weather24h.app.ui.widget.** extends android.appwidget.AppWidgetProvider { *; }
 -keep class com.weather24h.app.MainActivity { *; }
 -keep class com.weather24h.app.util.** { *; }
+-keep class androidx.core.content.FileProvider { *; }
 
 # 5. Kotlin Coroutines & Reflection
 -keep class kotlinx.coroutines.** { *; }

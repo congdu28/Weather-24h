@@ -61,6 +61,10 @@
     - **Sửa lỗi tham chiếu thuộc tính AirQuality**: Chuẩn hóa gọi `aqiIndex` và `statusText` trong `WeatherShareHelper`, bảo đảm `./gradlew testDebugUnitTest` và `assembleRelease` chạy thành công 100%.
     - **Kiểm thử đơn vị tự động**: Bổ sung bộ test `WeatherShareHelperTest` xác thực độ chính xác của chuỗi chia sẻ dự báo thời tiết và chia sẻ ứng dụng.
     - **Mô đun hóa & ProGuard**: Tách hàm tạo văn bản chia sẻ (`buildForecastShareText`, `buildAppShareText`) giúp kiểm thử độc lập và cập nhật bộ quy tắc ProGuard R8 bảo vệ toàn diện các lớp tiện ích `util`.
+21. Từ v1.0.41, app tích hợp tính năng tự động cập nhật trực tiếp trong ứng dụng (In-App Self-Update) và bảo vệ an toàn danh tính repo:
+    - **Tự động cập nhật trực tiếp (In-App Self-Update / OTA)**: Cho phép người dùng kiểm tra phiên bản mới và tải APK ngầm trực tiếp trong app qua `AppUpdateManager` mà không cần mở trình duyệt web hay truy cập GitHub. Tích hợp thanh tiến trình tải trực quan và kích hoạt trình cài đặt hệ thống Android (`FileProvider` và `PackageInstaller`) nâng cấp đè ứng dụng mà không làm mất dữ liệu.
+    - **Gỡ bỏ URL GitHub khỏi tính năng chia sẻ**: Xóa bỏ toàn bộ liên kết repo khỏi nội dung chia sẻ thời tiết và chia sẻ ứng dụng, bảo vệ an toàn tuyệt đối mã nguồn và quyền riêng tư cá nhân.
+    - **Kiểm thử đơn vị tự động `AppUpdateManagerTest`**: Kiểm thử toàn diện thuật toán so sánh phiên bản semver (`isNewerVersion`).
 
 ## Quy tắc hiển thị mưa
 

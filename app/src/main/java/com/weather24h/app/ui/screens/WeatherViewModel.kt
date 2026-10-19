@@ -14,8 +14,12 @@ import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
 import com.weather24h.app.ui.theme.AmbientGlowStyle
 import com.weather24h.app.ui.theme.AtmospherePerformanceMode
+import com.weather24h.app.data.model.AppUpdateInfo
+import com.weather24h.app.util.AppUpdateManager
 import com.weather24h.app.util.PeriodicWeatherWorker
 import com.weather24h.app.util.WeatherNotificationHelper
+import java.io.File
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -36,6 +40,21 @@ sealed interface WeatherUiState {
     data class Error(val message: String) : WeatherUiState
 }
 
+sealed interface UpdateUiState {
+    object Idle : UpdateUiState
+    object Checking : UpdateUiState
+    data class NoUpdateAvailable(val currentVersion: String) : UpdateUiState
+    data class UpdateAvailable(val info: AppUpdateInfo) : UpdateUiState
+    data class Downloading(
+        val progress: Float,
+        val downloadedMB: String,
+        val totalMB: String,
+        val info: AppUpdateInfo
+    ) : UpdateUiState
+    data class ReadyToInstall(val apkFile: File, val info: AppUpdateInfo) : UpdateUiState
+    data class Error(val message: String) : UpdateUiState
+}
+
 class WeatherViewModel(application: Application) : AndroidViewModel(application) {
     private val apiService = WeatherApiService()
     private val stylistService = GeminiStylistService(application)
@@ -44,6 +63,12 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         apiService = apiService,
         stylistService = stylistService
     )
+
+    private val appUpdateManager = AppUpdateManager(application)
+    private val _updateUiState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
+    val updateUiState: StateFlow<UpdateUiState> = _updateUiState.asStateFlow()
+
+    private var downloadJob: Job? = null
 
     private val _uiState = MutableStateFlow<WeatherUiState>(
         repository.getCachedWeather()?.let {
@@ -681,5 +706,76 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 _isRefreshing.value = false
             }
         }
+    }
+
+    // ==========================================
+    // CẬP NHẬT ỨNG DỤNG TỰ ĐỘNG (IN-APP SELF-UPDATE)
+    // ==========================================
+    fun checkForUpdates(silent: Boolean = false) {
+        viewModelScope.launch {
+            if (!silent) {
+                _updateUiState.value = UpdateUiState.Checking
+            }
+            val result = appUpdateManager.checkForUpdates(com.weather24h.app.BuildConfig.VERSION_NAME)
+            result.onSuccess { info ->
+                if (info.isUpdateAvailable) {
+                    _updateUiState.value = UpdateUiState.UpdateAvailable(info)
+                } else if (!silent) {
+                    _updateUiState.value = UpdateUiState.NoUpdateAvailable(com.weather24h.app.BuildConfig.VERSION_NAME)
+                }
+            }.onFailure { error ->
+                if (!silent) {
+                    _updateUiState.value = UpdateUiState.Error(
+                        error.localizedMessage ?: "Không thể kiểm tra bản cập nhật. Vui lòng kiểm tra lại kết nối mạng."
+                    )
+                }
+            }
+        }
+    }
+
+    fun startDownloadUpdate(info: AppUpdateInfo) {
+        downloadJob?.cancel()
+        downloadJob = viewModelScope.launch {
+            _updateUiState.value = UpdateUiState.Downloading(
+                progress = 0f,
+                downloadedMB = "0 MB",
+                totalMB = info.formattedApkSize,
+                info = info
+            )
+
+            val result = appUpdateManager.downloadApk(info.downloadUrl) { progress, downloaded, total ->
+                val dlMB = String.format(Locale.US, "%.1f MB", downloaded / (1024.0 * 1024.0))
+                val totMB = if (total > 0) {
+                    String.format(Locale.US, "%.1f MB", total / (1024.0 * 1024.0))
+                } else {
+                    info.formattedApkSize
+                }
+                _updateUiState.value = UpdateUiState.Downloading(
+                    progress = progress,
+                    downloadedMB = dlMB,
+                    totalMB = totMB,
+                    info = info
+                )
+            }
+
+            result.onSuccess { apkFile ->
+                _updateUiState.value = UpdateUiState.ReadyToInstall(apkFile, info)
+                // Tự động kích hoạt mở trình cài đặt khi tải xong
+                appUpdateManager.installApk(getApplication(), apkFile)
+            }.onFailure { err ->
+                _updateUiState.value = UpdateUiState.Error(
+                    err.localizedMessage ?: "Tải xuống thất bại. Vui lòng kiểm tra kết nối mạng và thử lại."
+                )
+            }
+        }
+    }
+
+    fun installDownloadedApk(apkFile: File) {
+        appUpdateManager.installApk(getApplication(), apkFile)
+    }
+
+    fun dismissUpdateDialog() {
+        downloadJob?.cancel()
+        _updateUiState.value = UpdateUiState.Idle
     }
 }

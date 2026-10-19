@@ -57,7 +57,7 @@ class WeatherShareHelperTest {
         assertTrue("Should contain temperature", text.contains("28°C"))
         assertTrue("Should contain feels like temperature", text.contains("31°C"))
         assertTrue("Should contain rain chance", text.contains("30%"))
-        assertTrue("Should contain release link", text.contains(WeatherShareHelper.APP_RELEASE_URL))
+        assertFalse("Should not leak github URL", text.contains("github.com"))
         assertFalse("Should not mention AQI when null", text.contains("AQI:"))
     }
 
@@ -86,6 +86,7 @@ class WeatherShareHelperTest {
         assertTrue("Should contain outfit top", text.contains("Áo phông cotton"))
         assertTrue("Should contain outfit bottom", text.contains("Quần shorts hoặc kaki mỏng"))
         assertTrue("Should contain accessory", text.contains("Kính râm"))
+        assertFalse("Should not leak github URL", text.contains("github.com"))
     }
 
     @Test
@@ -94,6 +95,6 @@ class WeatherShareHelperTest {
 
         assertTrue("Should contain app name", text.contains("Weather 24h"))
         assertTrue("Should contain features", text.contains("Radar") || text.contains("Widget"))
-        assertTrue("Should contain release url", text.contains(WeatherShareHelper.APP_RELEASE_URL))
+        assertFalse("Should not leak github URL", text.contains("github.com"))
     }
 }
