@@ -50,6 +50,68 @@ class AppUpdateManager(private val context: Context) {
             }
             return false
         }
+
+        /**
+         * Lọc sạch toàn bộ đường dẫn git, repo, markdown links, commit SHA khỏi mô tả bản cập nhật,
+         * chỉ giữ lại các nội dung tính năng/thay đổi thân thiện với người dùng để bảo mật repo.
+         */
+        fun sanitizeReleaseNotes(rawBody: String?): String {
+            if (rawBody.isNullOrBlank()) {
+                return "• Tối ưu hóa hiệu năng và độ ổn định toàn hệ thống.\n• Cải tiến giao diện trực quan và trải nghiệm người dùng.\n• Sửa các lỗi phát sinh từ phiên bản trước."
+            }
+
+            val lines = rawBody.lines()
+            val cleanedLines = mutableListOf<String>()
+
+            for (line in lines) {
+                val trimmed = line.trim()
+                if (trimmed.isBlank()) continue
+
+                // Bỏ qua các dòng tiêu đề máy chủ tự sinh hoặc chứa liên kết changelog/github
+                if (trimmed.contains("github.com", ignoreCase = true) ||
+                    trimmed.contains("Full Changelog", ignoreCase = true) ||
+                    trimmed.contains("What's Changed", ignoreCase = true) ||
+                    trimmed.contains("compare/", ignoreCase = true) ||
+                    trimmed.contains("commit/", ignoreCase = true) ||
+                    trimmed.contains("pull/", ignoreCase = true) ||
+                    trimmed.startsWith("##") ||
+                    trimmed.startsWith("http://") ||
+                    trimmed.startsWith("https://")
+                ) {
+                    continue
+                }
+
+                // Loại bỏ các cú pháp URL http/https còn sót lại trong dòng
+                var clean = trimmed.replace(Regex("""https?://\S+"""), "").trim()
+
+                // Loại bỏ cú pháp Markdown link [Text](url) -> Text
+                clean = clean.replace(Regex("""\[(.*?)\]\(.*?\)"""), "$1").trim()
+
+                // Loại bỏ phần đuôi " by @user in ..." hoặc " in #..." nếu có
+                clean = clean.replace(Regex("""\s+by\s+@[a-zA-Z0-9_\-]+.*$"""), "").trim()
+                clean = clean.replace(Regex("""\s+in\s+#[0-9]+.*$"""), "").trim()
+
+                // Loại bỏ markdown in đậm / in nghiêng
+                clean = clean.replace("**", "").replace("__", "").trim()
+
+                // Chuẩn hóa dấu đầu dòng
+                if (clean.startsWith("* ") || clean.startsWith("- ")) {
+                    clean = "• " + clean.substring(2).trim()
+                } else if (!clean.startsWith("•") && clean.isNotEmpty()) {
+                    clean = "• $clean"
+                }
+
+                if (clean.length > 2 && !clean.contains("github", ignoreCase = true)) {
+                    cleanedLines.add(clean)
+                }
+            }
+
+            return if (cleanedLines.isEmpty()) {
+                "• Tối ưu hóa hiệu năng và độ ổn định toàn hệ thống.\n• Cải tiến giao diện trực quan và trải nghiệm người dùng.\n• Sửa các lỗi phát sinh từ phiên bản trước."
+            } else {
+                cleanedLines.joinToString("\n")
+            }
+        }
     }
 
     /**
@@ -78,8 +140,9 @@ class AppUpdateManager(private val context: Context) {
             val jsonObject = JsonParser.parseString(bodyString).asJsonObject
             val rawTag = jsonObject.get("tag_name")?.asString ?: ""
             val latestVersion = rawTag.removePrefix("v").removePrefix("V")
-            val releaseTitle = jsonObject.get("name")?.asString ?: "Bản cập nhật v$latestVersion"
-            val releaseNotes = jsonObject.get("body")?.asString ?: "Cải tiến hiệu năng & tối ưu trải nghiệm."
+            val rawTitle = jsonObject.get("name")?.asString ?: "Bản cập nhật v$latestVersion"
+            val releaseTitle = rawTitle.replace(Regex("""https?://\S+"""), "").trim().ifBlank { "Bản cập nhật v$latestVersion" }
+            val releaseNotes = sanitizeReleaseNotes(jsonObject.get("body")?.asString)
 
             // Tìm asset APK trong danh sách assets
             var apkUrl = ""

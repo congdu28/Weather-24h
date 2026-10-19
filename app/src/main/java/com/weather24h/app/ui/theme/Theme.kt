@@ -15,7 +15,7 @@ enum class AppThemeMode(val title: String) {
 }
 
 val LocalIsDarkTheme = staticCompositionLocalOf { true }
-val LocalCardOpacity = staticCompositionLocalOf { 0.80f }
+val LocalCardOpacity = staticCompositionLocalOf { 0.60f }
 val LocalCardGlassBg = staticCompositionLocalOf { CardGlassBgDark }
 val LocalCardBorder = staticCompositionLocalOf { CardBorderDark }
 val LocalContentTextColor = staticCompositionLocalOf { Color.White }
@@ -48,7 +48,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun Weather24hTheme(
     themeMode: AppThemeMode = AppThemeMode.SYSTEM,
-    cardOpacity: Float = 0.25f,
+    cardOpacity: Float = 0.60f,
     content: @Composable () -> Unit
 ) {
     val isDark = when (themeMode) {

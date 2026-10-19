@@ -44,6 +44,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.weather24h.app.data.model.WeatherData
 import com.weather24h.app.ui.theme.LocalCardOpacity
 import com.weather24h.app.ui.theme.LocalCardBorder
+import com.weather24h.app.ui.theme.LocalCardGlassBg
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
 import com.weather24h.app.ui.theme.LocalSubtextColor
 import java.util.Locale
@@ -105,7 +106,7 @@ fun WeatherRadarCard(
     // Khối thẻ xem nhanh Radar trên màn hình chính
     Surface(
         shape = RoundedCornerShape(20.dp),
-        color = if (isDark) Color(0xFF0F172A).copy(alpha = 0.65f * cardOpacity) else Color.White.copy(alpha = 0.85f * cardOpacity),
+        color = LocalCardGlassBg.current,
         border = BorderStroke(0.5.dp, LocalCardBorder.current),
         modifier = modifier
             .fillMaxWidth()

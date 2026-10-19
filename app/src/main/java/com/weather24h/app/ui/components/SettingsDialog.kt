@@ -98,7 +98,7 @@ fun SettingsDialog(
     ambientGlowStyle: com.weather24h.app.ui.theme.AmbientGlowStyle,
     ambientGlowIntensity: Float,
     atmospherePerformanceMode: AtmospherePerformanceMode = AtmospherePerformanceMode.BALANCED,
-    cardOpacity: Float = 0.25f,
+    cardOpacity: Float = 0.60f,
     widgetThemeMode: com.weather24h.app.ui.theme.AppThemeMode = com.weather24h.app.ui.theme.AppThemeMode.SYSTEM,
     widgetOpacity: Float = 0.85f,
     widgetStyle: WidgetStyle = WidgetStyle.FROSTED_GLASS,
@@ -622,8 +622,8 @@ fun SettingsDialog(
                                         ) {
                                             listOf(
                                                 Pair(0.40f, "40% Mờ"),
-                                                Pair(0.60f, "60%"),
-                                                Pair(0.80f, "80% Chuẩn"),
+                                                Pair(0.60f, "60% Chuẩn"),
+                                                Pair(0.80f, "80% Rõ"),
                                                 Pair(1.00f, "100% Đặc")
                                             ).forEach { (preset, label) ->
                                                 val isPresSelected = kotlin.math.abs(cardOpacity - preset) < 0.05f

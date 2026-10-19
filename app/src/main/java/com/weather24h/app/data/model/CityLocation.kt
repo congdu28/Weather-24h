@@ -1,14 +1,16 @@
 package com.weather24h.app.data.model
 
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
+@Keep
 data class CityLocation(
     @SerializedName("name") val name: String,
     @SerializedName("country") val country: String = "",
     @SerializedName("admin1") val admin1: String? = null,
     @SerializedName("latitude") val latitude: Double,
     @SerializedName("longitude") val longitude: Double,
-    val isCurrentLocation: Boolean = false
+    @SerializedName("isCurrentLocation") val isCurrentLocation: Boolean = false
 ) {
     val displayName: String
         get() {

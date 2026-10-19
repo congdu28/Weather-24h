@@ -72,6 +72,20 @@
         - *Mặt trời đỉnh trời rực rỡ*: Đĩa mặt trời tỏa ánh hào quang ấm áp lan tỏa toàn màn hình, chùm tia nắng thể tích (God Rays) chiếu xiên xuống qua các kẽ mây cả khi trời nắng lẫn khi nhiều mây ban ngày (như ảnh thực tế).
         - *Mây thể tích 3D chân thực (Volumetric 3D Clouds)*: Đa tầng mây trôi thị sai bồng bềnh với kỹ thuật đổ bóng 3 lớp: đáy mây đậm khối khí quyển, thân mây trắng đặc và viền mây bạc đón nắng (Silver Lining).
         - *Hệ màu bầu trời tươi tắn & sâu thẳm*: Nâng cấp gradient bầu trời xanh thiên thanh rực rỡ, không còn bị mờ nhạt hay xám chì đơn điệu.
+23. Từ v1.0.43, app khắc phục triệt để lưu trữ danh sách yêu thích, đồng bộ độ mờ 60%, cập nhật logo mới toàn hệ thống và bảo vệ thông tin cập nhật:
+    - **Khắc phục triệt để lỗi lưu danh sách yêu thích**:
+        - Bổ sung `@Keep` và `@SerializedName("isCurrentLocation")` cho model `CityLocation` và `CityWeatherSummary`.
+        - Bổ sung quy tắc ProGuard R8 bảo vệ toàn diện các lớp ẩn danh kế thừa `com.google.gson.reflect.TypeToken`, ngăn chặn triệt để hiện tượng xóa generic signature (Type Erasure) làm phát sinh `ClassCastException`.
+        - Tích hợp cơ chế giải mã đa tầng dự phòng (Multi-tier Safe Fallback Parsing) trong `WeatherRepository`: ưu tiên mảng `Array<CityLocation>::class.java` (giữ nguyên reified type ở runtime), `TypeToken`, và `JsonParser` đọc dữ liệu trường thô; tuyệt đối không ghi đè dữ liệu rỗng khi phát sinh lỗi tạm thời.
+    - **Độ mờ mặc định 60% và đồng bộ toàn bộ khối**:
+        - Nâng độ mờ mặc định của các thẻ thời tiết/khối thông tin khi cài mới lên 60% (`cardOpacity = 0.60f`).
+        - Tự động nâng cấp người dùng từ mức 25% cũ lên 60% chuẩn mới mà vẫn giữ nguyên các tùy chọn cá nhân hóa khác.
+        - Đồng bộ màu nền thẻ `LocalCardGlassBg` cho tất cả các khối: Chất lượng không khí `AirQualityCard`, Radar khí tượng `WeatherRadarCard`, Dự báo giờ/ngày, Lưới chỉ số `WeatherMetricsGrid` và Chỉ số phong cách sống `LifestyleIndexCard`.
+    - **Cập nhật nhận diện thương hiệu & TopBar**:
+        - Màn hình chính gỡ bỏ chữ "Weather 24h", chỉ giữ lại biểu tượng logo kích thước 36.dp bo tròn tinh tế và hiện đại.
+        - Cập nhật logo nhận diện thương hiệu mới chính thức trên toàn hệ thống (512x512 drawable, mipmap mdpi đến xxxhdpi cho cả launcher thông thường và launcher tròn).
+    - **Bảo mật tuyệt đối thông tin cập nhật OTA**:
+        - Thêm bộ lọc `sanitizeReleaseNotes` trong `AppUpdateManager` loại bỏ 100% các đường dẫn GitHub, URL, commit SHA, PR số hiệu, và tên tài khoản; chỉ hiển thị danh sách tính năng nâng cấp thân thiện bằng tiếng Việt, không để lộ bất kỳ thông tin nào về kho mã nguồn.
 
 ## Quy tắc hiển thị mưa
 

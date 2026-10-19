@@ -2,6 +2,7 @@ package com.weather24h.app.data.repository
 
 import android.content.Context
 import com.google.gson.Gson
+import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import com.weather24h.app.BuildConfig
 import com.weather24h.app.data.model.CityLocation
@@ -301,16 +302,87 @@ class WeatherRepository(
             saveFavoriteCities(initial)
             initial
         } else {
-            try {
-                val type = object : TypeToken<List<CityLocation>>() {}.type
-                gson.fromJson<List<CityLocation>>(json, type) ?: emptyList()
-            } catch (_: Exception) {
-                emptyList()
+            val parsed = parseFavoriteCitiesSafely(json)
+            if (parsed.isEmpty()) {
+                // Nếu chuỗi JSON không rỗng nhưng rỗng sau khi parse (ví dụ "[]" hoặc lỗi format),
+                // cố gắng lấy danh sách mặc định nhưng KHÔNG ghi đè vào prefs để tránh xóa nhầm dữ liệu người dùng
+                listOf(
+                    CityLocation.DEFAULT_LOCATION,
+                    CityLocation(name = "Đà Nẵng", country = "Việt Nam", latitude = 16.0544, longitude = 108.2022),
+                    CityLocation(name = "TP. Hồ Chí Minh", country = "Việt Nam", latitude = 10.8231, longitude = 106.6297)
+                )
+            } else {
+                parsed
             }
         }
         val mutable = list.toMutableList()
         cachedFavorites = mutable
         return ArrayList(mutable)
+    }
+
+    private fun parseFavoriteCitiesSafely(json: String): List<CityLocation> {
+        if (json.isBlank()) return emptyList()
+
+        // Tầng 1: Sử dụng mảng Array<CityLocation>::class.java
+        // (Trong JVM, Array luôn giữ nguyên reified type ở runtime, miễn nhiễm 100% với R8/ProGuard generic erasure)
+        try {
+            val array = gson.fromJson(json, Array<CityLocation>::class.java)
+            if (array != null && array.isNotEmpty()) {
+                val validList = array.filter { it.name.isNotBlank() }
+                if (validList.isNotEmpty()) {
+                    return validList
+                }
+            }
+        } catch (_: Exception) {}
+
+        // Tầng 2: Thử qua TypeToken (với keep rules đã kích hoạt)
+        try {
+            val type = object : TypeToken<List<CityLocation>>() {}.type
+            val parsedList = gson.fromJson<List<CityLocation>>(json, type)
+            if (!parsedList.isNullOrEmpty()) {
+                val validList = parsedList.filter { it.name.isNotBlank() }
+                if (validList.isNotEmpty()) {
+                    return validList
+                }
+            }
+        } catch (_: Exception) {}
+
+        // Tầng 3: Giải mã JSON cấp thấp qua JsonParser (phòng trường hợp cấu trúc từ bản rất cũ)
+        try {
+            val element = JsonParser.parseString(json)
+            if (element.isJsonArray) {
+                val jsonArray = element.asJsonArray
+                val manualList = mutableListOf<CityLocation>()
+                for (item in jsonArray) {
+                    if (item.isJsonObject) {
+                        val obj = item.asJsonObject
+                        val name = obj.get("name")?.asString?.trim() ?: ""
+                        if (name.isNotBlank()) {
+                            val country = obj.get("country")?.asString ?: ""
+                            val admin1 = obj.get("admin1")?.asString
+                            val lat = obj.get("latitude")?.asDouble ?: 0.0
+                            val lon = obj.get("longitude")?.asDouble ?: 0.0
+                            val isCurrent = obj.get("isCurrentLocation")?.asBoolean ?: false
+                            manualList.add(
+                                CityLocation(
+                                    name = name,
+                                    country = country,
+                                    admin1 = admin1,
+                                    latitude = lat,
+                                    longitude = lon,
+                                    isCurrentLocation = isCurrent
+                                )
+                            )
+                        }
+                    }
+                }
+                if (manualList.isNotEmpty()) {
+                    return manualList
+                }
+            }
+        } catch (_: Exception) {}
+
+        return emptyList()
     }
 
     fun toggleFavoriteCity(city: CityLocation): Boolean {
@@ -351,12 +423,30 @@ class WeatherRepository(
 
     fun getFavoriteSummaries(): Map<String, CityWeatherSummary> {
         val json = prefs.getString("favorite_summaries_json", null) ?: return emptyMap()
-        return try {
+        try {
             val type = object : TypeToken<Map<String, CityWeatherSummary>>() {}.type
-            gson.fromJson(json, type) ?: emptyMap()
-        } catch (_: Exception) {
-            emptyMap()
-        }
+            val result = gson.fromJson<Map<String, CityWeatherSummary>>(json, type)
+            if (result != null) return result
+        } catch (_: Exception) {}
+
+        try {
+            val element = JsonParser.parseString(json)
+            if (element.isJsonObject) {
+                val obj = element.asJsonObject
+                val map = mutableMapOf<String, CityWeatherSummary>()
+                for ((key, value) in obj.entrySet()) {
+                    if (value.isJsonObject) {
+                        val summary = gson.fromJson(value, CityWeatherSummary::class.java)
+                        if (summary != null) {
+                            map[key] = summary
+                        }
+                    }
+                }
+                return map
+            }
+        } catch (_: Exception) {}
+
+        return emptyMap()
     }
 
     fun saveFavoriteSummary(city: CityLocation, weather: WeatherData) {
@@ -555,8 +645,14 @@ class WeatherRepository(
     // CÀI ĐẶT ĐỘ MỜ KHỐI THỜI TIẾT MÀN HÌNH CHÍNH (CARD OPACITY)
     // ==========================================
     fun getCardOpacity(): Float {
-        // Mặc định độ đục các thẻ thời tiết là 0.25f (25%), từ 0.20f (rất mờ/trong suốt) đến 1.0f (đặc hoàn toàn)
-        return prefs.getFloat("card_bg_opacity", 0.25f)
+        // Mặc định độ đục các thẻ thời tiết là 0.60f (60%), từ 0.20f đến 1.0f
+        val saved = prefs.getFloat("card_bg_opacity", 0.60f)
+        // Nếu trước đó đang ở mức mặc định cũ 0.25f (25%), tự động nâng cấp lên 0.60f (60%) theo chuẩn mới
+        if (kotlin.math.abs(saved - 0.25f) < 0.01f) {
+            setCardOpacity(0.60f)
+            return 0.60f
+        }
+        return saved
     }
 
     fun setCardOpacity(opacity: Float) {

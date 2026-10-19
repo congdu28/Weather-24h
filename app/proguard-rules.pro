@@ -15,9 +15,13 @@
     @com.google.gson.annotations.Expose <fields>;
 }
 -keep class com.google.gson.** { *; }
+-keep class com.google.gson.reflect.TypeToken { *; }
+-keep class * extends com.google.gson.reflect.TypeToken
+-keepclassmembers class * extends com.google.gson.reflect.TypeToken { *; }
 -dontwarn sun.misc.**
 
 # Giữ nguyên toàn bộ cấu trúc và trường của các Model để tránh lỗi giải mã JSON
+-keep @androidx.annotation.Keep class * { *; }
 -keep class com.weather24h.app.data.model.** { *; }
 -keepclassmembers class com.weather24h.app.data.model.** { *; }
 -keepclassmembers enum com.weather24h.app.data.model.** { *; }

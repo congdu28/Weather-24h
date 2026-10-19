@@ -39,4 +39,29 @@ class AppUpdateManagerTest {
         assertTrue(AppUpdateManager.isNewerVersion("1.0.40.1", "1.0.40"))
         assertFalse(AppUpdateManager.isNewerVersion("1.0.40", "1.0.40.1"))
     }
+
+    @Test
+    fun testSanitizeReleaseNotes_removesGithubLinksAndRepoArtifacts() {
+        val rawGithubNotes = """
+            ## What's Changed
+            * feat: Redesign hero card by @congdu28 in https://github.com/congdu28/Weather-24h/pull/12
+            * fix: Keep favorite cities across updates in https://github.com/congdu28/Weather-24h/pull/13
+
+            **Full Changelog**: https://github.com/congdu28/Weather-24h/compare/v1.0.41...v1.0.42
+        """.trimIndent()
+
+        val sanitized = AppUpdateManager.sanitizeReleaseNotes(rawGithubNotes)
+        assertFalse(sanitized.contains("github.com"))
+        assertFalse(sanitized.contains("congdu28"))
+        assertFalse(sanitized.contains("Full Changelog"))
+        assertFalse(sanitized.contains("What's Changed"))
+        assertTrue(sanitized.contains("feat: Redesign hero card"))
+        assertTrue(sanitized.contains("fix: Keep favorite cities across updates"))
+    }
+
+    @Test
+    fun testSanitizeReleaseNotes_emptyFallback() {
+        val sanitized = AppUpdateManager.sanitizeReleaseNotes("")
+        assertTrue(sanitized.contains("Tối ưu hóa hiệu năng"))
+    }
 }
