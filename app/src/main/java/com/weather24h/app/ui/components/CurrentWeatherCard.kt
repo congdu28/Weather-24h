@@ -2,280 +2,244 @@ package com.weather24h.app.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.weather24h.app.data.model.WeatherCondition
 import com.weather24h.app.data.model.WeatherData
-import com.weather24h.app.ui.theme.CardBorder
-import com.weather24h.app.ui.theme.CardGlassBg
 import kotlin.math.roundToInt
 
+/**
+ * Phần hiển thị thời tiết hiện tại chính (Seamless Hero Display)
+ * Thiết kế hòa quyện trực tiếp vào nền trời khí quyển sống động (không viền hộp trắng đục cồng kềnh)
+ * Phông chữ trắng sắc nét với bóng đổ mềm mại, tương phản hoàn hảo trên mọi hình nền thời tiết.
+ */
 @Composable
 fun CurrentWeatherCard(
     weather: WeatherData,
     onLocationClick: () -> Unit,
     isFavorite: Boolean = false,
     onToggleFavorite: () -> Unit = {},
-    onShareClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val condition = weather.current.condition
 
-    val isDark = com.weather24h.app.ui.theme.LocalIsDarkTheme.current
-    val cardBg = com.weather24h.app.ui.theme.LocalCardGlassBg.current
-    val cardBorder = com.weather24h.app.ui.theme.LocalCardBorder.current
-    val textColor = com.weather24h.app.ui.theme.LocalContentTextColor.current
-    val subtextColor = com.weather24h.app.ui.theme.LocalSubtextColor.current
+    // Bóng đổ nhẹ cho chữ để luôn tương phản rõ ràng trên nền mây trắng, nắng hay bầu trời đêm
+    val heroTextShadow = Shadow(
+        color = Color.Black.copy(alpha = 0.38f),
+        offset = Offset(0f, 2f),
+        blurRadius = 8f
+    )
+
+    val tempShadow = Shadow(
+        color = Color.Black.copy(alpha = 0.30f),
+        offset = Offset(0f, 3f),
+        blurRadius = 12f
+    )
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(28.dp))
-            .background(cardBg)
-            .border(0.5.dp, cardBorder, RoundedCornerShape(28.dp))
-            .padding(vertical = 22.dp, horizontal = 20.dp),
+            .padding(top = 4.dp, bottom = 12.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // Location Row with Star Button
+            // 1. Tên Địa điểm (Nhấn để tìm kiếm / chọn thành phố) & Nút Yêu thích ⭐
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.padding(horizontal = 8.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .clickable { onLocationClick() }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Icon(
                         imageVector = if (weather.location.isCurrentLocation) Icons.Default.MyLocation else Icons.Default.LocationOn,
-                        contentDescription = "Location",
-                        tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                        contentDescription = "Vị trí",
+                        tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = weather.location.name,
-                        color = textColor,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        style = TextStyle(shadow = heroTextShadow),
                         maxLines = 1
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "Select City",
-                        tint = textColor.copy(alpha = 0.8f),
-                        modifier = Modifier.size(18.dp)
+                        contentDescription = "Chọn địa điểm",
+                        tint = Color.White.copy(alpha = 0.85f),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(2.dp))
 
-                // Nút Đánh dấu yêu thích ⭐ (Hiệu ứng chạm nhạy phản hồi tức thì)
+                // Nút Đánh dấu yêu thích ⭐ (Hiệu ứng nảy lò xo mượt mà)
                 val starScale by animateFloatAsState(
-                    targetValue = if (isFavorite) 1.2f else 1.0f,
+                    targetValue = if (isFavorite) 1.22f else 1.0f,
                     animationSpec = spring(dampingRatio = 0.45f, stiffness = 500f),
                     label = "StarAnim"
                 )
                 IconButton(
                     onClick = onToggleFavorite,
-                    modifier = Modifier.size(34.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Default.Star else Icons.Default.StarBorder,
                         contentDescription = "Yêu thích",
-                        tint = if (isFavorite) Color(0xFFFFD166) else textColor.copy(alpha = 0.65f),
+                        tint = if (isFavorite) Color(0xFFFFD166) else Color.White.copy(alpha = 0.75f),
                         modifier = Modifier
-                            .size(23.dp)
+                            .size(22.dp)
                             .graphicsLayer(scaleX = starScale, scaleY = starScale)
                     )
                 }
-
-                if (onShareClick != null) {
-                    IconButton(
-                        onClick = onShareClick,
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Chia sẻ dự báo",
-                            tint = textColor.copy(alpha = 0.70f),
-                            modifier = Modifier.size(19.dp)
-                        )
-                    }
-                }
             }
 
-            if (weather.location.country.isNotEmpty()) {
+            // Tên chi tiết phụ (nếu có khác biệt)
+            if (weather.location.displayName.isNotBlank() && weather.location.displayName != weather.location.name) {
                 Text(
                     text = weather.location.displayName,
-                    color = subtextColor,
+                    color = Color.White.copy(alpha = 0.80f),
                     fontSize = 12.5.sp,
-                    maxLines = 1
+                    style = TextStyle(shadow = heroTextShadow),
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 24.dp)
                 )
             }
 
             // Nhãn hiển thị nếu đang xem ngoại tuyến
             if (weather.isOffline) {
                 Spacer(modifier = Modifier.height(6.dp))
-                val offlineBg = if (isDark) Color(0xFFEF4444).copy(alpha = 0.25f) else Color(0xFFFEE2E2)
-                val offlineBorder = if (isDark) Color(0xFFEF4444).copy(alpha = 0.25f) else Color(0xFFFCA5A5).copy(alpha = 0.5f)
-                val offlineTextColor = if (isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C)
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(offlineBg)
-                        .border(0.5.dp, offlineBorder, RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFEF4444).copy(alpha = 0.35f),
+                    border = BorderStroke(0.5.dp, Color(0xFFEF4444).copy(alpha = 0.5f))
                 ) {
                     Text(
                         text = "📡 Ngoại tuyến (Đã lưu lúc ${weather.lastUpdated})",
-                        color = offlineTextColor,
+                        color = Color.White,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        style = TextStyle(shadow = heroTextShadow),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            val weatherIcon = WeatherCondition.getWeatherIcon(condition.type, weather.current.isDay)
-            val iconTint = if (!isDark && condition.type == com.weather24h.app.data.model.WeatherType.CLOUDY) {
-                Color(0xFF64748B)
-            } else WeatherCondition.getWeatherIconTint(condition.type, weather.current.isDay)
+            // 2. Nhiệt độ cỡ lớn thanh thoát (86sp - Phong cách hiện đại hòa quyện nền)
+            Text(
+                text = "${weather.current.temperature.roundToInt()}°",
+                color = Color.White,
+                fontSize = 86.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = (-2.5).sp,
+                style = TextStyle(shadow = tempShadow),
+                textAlign = TextAlign.Center
+            )
 
-            // Main Weather Icon & Temperature
+            // 3. Tình trạng thời tiết & Biên độ nhiệt độ (Cao/Thấp)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                Icon(
-                    imageVector = weatherIcon,
-                    contentDescription = condition.description,
-                    tint = iconTint,
-                    modifier = Modifier.size(64.dp)
-                )
-
-                Spacer(modifier = Modifier.width(14.dp))
-
                 Text(
-                    text = "${weather.current.temperature.roundToInt()}°",
-                    color = textColor,
-                    fontSize = 64.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = (-1.5).sp
+                    text = "${condition.description}   ${weather.maxTemp24h.roundToInt()}° / ${weather.minTemp24h.roundToInt()}°",
+                    color = Color.White,
+                    fontSize = 16.5.sp,
+                    fontWeight = FontWeight.Medium,
+                    style = TextStyle(shadow = heroTextShadow),
+                    textAlign = TextAlign.Center
                 )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Weather Description & Day/Night Indicator Tag
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = condition.description,
-                    color = textColor,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    textAlign = TextAlign.Center
-                )
+            // Cảm giác thật
+            Text(
+                text = "Cảm giác thật: ${weather.current.feelsLike.roundToInt()}°",
+                color = Color.White.copy(alpha = 0.85f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Normal,
+                style = TextStyle(shadow = heroTextShadow),
+                textAlign = TextAlign.Center
+            )
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                val tagBg = if (isDark) {
-                    if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.22f)
-                    else Color(0xFF6366F1).copy(alpha = 0.28f)
-                } else {
-                    if (weather.current.isDay) Color(0xFFFEF3C7)
-                    else Color(0xFFEEF2FF)
-                }
-                val tagBorder = if (isDark) {
-                    if (weather.current.isDay) Color(0xFFFFB703).copy(alpha = 0.25f)
-                    else Color(0xFF6366F1).copy(alpha = 0.25f)
-                } else {
-                    if (weather.current.isDay) Color(0xFFFDE68A).copy(alpha = 0.6f)
-                    else Color(0xFFC7D2FE).copy(alpha = 0.6f)
-                }
-                val tagTextColor = if (isDark) {
-                    if (weather.current.isDay) Color(0xFFFFD166)
-                    else Color(0xFFBAE6FD)
-                } else {
-                    if (weather.current.isDay) Color(0xFFB45309)
-                    else Color(0xFF4338CA)
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(tagBg)
-                        .border(0.5.dp, tagBorder, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
+            // 4. Chip chất lượng không khí AQI bán trong suốt thanh lịch (như ảnh mẫu)
+            val aqi = weather.airQuality
+            if (aqi != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.Black.copy(alpha = 0.22f),
+                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.22f)),
+                    modifier = Modifier.clip(RoundedCornerShape(20.dp))
                 ) {
-                    Text(
-                        text = if (weather.current.isDay) "Ban ngày" else "Ban đêm",
-                        color = tagTextColor,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text = "🍃 AQI ${aqi.aqiIndex} • ${aqi.statusText}",
+                            color = Color.White,
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            style = TextStyle(shadow = heroTextShadow)
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // High / Low & Feels like (Ghi rõ ràng: Cảm giác thật: , Cao: , Thấp: - đảm bảo 1 hàng duy nhất không bị rớt dòng)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Cảm giác thật: ${weather.current.feelsLike.roundToInt()}°  •  Cao: ${weather.maxTemp24h.roundToInt()}°  •  Thấp: ${weather.minTemp24h.roundToInt()}°",
-                    color = subtextColor,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    textAlign = TextAlign.Center
-                )
-            }
+            // 5. Thời gian cập nhật
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "${if (weather.isOffline) "Đã lưu" else "Cập nhật"} ${weather.lastUpdated}",
-                color = subtextColor,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                lineHeight = 14.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                color = Color.White.copy(alpha = 0.65f),
+                fontSize = 11.5.sp,
+                fontWeight = FontWeight.Normal,
+                style = TextStyle(shadow = heroTextShadow),
+                textAlign = TextAlign.Center
             )
         }
     }

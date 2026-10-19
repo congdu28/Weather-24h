@@ -53,7 +53,6 @@ import com.weather24h.app.data.model.WeatherForecastModel
 import com.weather24h.app.data.model.WeatherProvider
 import com.weather24h.app.data.model.WidgetStyle
 import com.weather24h.app.ui.theme.AtmospherePerformanceMode
-import com.weather24h.app.util.WeatherShareHelper
 
 private enum class SettingsSubScreen {
     MAIN,
@@ -397,16 +396,6 @@ fun SettingsDialog(
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { onCheckForUpdates() }
-                                    )
-                                    ItemDivider(dividerColor = dividerColor)
-                                    SettingsRowItem(
-                                        icon = Icons.Default.Share,
-                                        iconTint = Color(0xFF10B981),
-                                        title = "Chia sẻ ứng dụng",
-                                        subtitle = "Giới thiệu Weather 24h với người thân & bạn bè",
-                                        titleColor = contentColor,
-                                        subtitleColor = subtextColor,
-                                        onClick = { WeatherShareHelper.shareApp(context) }
                                     )
                                     ItemDivider(dividerColor = dividerColor)
                                     SettingsRowItem(
@@ -2368,36 +2357,6 @@ fun SettingsDialog(
                                         )
 
                                         Spacer(modifier = Modifier.height(16.dp))
-
-                                        // Nút chia sẻ ứng dụng cho bạn bè
-                                        Surface(
-                                            shape = RoundedCornerShape(12.dp),
-                                            color = Color(0xFF10B981).copy(alpha = if (isDark) 0.18f else 0.12f),
-                                            border = BorderStroke(0.5.dp, Color(0xFF10B981).copy(alpha = 0.35f)),
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clickable { WeatherShareHelper.shareApp(context) }
-                                        ) {
-                                            Row(
-                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                                                horizontalArrangement = Arrangement.Center,
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Default.Share,
-                                                    contentDescription = "Chia sẻ",
-                                                    tint = Color(0xFF10B981),
-                                                    modifier = Modifier.size(18.dp)
-                                                )
-                                                Spacer(modifier = Modifier.width(8.dp))
-                                                Text(
-                                                    text = "Chia sẻ ứng dụng cho bạn bè",
-                                                    color = if (isDark) Color(0xFF34D399) else Color(0xFF059669),
-                                                    fontSize = 14.sp,
-                                                    fontWeight = FontWeight.Bold
-                                                )
-                                            }
-                                        }
                                     }
                                 }
                             }

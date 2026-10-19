@@ -65,6 +65,13 @@
     - **Tự động cập nhật trực tiếp (In-App Self-Update / OTA)**: Cho phép người dùng kiểm tra phiên bản mới và tải APK ngầm trực tiếp trong app qua `AppUpdateManager` mà không cần mở trình duyệt web hay truy cập GitHub. Tích hợp thanh tiến trình tải trực quan và kích hoạt trình cài đặt hệ thống Android (`FileProvider` và `PackageInstaller`) nâng cấp đè ứng dụng mà không làm mất dữ liệu.
     - **Gỡ bỏ URL GitHub khỏi tính năng chia sẻ**: Xóa bỏ toàn bộ liên kết repo khỏi nội dung chia sẻ thời tiết và chia sẻ ứng dụng, bảo vệ an toàn tuyệt đối mã nguồn và quyền riêng tư cá nhân.
     - **Kiểm thử đơn vị tự động `AppUpdateManagerTest`**: Kiểm thử toàn diện thuật toán so sánh phiên bản semver (`isNewerVersion`).
+22. Từ v1.0.42, app tinh chỉnh giao diện hòa quyện nền và nâng cấp hoạt ảnh thời tiết chân thực:
+    - **Gỡ bỏ hoàn toàn tính năng chia sẻ**: Xóa bỏ các nút chia sẻ thời tiết trên TopBar, thẻ thời tiết chính và mục chia sẻ trong Cài đặt / Giới thiệu theo nhu cầu người dùng, giữ giao diện gọn gàng, tinh tế và riêng tư.
+    - **Khung thời tiết chính hòa quyện nền trời (Seamless Borderless Hero)**: Loại bỏ khung hộp trắng đục cồng kềnh, chuyển sang bố cục không viền trong suốt hòa quyện tự nhiên với bầu trời khí quyển; nhiệt độ 86sp thanh thoát phong cách tối giản; phông chữ trắng sắc nét với bóng đổ mềm mại đọc rõ trên mọi nền trời; tích hợp chip viên thuốc bán trong suốt hiển thị chất lượng không khí (`🍃 AQI 22 • Tốt`).
+    - **Nâng cấp hoạt ảnh nền động chân thực & sống động (Living Dynamic Atmosphere)**:
+        - *Mặt trời đỉnh trời rực rỡ*: Đĩa mặt trời tỏa ánh hào quang ấm áp lan tỏa toàn màn hình, chùm tia nắng thể tích (God Rays) chiếu xiên xuống qua các kẽ mây cả khi trời nắng lẫn khi nhiều mây ban ngày (như ảnh thực tế).
+        - *Mây thể tích 3D chân thực (Volumetric 3D Clouds)*: Đa tầng mây trôi thị sai bồng bềnh với kỹ thuật đổ bóng 3 lớp: đáy mây đậm khối khí quyển, thân mây trắng đặc và viền mây bạc đón nắng (Silver Lining).
+        - *Hệ màu bầu trời tươi tắn & sâu thẳm*: Nâng cấp gradient bầu trời xanh thiên thanh rực rỡ, không còn bị mờ nhạt hay xám chì đơn điệu.
 
 ## Quy tắc hiển thị mưa
 

@@ -105,38 +105,38 @@ fun getSkyGradientColors(type: WeatherType, isDay: Boolean, isDarkTheme: Boolean
     // 1. BAN ĐÊM (Night Sky): Bầu trời vũ trụ sâu thẳm, giàu sắc thái theo từng trạng thái khí quyển
     if (!isDay) {
         return when (type) {
-            WeatherType.CLEAR -> Triple(Color(0xFF020617), Color(0xFF0B132B), Color(0xFF1C2541))
-            WeatherType.PARTLY_CLOUDY -> Triple(Color(0xFF0A0F1D), Color(0xFF162035), Color(0xFF1E293B))
-            WeatherType.CLOUDY -> Triple(Color(0xFF0B111D), Color(0xFF182232), Color(0xFF283548))
-            WeatherType.FOG -> Triple(Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF334155))
-            WeatherType.DRIZZLE, WeatherType.RAIN -> Triple(Color(0xFF020914), Color(0xFF0C1E34), Color(0xFF163252))
-            WeatherType.THUNDERSTORM -> Triple(Color(0xFF090414), Color(0xFF1B0E33), Color(0xFF2D1052))
-            WeatherType.SNOW -> Triple(Color(0xFF050B18), Color(0xFF0D1D38), Color(0xFF173560))
+            WeatherType.CLEAR -> Triple(Color(0xFF050B1B), Color(0xFF0B1736), Color(0xFF122452))
+            WeatherType.PARTLY_CLOUDY -> Triple(Color(0xFF070E20), Color(0xFF0E1C3C), Color(0xFF162952))
+            WeatherType.CLOUDY -> Triple(Color(0xFF09101C), Color(0xFF121D30), Color(0xFF1A2840))
+            WeatherType.FOG -> Triple(Color(0xFF0E1624), Color(0xFF162234), Color(0xFF202E42))
+            WeatherType.DRIZZLE, WeatherType.RAIN -> Triple(Color(0xFF040A16), Color(0xFF0A182E), Color(0xFF112544))
+            WeatherType.THUNDERSTORM -> Triple(Color(0xFF0E071C), Color(0xFF1B0E36), Color(0xFF27134A))
+            WeatherType.SNOW -> Triple(Color(0xFF070F22), Color(0xFF0E1E40), Color(0xFF162E5E))
         }
     }
 
-    // 2. BAN NGÀY - CHẾ ĐỘ SÁNG (Light Theme Daytime): Tươi tắn, rực rỡ, chân thực
+    // 2. BAN NGÀY - CHẾ ĐỘ SÁNG (Light Theme Daytime): Tươi tắn, rực rỡ, chân thực (như bầu trời nhiệt đới sống động)
     if (!isDarkTheme) {
         return when (type) {
-            WeatherType.CLEAR -> Triple(Color(0xFF0284C7), Color(0xFF38BDF8), Color(0xFFBAE6FD))
-            WeatherType.PARTLY_CLOUDY -> Triple(Color(0xFF0EA5E9), Color(0xFF7DD3FC), Color(0xFFE0F2FE))
-            WeatherType.CLOUDY -> Triple(Color(0xFF64748B), Color(0xFF94A3B8), Color(0xFFE2E8F0))
-            WeatherType.FOG -> Triple(Color(0xFF64748B), Color(0xFFCBD5E1), Color(0xFFF1F5F9))
-            WeatherType.DRIZZLE, WeatherType.RAIN -> Triple(Color(0xFF38BDF8), Color(0xFF60A5FA), Color(0xFFDBEAFE))
-            WeatherType.THUNDERSTORM -> Triple(Color(0xFF475569), Color(0xFF64748B), Color(0xFF94A3B8))
-            WeatherType.SNOW -> Triple(Color(0xFF7DD3FC), Color(0xFFBAE6FD), Color(0xFFF8FAFC))
+            WeatherType.CLEAR -> Triple(Color(0xFF5BA0E5), Color(0xFF337AC4), Color(0xFF1B5192))
+            WeatherType.PARTLY_CLOUDY -> Triple(Color(0xFF5394D6), Color(0xFF3574B4), Color(0xFF1E4C84))
+            WeatherType.CLOUDY -> Triple(Color(0xFF4C82B8), Color(0xFF386894), Color(0xFF22446A))
+            WeatherType.FOG -> Triple(Color(0xFF6B8298), Color(0xFF506880), Color(0xFF364B60))
+            WeatherType.DRIZZLE, WeatherType.RAIN -> Triple(Color(0xFF3B5676), Color(0xFF28415E), Color(0xFF16283D))
+            WeatherType.THUNDERSTORM -> Triple(Color(0xFF231F3A), Color(0xFF171426), Color(0xFF0F0D1A))
+            WeatherType.SNOW -> Triple(Color(0xFF6B8EAE), Color(0xFF4A7094), Color(0xFF2A4868))
         }
     }
 
     // 3. BAN NGÀY - CHẾ ĐỘ TỐI (Dark Theme Daytime): Sắc nét, tương phản sâu, nổi bật thẻ bán trong suốt
     return when (type) {
-        WeatherType.CLEAR -> Triple(Color(0xFF0369A1), Color(0xFF0284C7), Color(0xFF075985))
-        WeatherType.PARTLY_CLOUDY -> Triple(Color(0xFF0F4C81), Color(0xFF1D6F9E), Color(0xFF1E3A5F))
-        WeatherType.CLOUDY -> Triple(Color(0xFF1E293B), Color(0xFF334155), Color(0xFF475569))
-        WeatherType.FOG -> Triple(Color(0xFF1E293B), Color(0xFF3B485A), Color(0xFF475569))
-        WeatherType.DRIZZLE, WeatherType.RAIN -> Triple(Color(0xFF0F172A), Color(0xFF1E3A5F), Color(0xFF2B5480))
-        WeatherType.THUNDERSTORM -> Triple(Color(0xFF18112C), Color(0xFF281845), Color(0xFF16253C))
-        WeatherType.SNOW -> Triple(Color(0xFF0F172A), Color(0xFF1E3A5F), Color(0xFF0284C7))
+        WeatherType.CLEAR -> Triple(Color(0xFF0369A1), Color(0xFF0284C7), Color(0xFF0C2B4E))
+        WeatherType.PARTLY_CLOUDY -> Triple(Color(0xFF144D80), Color(0xFF195E96), Color(0xFF0E2A4A))
+        WeatherType.CLOUDY -> Triple(Color(0xFF1E3A5F), Color(0xFF234468), Color(0xFF111E30))
+        WeatherType.FOG -> Triple(Color(0xFF243342), Color(0xFF1E2A36), Color(0xFF11171E))
+        WeatherType.DRIZZLE, WeatherType.RAIN -> Triple(Color(0xFF16253A), Color(0xFF1A2F48), Color(0xFF0D1826))
+        WeatherType.THUNDERSTORM -> Triple(Color(0xFF1E1436), Color(0xFF170E2B), Color(0xFF0F081E))
+        WeatherType.SNOW -> Triple(Color(0xFF1E3A5F), Color(0xFF194C78), Color(0xFF0C2440))
     }
 }
 
