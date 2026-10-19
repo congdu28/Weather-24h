@@ -136,6 +136,20 @@
         - *Tách biệt hoàn toàn Độ ẩm và Lượng mưa*: Thay thế nhãn `💧%` bên dưới biểu đồ nhiệt độ ở chế độ Tổng hợp thành `Ẩm: X%`, người dùng không còn bị nhầm lẫn giữa độ ẩm không khí và xác suất mưa.
         - *Tối ưu cột mưa trong biểu đồ*: Ở chế độ Tổng hợp, chỉ vẽ cột mưa khi có lượng mưa thực tế (`>= 0.1 mm`); loại bỏ điểm sáng viên thuốc lơ lửng trên số nhiệt độ, giúp biểu đồ trực quan, thoáng đãng và chuẩn xác.
         - *Đồng bộ trạng thái giờ*: Nếu bầu trời quang nhưng xác suất mưa cao (`>= 40%`) hoặc có mưa đo được, tự động chuyển biểu tượng sang "Nắng xen mây, có thể mưa" hoặc "Có lúc mưa rào", loại bỏ mâu thuẫn giữa icon nắng gắt và chỉ số mưa.
+28. Từ v1.0.48, app tối ưu icon mặt trăng chống nhầm lẫn, sửa lỗi lệch nút cập nhật, tích hợp commit changelog thật và nâng cấp widget thích ứng đa kích thước theo theme hệ thống:
+    - **Phân biệt rõ nét Mặt trăng & Mặt trời ở giao diện Sáng**:
+        - Chuyển màu icon mặt trăng (ban đêm) trên giao diện sáng sang tone xanh tím chạng vạng đặc trưng (Deep Twilight Indigo `#4F46E5`), tạo sự tương phản nổi bật và hoàn toàn khác biệt với màu vàng cam của mặt trời (`#D97706`), loại bỏ hoàn toàn hiểu lầm.
+    - **Tối ưu hiển thị và Responsive cho mục Dự báo 24h tới**:
+        - *Banner chi tiết giờ chọn*: Đồng bộ 3 thẻ thông số (Nhiệt độ, Mưa, Độ ẩm) với chiều cao bằng nhau (`IntrinsicSize.Min`), thẻ mưa hiển thị tinh gọn 1 dòng `🌤️ Tạnh ráo` (khi `< 20%`) hoặc `🌧️ Mưa` kèm `%` và `mm`, triệt tiêu hiện tượng lệch dòng.
+        - *Bộ 4 nút lọc chế độ (Tổng hợp, Nhiệt độ, Lượng mưa, Độ ẩm)*: Căn chỉnh padding và khoảng cách co giãn vừa vặn, không bị xô lệch trên các kích thước màn hình nhỏ.
+        - *Vùng cuộn 24h*: Tăng chiều rộng mỗi mốc giờ lên `72.dp` kèm lề đệm an toàn `end = 16.dp`, cuộn mượt mà và không bị cấn mép.
+    - **Khắc phục xô lệch nút Cập nhật & Tích hợp Commit Changelog thật**:
+        - Khóa chiều cao đối xứng (`46.dp`) và `maxLines = 1, softWrap = false` cho hai nút "Để sau" và "Cập nhật ngay" trong `AppUpdateDialog`, đảm bảo 2 nút luôn thẳng hàng và không bao giờ bị rớt dòng.
+        - Tự động trích xuất các commit message thật đưa vào mô tả bản phát hành (`release_notes.txt`), đồng thời lọc sạch toàn bộ liên kết git, link PR, link commit, repo URL để bảo mật tuyệt đối repository.
+    - **Nâng cấp Widget màn hình chính theo Theme hệ thống & Thích ứng kích thước mọi thiết bị**:
+        - *Nhận diện tức thì Dark/Light Mode hệ thống*: Đọc trực tiếp từ `Resources.getSystem().configuration.uiMode` và đăng ký lắng nghe `Intent.ACTION_CONFIGURATION_CHANGED` trên cả 4 Widget Provider, giúp widget tự động đổi màu sáng/tối ngay lập tức khi người dùng bật tắt Dark Mode trong Cài đặt nhanh của máy.
+        - *Loại bỏ khoảng trắng chết ở đáy widget*: Bổ sung khoảng đệm co giãn thông minh (`FrameLayout weight="1"`) và căn giữa dọc `gravity="center_vertical"` trong `weather_widget.xml`, giúp các hàng thông tin luôn phân bổ đều đặn và cân đối trên mọi launcher (Samsung One UI, Xiaomi HyperOS, ColorOS, Pixel...).
+        - *Linh hoạt số lượng chip giờ theo chiều rộng ô widget*: Tự động hiển thị 6 chip (khi độ rộng `>= 330dp`), 5 chip (khi `280..329dp`), hoặc 4 chip (khi `< 280dp`) giúp các con số luôn thoáng đãng; hiển thị `—` khi tạnh ráo (`< 20%`) thay vì số 0% chiếm diện tích.
 
 ## Quy tắc hiển thị mưa
 

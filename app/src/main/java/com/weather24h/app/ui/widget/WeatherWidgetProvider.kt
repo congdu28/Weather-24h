@@ -35,6 +35,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             refreshWidgetWeatherWithLocation(context, isSilent = false, pendingResult = pendingResult)
             return
         }
+        if (intent.action == Intent.ACTION_CONFIGURATION_CHANGED) {
+            updateAllWidgets(context)
+            return
+        }
         super.onReceive(context, intent)
     }
 
@@ -238,15 +242,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
                 // Cài đặt Theme & Độ trong suốt nền
                 val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
-                val themeStr = prefs.getString("widget_theme_mode", "SYSTEM") ?: "SYSTEM"
-                val isDark = when (themeStr) {
-                    "LIGHT" -> false
-                    "DARK" -> true
-                    else -> {
-                        val nightFlags = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                        nightFlags == Configuration.UI_MODE_NIGHT_YES
-                    }
-                }
+                val isDark = WidgetThemeHelper.resolveIsDark(context)
                 val bgOpacity = prefs.getFloat("widget_bg_opacity", 0.85f).coerceIn(0.0f, 1.0f)
                 val styleStr = prefs.getString("widget_visual_style", "FROSTED_GLASS")
                 val widgetStyle = try {
@@ -372,15 +368,22 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     if (minHeight < 95) android.view.View.GONE else android.view.View.VISIBLE
                 )
 
-                // Nếu chiều rộng hẹp (< 255dp), chỉ hiện 4 khung giờ để tránh dồn chữ
-                val show6Chips = minWidth >= 255
+                // Tính toán số lượng chip giờ hiển thị linh hoạt theo kích thước chiều rộng màn hình:
+                // >= 330dp: Đủ rộng để hiển thị trọn vẹn 6 chip (~55dp/chip)
+                // 280..329dp: Hiển thị 5 chip cân đối (~56-65dp/chip)
+                // < 280dp: Hiển thị 4 chip thoáng đãng (~65-70dp/chip)
+                val numVisibleChips = when {
+                    minWidth >= 330 -> 6
+                    minWidth >= 280 -> 5
+                    else -> 4
+                }
                 views.setViewVisibility(
                     R.id.widget_h5_container,
-                    if (show6Chips) android.view.View.VISIBLE else android.view.View.GONE
+                    if (numVisibleChips >= 5) android.view.View.VISIBLE else android.view.View.GONE
                 )
                 views.setViewVisibility(
                     R.id.widget_h6_container,
-                    if (show6Chips) android.view.View.VISIBLE else android.view.View.GONE
+                    if (numVisibleChips >= 6) android.view.View.VISIBLE else android.view.View.GONE
                 )
 
                 if (weather != null) {
@@ -409,7 +412,12 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                             views.setTextViewText(hourTimeIds[i], timeLabel)
                             views.setTextViewText(hourIconIds[i], getWeatherEmoji(h.condition, h.isDay))
                             views.setTextViewText(hourTempIds[i], "${h.temperature.roundToInt()}°")
-                            views.setTextViewText(hourRainIds[i], h.rainProbabilityText)
+                            val rainLabel = if (h.rainProbability != null && h.rainProbability < 20 && h.precipitation < 0.1) {
+                                "—"
+                            } else {
+                                h.rainProbabilityText
+                            }
+                            views.setTextViewText(hourRainIds[i], rainLabel)
                         }
                     }
 

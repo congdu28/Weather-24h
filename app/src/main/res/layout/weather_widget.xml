@@ -17,6 +17,7 @@
         android:id="@+id/widget_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:gravity="center_vertical"
         android:orientation="vertical"
         android:padding="8dp">
 
@@ -99,13 +100,18 @@
                 android:padding="5dp"
                 android:src="@drawable/ic_refresh" />
         </LinearLayout>
+ 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <!-- Hourly Forecast Section (6 Upcoming Hours Timeline) -->
         <LinearLayout
             android:id="@+id/widget_hourly_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
+            android:layout_marginTop="2dp"
             android:baselineAligned="false"
             android:orientation="horizontal">
 
@@ -432,12 +438,17 @@
             </LinearLayout>
         </LinearLayout>
 
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
         <!-- Bottom Row: AI Stylist Tip & Updated time -->
         <LinearLayout
             android:id="@+id/widget_bottom_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="2dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 

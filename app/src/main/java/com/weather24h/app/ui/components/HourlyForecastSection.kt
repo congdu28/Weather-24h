@@ -44,7 +44,7 @@ fun HourlyForecastSection(
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
     val temps = remember(hourlyList) { hourlyList.map { it.temperature } }
-    val itemWidth = 68.dp
+    val itemWidth = 72.dp
 
     // Trạng thái chế độ xem biểu đồ (Tổng hợp / Nhiệt độ / Lượng mưa)
     var displayMode by remember { mutableStateOf(ChartDisplayMode.COMBINED) }
@@ -111,8 +111,8 @@ fun HourlyForecastSection(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = 14.dp, vertical = 5.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ChartDisplayMode.values().forEach { mode ->
@@ -146,15 +146,15 @@ fun HourlyForecastSection(
                             .background(pillBg)
                             .border(if (isSelected) 1.dp else 0.6.dp, pillBorder, RoundedCornerShape(20.dp))
                             .clickable { displayMode = mode }
-                            .padding(horizontal = 11.dp, vertical = 6.dp)
+                            .padding(horizontal = 9.dp, vertical = 5.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = mode.iconEmoji, fontSize = 11.sp)
-                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = mode.iconEmoji, fontSize = 10.5.sp)
+                            Spacer(modifier = Modifier.width(3.dp))
                             Text(
                                 text = mode.label,
                                 color = pillTextColor,
-                                fontSize = 11.5.sp,
+                                fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 maxLines = 1,
                                 softWrap = false
@@ -332,7 +332,9 @@ fun HourlyForecastSection(
 
                                 // 3 Thẻ chỉ số hiển thị màu sắc và icon riêng biệt: Nhiệt độ - Mưa - Độ ẩm
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(IntrinsicSize.Min),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     // 1. Thẻ Nhiệt độ (Đỏ Cam)
@@ -343,29 +345,44 @@ fun HourlyForecastSection(
                                             0.5.dp,
                                             Color(0xFFFF6B00).copy(alpha = 0.35f)
                                         ),
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
+                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
                                         ) {
                                             Text(
                                                 text = "🌡️ Nhiệt độ",
                                                 color = Color(0xFFFF6B00),
                                                 fontSize = 10.sp,
-                                                fontWeight = FontWeight.Medium
+                                                fontWeight = FontWeight.Medium,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
                                                 text = "${selectedItem.temperature.roundToInt()}°C",
                                                 color = Color(0xFFFF6B00),
                                                 fontSize = 13.5.sp,
-                                                fontWeight = FontWeight.ExtraBold
+                                                fontWeight = FontWeight.ExtraBold,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         }
                                     }
 
                                     // 2. Thẻ Lượng mưa / Xác suất mưa (Xanh Biển)
+                                    val isDryHour = selectedItem.precipitationProbability < 20 && (selectedItem.precipitationMm ?: 0.0) < 0.1
+                                    val rainTitle = if (isDryHour) "🌤️ Tạnh ráo" else "🌧️ Mưa"
+                                    val rainDetail = if ((selectedItem.precipitationMm ?: 0.0) >= 0.1) {
+                                        "${selectedItem.precipitationProbability}% (${selectedItem.precipitationMm}mm)"
+                                    } else {
+                                        "${selectedItem.precipitationProbability}%"
+                                    }
+
                                     Surface(
                                         shape = RoundedCornerShape(10.dp),
                                         color = Color(0xFF0284C7).copy(alpha = if (isDark) 0.18f else 0.10f),
@@ -373,32 +390,31 @@ fun HourlyForecastSection(
                                             0.5.dp,
                                             Color(0xFF0284C7).copy(alpha = 0.35f)
                                         ),
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
+                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
                                         ) {
                                             Text(
-                                                text = "🌧️ Mưa",
+                                                text = rainTitle,
                                                 color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
                                                 fontSize = 10.sp,
-                                                fontWeight = FontWeight.Medium
+                                                fontWeight = FontWeight.Medium,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
-                                            val rainDetail = when {
-                                                selectedItem.precipitationMm != null && selectedItem.precipitationMm >= 0.1 ->
-                                                    "${selectedItem.rainProbabilityText} (${selectedItem.precipitationMm}mm)"
-                                                selectedItem.precipitationProbability >= 20 ->
-                                                    selectedItem.rainProbabilityText
-                                                else ->
-                                                    "Tạnh ráo (${selectedItem.precipitationProbability}%)"
-                                            }
                                             Text(
                                                 text = rainDetail,
                                                 color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.ExtraBold
+                                                fontSize = 13.5.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         }
                                     }
@@ -411,24 +427,31 @@ fun HourlyForecastSection(
                                             0.5.dp,
                                             Color(0xFF0D9488).copy(alpha = 0.35f)
                                         ),
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .fillMaxHeight()
                                     ) {
                                         Column(
-                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
-                                            horizontalAlignment = Alignment.CenterHorizontally
+                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 4.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center
                                         ) {
                                             Text(
                                                 text = "💧 Độ ẩm",
                                                 color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
                                                 fontSize = 10.sp,
-                                                fontWeight = FontWeight.Medium
+                                                fontWeight = FontWeight.Medium,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(
                                                 text = "${selectedItem.humidity}%",
                                                 color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
                                                 fontSize = 13.5.sp,
-                                                fontWeight = FontWeight.ExtraBold
+                                                fontWeight = FontWeight.ExtraBold,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         }
                                     }
@@ -478,7 +501,7 @@ fun HourlyForecastSection(
             Column(
                 modifier = Modifier
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 8.dp)
+                    .padding(start = 10.dp, end = 16.dp)
             ) {
                 // Row 1: Giờ, Icon thời tiết, Chỉ số theo từng chế độ
                 Row {

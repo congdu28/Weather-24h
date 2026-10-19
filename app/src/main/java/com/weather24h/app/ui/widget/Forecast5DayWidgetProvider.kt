@@ -19,6 +19,14 @@ import kotlin.math.roundToInt
 
 class Forecast5DayWidgetProvider : AppWidgetProvider() {
 
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == Intent.ACTION_CONFIGURATION_CHANGED) {
+            updateAllForecastWidgets(context)
+            return
+        }
+        super.onReceive(context, intent)
+    }
+
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         val weather = getSavedWeather(context)
         for (widgetId in appWidgetIds) {
@@ -51,15 +59,7 @@ class Forecast5DayWidgetProvider : AppWidgetProvider() {
 
                 // Cài đặt Theme & Độ trong suốt nền
                 val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
-                val themeStr = prefs.getString("widget_theme_mode", "SYSTEM") ?: "SYSTEM"
-                val isDark = when (themeStr) {
-                    "LIGHT" -> false
-                    "DARK" -> true
-                    else -> {
-                        val nightFlags = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-                        nightFlags == Configuration.UI_MODE_NIGHT_YES
-                    }
-                }
+                val isDark = WidgetThemeHelper.resolveIsDark(context)
                 val bgOpacity = prefs.getFloat("widget_bg_opacity", 0.85f).coerceIn(0.0f, 1.0f)
                 val styleStr = prefs.getString("widget_visual_style", "FROSTED_GLASS")
                 val widgetStyle = try {

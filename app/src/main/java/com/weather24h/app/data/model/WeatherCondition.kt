@@ -71,12 +71,12 @@ data class WeatherCondition(
                 WeatherType.CLEAR -> if (isDay) {
                     if (isDark) Color(0xFFFFB703) else Color(0xFFD97706)
                 } else {
-                    if (isDark) Color(0xFFFDE047) else Color(0xFFD97706)
+                    if (isDark) Color(0xFFFDE047) else Color(0xFF4F46E5)
                 }
                 WeatherType.PARTLY_CLOUDY -> if (isDay) {
                     if (isDark) Color(0xFFFFD166) else Color(0xFFD97706)
                 } else {
-                    if (isDark) Color(0xFF93C5FD) else Color(0xFF475569)
+                    if (isDark) Color(0xFF93C5FD) else Color(0xFF4F46E5)
                 }
                 WeatherType.CLOUDY -> if (isDark) Color(0xFFCBD5E1) else Color(0xFF475569)
                 WeatherType.FOG -> if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)

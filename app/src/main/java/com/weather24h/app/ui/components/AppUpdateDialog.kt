@@ -220,23 +220,47 @@ fun AppUpdateDialog(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             OutlinedButton(
                                 onClick = onDismiss,
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 46.dp)
+                                    .fillMaxHeight(),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                             ) {
-                                Text("Để sau", color = bodyColor)
+                                Text(
+                                    text = "Để sau",
+                                    color = bodyColor,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                             Button(
                                 onClick = { onStartDownload(info) },
-                                modifier = Modifier.weight(1.3f),
+                                modifier = Modifier
+                                    .weight(1.2f)
+                                    .heightIn(min = 46.dp)
+                                    .fillMaxHeight(),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                             ) {
-                                Text("Cập nhật ngay", color = Color.White, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = "Cập nhật ngay",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
                     }
@@ -372,23 +396,47 @@ fun AppUpdateDialog(
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier
+                                 .fillMaxWidth()
+                                 .height(IntrinsicSize.Min),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             OutlinedButton(
                                 onClick = onDismiss,
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 46.dp)
+                                    .fillMaxHeight(),
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                             ) {
-                                Text("Đóng", color = bodyColor)
+                                Text(
+                                    text = "Đóng",
+                                    color = bodyColor,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                             Button(
                                 onClick = onRetry,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .heightIn(min = 46.dp)
+                                    .fillMaxHeight(),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                             ) {
-                                Text("Thử lại", color = Color.White)
+                                Text(
+                                    text = "Thử lại",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         }
                     }

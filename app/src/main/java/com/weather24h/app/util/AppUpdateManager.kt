@@ -118,6 +118,11 @@ class AppUpdateManager(private val context: Context) {
                 cleanedLines.joinToString("\n")
             }
         }
+
+        fun isFallbackReleaseNotes(notes: String): Boolean {
+            return notes.contains("Tối ưu hóa hiệu năng và độ ổn định toàn hệ thống") &&
+                    notes.contains("Cải tiến giao diện trực quan và trải nghiệm người dùng")
+        }
     }
 
     /**
@@ -148,7 +153,15 @@ class AppUpdateManager(private val context: Context) {
             val latestVersion = rawTag.removePrefix("v").removePrefix("V")
             val rawTitle = jsonObject.get("name")?.asString ?: "Bản cập nhật v$latestVersion"
             val releaseTitle = rawTitle.replace(Regex("""https?://\S+"""), "").trim().ifBlank { "Bản cập nhật v$latestVersion" }
-            val releaseNotes = sanitizeReleaseNotes(jsonObject.get("body")?.asString)
+            var releaseNotes = sanitizeReleaseNotes(jsonObject.get("body")?.asString)
+
+            // Nếu releaseNotes rỗng hoặc chỉ có link compare khiến rơi vào fallback, tự động lấy thông tin từ commit thật của tag
+            if (isFallbackReleaseNotes(releaseNotes) && rawTag.isNotBlank()) {
+                val commitNotes = fetchCommitReleaseNotes(rawTag)
+                if (!commitNotes.isNullOrBlank() && !isFallbackReleaseNotes(commitNotes)) {
+                    releaseNotes = commitNotes
+                }
+            }
 
             // Tìm asset APK trong danh sách assets
             var apkUrl = ""
@@ -285,6 +298,32 @@ class AppUpdateManager(private val context: Context) {
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Fallback đọc commit message trực tiếp từ tag của phiên bản mới nhất
+     * khi release body không chứa nội dung mô tả chi tiết.
+     */
+    private fun fetchCommitReleaseNotes(rawTag: String): String? {
+        return try {
+            val commitUrl = "https://api.github.com/repos/congdu28/Weather-24h/commits/$rawTag"
+            val request = Request.Builder()
+                .url(commitUrl)
+                .header("Accept", "application/vnd.github.v3+json")
+                .header("User-Agent", "Weather24h-Android/${BuildConfig.VERSION_NAME}")
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) return null
+
+            val body = response.body?.string() ?: return null
+            val jsonObject = JsonParser.parseString(body).asJsonObject
+            val commitObj = jsonObject.getAsJsonObject("commit") ?: return null
+            val message = commitObj.get("message")?.asString ?: return null
+            sanitizeReleaseNotes(message)
+        } catch (_: Exception) {
+            null
         }
     }
 }
