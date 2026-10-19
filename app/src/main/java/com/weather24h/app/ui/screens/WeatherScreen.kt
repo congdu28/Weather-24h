@@ -288,7 +288,7 @@ fun WeatherScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Column {
                                     Text(
-                                        text = "Có bản cập nhật mới: v${info.latestVersion}",
+                                        text = "Có bản cập nhật mới: v${info.latestVersionName}",
                                         color = Color.White,
                                         fontSize = 12.5.sp,
                                         fontWeight = FontWeight.Bold
