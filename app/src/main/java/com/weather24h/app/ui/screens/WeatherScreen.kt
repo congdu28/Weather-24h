@@ -430,8 +430,6 @@ fun WeatherScreen(
                             modifier = Modifier.align(Alignment.TopCenter)
                         )
 
-                        val listState = rememberLazyListState()
-
                         LazyColumn(
                             state = listState,
                             modifier = Modifier.fillMaxSize(),

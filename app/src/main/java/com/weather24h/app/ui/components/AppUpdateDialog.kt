@@ -55,12 +55,14 @@ fun AppUpdateDialog(
         },
         properties = DialogProperties(
             dismissOnBackPress = state !is UpdateUiState.Downloading,
-            dismissOnClickOutside = state !is UpdateUiState.Downloading
+            dismissOnClickOutside = state !is UpdateUiState.Downloading,
+            usePlatformDefaultWidth = false
         )
     ) {
         Surface(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.92f)
+                .widthIn(max = 440.dp)
                 .padding(horizontal = 8.dp),
             shape = RoundedCornerShape(24.dp),
             color = dialogBg,
@@ -188,31 +190,33 @@ fun AppUpdateDialog(
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 160.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isDark) Color(0xFF0F172A).copy(alpha = 0.6f) else Color(0xFFF1F5F9),
+                                .heightIn(min = 140.dp, max = 280.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            color = if (isDark) Color(0xFF0F172A).copy(alpha = 0.65f) else Color(0xFFF1F5F9),
                             border = androidx.compose.foundation.BorderStroke(
-                                0.5.dp,
-                                if (isDark) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.08f)
+                                1.dp,
+                                if (isDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
                             )
                         ) {
                             Column(
                                 modifier = Modifier
-                                    .padding(12.dp)
+                                    .padding(14.dp)
                                     .verticalScroll(rememberScrollState())
                             ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "✨ Nội dung nâng cấp:",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = titleColor
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
-                                    text = "Nội dung nâng cấp:",
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = titleColor
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = info.releaseNotes.ifBlank { "Tối ưu hóa hiệu năng và sửa các lỗi tồn đọng." },
+                                    text = info.releaseNotes.ifBlank { "• Tối ưu hóa hiệu năng và độ ổn định toàn hệ thống.\n• Cải tiến giao diện trực quan và trải nghiệm người dùng." },
                                     fontSize = 13.sp,
                                     color = bodyColor,
-                                    lineHeight = 18.sp
+                                    lineHeight = 20.sp
                                 )
                             }
                         }
@@ -222,14 +226,14 @@ fun AppUpdateDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(IntrinsicSize.Min),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                .height(48.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedButton(
                                 onClick = onDismiss,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .heightIn(min = 46.dp)
                                     .fillMaxHeight(),
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
@@ -246,21 +250,32 @@ fun AppUpdateDialog(
                             Button(
                                 onClick = { onStartDownload(info) },
                                 modifier = Modifier
-                                    .weight(1.2f)
-                                    .heightIn(min = 46.dp)
+                                    .weight(1.35f)
                                     .fillMaxHeight(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
                             ) {
-                                Text(
-                                    text = "Cập nhật ngay",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 14.sp,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.SystemUpdate,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Cập nhật ngay",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
                     }
@@ -355,11 +370,19 @@ fun AppUpdateDialog(
 
                         Button(
                             onClick = { onInstall(state.apkFile) },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
                         ) {
-                            Text("Cài đặt ngay", color = Color.White, fontWeight = FontWeight.Bold)
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Cài đặt ngay", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                         }
                     }
 
@@ -397,15 +420,15 @@ fun AppUpdateDialog(
 
                         Row(
                             modifier = Modifier
-                                 .fillMaxWidth()
-                                 .height(IntrinsicSize.Min),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             OutlinedButton(
                                 onClick = onDismiss,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .heightIn(min = 46.dp)
                                     .fillMaxHeight(),
                                 shape = RoundedCornerShape(12.dp),
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
@@ -423,7 +446,6 @@ fun AppUpdateDialog(
                                 onClick = onRetry,
                                 modifier = Modifier
                                     .weight(1f)
-                                    .heightIn(min = 46.dp)
                                     .fillMaxHeight(),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = accentColor),

@@ -150,6 +150,17 @@
         - *Nhận diện tức thì Dark/Light Mode hệ thống*: Đọc trực tiếp từ `Resources.getSystem().configuration.uiMode` và đăng ký lắng nghe `Intent.ACTION_CONFIGURATION_CHANGED` trên cả 4 Widget Provider, giúp widget tự động đổi màu sáng/tối ngay lập tức khi người dùng bật tắt Dark Mode trong Cài đặt nhanh của máy.
         - *Loại bỏ khoảng trắng chết ở đáy widget*: Bổ sung khoảng đệm co giãn thông minh (`FrameLayout weight="1"`) và căn giữa dọc `gravity="center_vertical"` trong `weather_widget.xml`, giúp các hàng thông tin luôn phân bổ đều đặn và cân đối trên mọi launcher (Samsung One UI, Xiaomi HyperOS, ColorOS, Pixel...).
         - *Linh hoạt số lượng chip giờ theo chiều rộng ô widget*: Tự động hiển thị 6 chip (khi độ rộng `>= 330dp`), 5 chip (khi `280..329dp`), hoặc 4 chip (khi `< 280dp`) giúp các con số luôn thoáng đãng; hiển thị `—` khi tạnh ráo (`< 20%`) thay vì số 0% chiếm diện tích.
+28. Từ v1.0.49, app nâng cấp toàn diện kích thước và độ phản hồi của Hộp thoại Cập nhật, tối ưu nội dung nâng cấp và tinh chỉnh UI/UX:
+    - **Nâng cấp độ rộng và kích thước Hộp thoại Cập nhật (`AppUpdateDialog`)**:
+        - Mở khóa giới hạn độ rộng mặc định của Compose (`usePlatformDefaultWidth = false`), mở rộng khung Surface đạt 92% chiều rộng màn hình (`maxWidth = 440.dp`).
+        - Mở rộng khung hiển thị nội dung nâng cấp lên tối đa `280.dp` kèm thanh cuộn mềm mại, giúp hiển thị đầy đủ và rõ ràng các chi tiết cập nhật mà không bị cắt cụt.
+        - Khắc phục triệt để lỗi rớt dòng của nút "Cập nhật ngay": cố định chiều cao chuẩn `48.dp`, phân bổ tỷ lệ `weight(1f)` và `weight(1.35f)` cùng biểu tượng `SystemUpdate`, đảm bảo văn bản luôn nằm gọn trên 1 dòng với mọi cỡ chữ và tỷ lệ màn hình.
+    - **Lọc sạch tiền tố commit kỹ thuật khỏi Changelog**:
+        - Tự động nhận diện và bóc tách các tiền tố như `feat:`, `fix(scope):`, `chore:`, `perf:`, `[fix]` từ commit message trong cả `AppUpdateManager` và GitHub Actions CI, tự động viết hoa chữ cái đầu câu giúp mô tả tính năng mới rõ ràng, chuyên nghiệp và chuẩn mực.
+    - **Tinh chỉnh giao diện & Tối ưu hóa UI/UX toàn hệ thống**:
+        - *Khắc phục lặp lại tên thành phố ở tiêu đề chính*: Bổ sung thuộc tính `subLocationText` trong `CityLocation`, loại bỏ hoàn toàn tình trạng lặp lại thông tin (ví dụ: "Hà Nội, Hà Nội, Việt Nam" bên dưới "Hà Nội"), chỉ hiển thị tỉnh/thành phụ hoặc quốc gia một cách thanh lịch và sắc nét.
+        - *Chuẩn hóa toàn diện các hộp thoại (`CitySearchDialog`, `LifestyleIndexCard`, `DayForecastDetailDialog`)*: Áp dụng `usePlatformDefaultWidth = false` với kích thước co giãn theo thiết bị, hiển thị vừa vặn trên cả điện thoại màn hình nhỏ lẫn tablet/máy gập.
+        - *Tối ưu hóa hiệu năng cuộn 60/120 FPS*: Đồng bộ hóa trạng thái `listState` của `LazyColumn` với bộ điều tiết hiệu ứng nền động và Ambient Glow, giúp việc lướt xem thời tiết luôn mượt mà và tiết kiệm pin tối đa.
 
 ## Quy tắc hiển thị mưa
 

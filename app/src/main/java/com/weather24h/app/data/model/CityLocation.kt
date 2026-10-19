@@ -23,6 +23,27 @@ data class CityLocation(
             }
         }
 
+    val subLocationText: String
+        get() {
+            val parts = mutableListOf<String>()
+            val trimmedAdmin = admin1?.trim()
+            val trimmedName = name.trim()
+            if (!trimmedAdmin.isNullOrBlank() &&
+                !trimmedAdmin.equals(trimmedName, ignoreCase = true) &&
+                !trimmedAdmin.equals("Thành phố $trimmedName", ignoreCase = true) &&
+                !trimmedAdmin.equals("TP. $trimmedName", ignoreCase = true) &&
+                !trimmedAdmin.equals("Tỉnh $trimmedName", ignoreCase = true) &&
+                !trimmedName.contains(trimmedAdmin, ignoreCase = true)
+            ) {
+                parts.add(trimmedAdmin)
+            }
+            val trimmedCountry = country.trim()
+            if (trimmedCountry.isNotBlank() && !trimmedCountry.equals(trimmedName, ignoreCase = true)) {
+                parts.add(trimmedCountry)
+            }
+            return parts.joinToString(", ")
+        }
+
     companion object {
         val DEFAULT_LOCATION = CityLocation(
             name = "Hà Nội",

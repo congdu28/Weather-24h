@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.weather24h.app.data.model.CityLocation
 import com.weather24h.app.data.model.CityWeatherSummary
 import com.weather24h.app.data.model.icon
@@ -56,13 +57,17 @@ fun CitySearchDialog(
     val cardBg = if (isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFE2E8F0)
     val chipBg = if (isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFF1F5F9)
 
-    Dialog(onDismissRequest = onDismiss) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Surface(
             shape = RoundedCornerShape(26.dp),
             color = dialogBg,
             tonalElevation = 6.dp,
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.92f)
+                .widthIn(max = 500.dp)
                 .fillMaxHeight(0.88f)
         ) {
             Column(

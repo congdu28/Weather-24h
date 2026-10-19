@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.weather24h.app.data.model.LifestyleCalculator
 import com.weather24h.app.data.model.LifestyleItem
 import com.weather24h.app.data.model.WeatherData
@@ -114,13 +115,17 @@ fun LifestyleIndexCard(
 
     // Modal chi tiết khi chạm vào từng mục
     selectedItem?.let { item ->
-        Dialog(onDismissRequest = { selectedItem = null }) {
+        Dialog(
+            onDismissRequest = { selectedItem = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.surface,
                 border = BorderStroke(0.5.dp, LocalCardBorder.current),
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(0.92f)
+                    .widthIn(max = 440.dp)
                     .padding(16.dp)
             ) {
                 Column(modifier = Modifier.verticalScroll(rememberScrollState()).padding(20.dp)) {

@@ -100,10 +100,26 @@ class AppUpdateManager(private val context: Context) {
                     continue
                 }
 
+                // Loại bỏ tiền tố bullet cũ nếu có để xử lý nội dung chính
+                if (clean.startsWith("* ") || clean.startsWith("- ") || clean.startsWith("• ")) {
+                    clean = clean.substring(2).trim()
+                } else if (clean.startsWith("•")) {
+                    clean = clean.removePrefix("•").trim()
+                }
+
+                // Loại bỏ tiền tố commit kỹ thuật: feat(scope):, fix:, chore:, perf:, [fix], etc.
+                clean = clean.replace(
+                    Regex("""^(?:\[(?:feat|fix|perf|refactor|chore|style|test|build|ci)\]|(?:feat|fix|perf|refactor|chore|style|test|build|ci)(?:\([a-zA-Z0-9_\- ]+\))?:)\s*""", RegexOption.IGNORE_CASE),
+                    ""
+                ).trim()
+
+                // Viết hoa chữ cái đầu tiên cho chuẩn mực ứng dụng thương mại
+                if (clean.isNotEmpty() && clean[0].isLowerCase()) {
+                    clean = clean.replaceFirstChar { it.uppercaseChar() }
+                }
+
                 // Chuẩn hóa dấu đầu dòng
-                if (clean.startsWith("* ") || clean.startsWith("- ")) {
-                    clean = "• " + clean.substring(2).trim()
-                } else if (!clean.startsWith("•") && clean.isNotEmpty()) {
+                if (clean.isNotEmpty()) {
                     clean = "• $clean"
                 }
 

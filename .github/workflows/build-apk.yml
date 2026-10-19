@@ -157,6 +157,8 @@ jobs:
           echo "$RAW_LOGS" | grep -v "\[skip ci\]" \
             | grep -v -E "^\s*$" \
             | sed 's/^[*-] //' \
+            | sed -E 's/^(feat|fix|perf|refactor|chore|style|test|build|ci)(\([a-zA-Z0-9_\- ]+\))?:\s*//I' \
+            | sed -E 's/^\[(feat|fix|perf|refactor|chore|style|test|build|ci)\]\s*//I' \
             | sed 's/^/• /' > release_notes.txt
 
           if [ ! -s release_notes.txt ]; then

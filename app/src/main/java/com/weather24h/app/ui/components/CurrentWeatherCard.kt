@@ -133,12 +133,15 @@ fun CurrentWeatherCard(
                 }
             }
 
-            // Tên chi tiết phụ (nếu có khác biệt)
-            if (weather.location.displayName.isNotBlank() && weather.location.displayName != weather.location.name) {
+            // Tên chi tiết phụ (tỉnh thành / quốc gia - tránh lặp lại tên thành phố chính)
+            val subText = weather.location.subLocationText.ifBlank {
+                if (weather.location.displayName != weather.location.name) weather.location.displayName else ""
+            }
+            if (subText.isNotBlank()) {
                 Text(
-                    text = weather.location.displayName,
-                    color = Color.White.copy(alpha = 0.80f),
-                    fontSize = 12.5.sp,
+                    text = subText,
+                    color = Color.White.copy(alpha = 0.82f),
+                    fontSize = 13.sp,
                     style = TextStyle(shadow = heroTextShadow),
                     maxLines = 1,
                     textAlign = TextAlign.Center,

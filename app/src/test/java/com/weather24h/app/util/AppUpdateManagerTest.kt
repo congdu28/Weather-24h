@@ -45,7 +45,8 @@ class AppUpdateManagerTest {
         val rawGithubNotes = """
             ## What's Changed
             * feat: Redesign hero card by @congdu28 in https://github.com/congdu28/Weather-24h/pull/12
-            * fix: Keep favorite cities across updates in https://github.com/congdu28/Weather-24h/pull/13
+            * fix(widget): Keep favorite cities across updates in https://github.com/congdu28/Weather-24h/pull/13
+            * [perf]: Improve particle frame rate
 
             **Full Changelog**: https://github.com/congdu28/Weather-24h/compare/v1.0.41...v1.0.42
         """.trimIndent()
@@ -55,8 +56,12 @@ class AppUpdateManagerTest {
         assertFalse(sanitized.contains("congdu28"))
         assertFalse(sanitized.contains("Full Changelog"))
         assertFalse(sanitized.contains("What's Changed"))
-        assertTrue(sanitized.contains("feat: Redesign hero card"))
-        assertTrue(sanitized.contains("fix: Keep favorite cities across updates"))
+        assertFalse(sanitized.contains("feat:"))
+        assertFalse(sanitized.contains("fix(widget):"))
+        assertFalse(sanitized.contains("[perf]"))
+        assertTrue(sanitized.contains("Redesign hero card"))
+        assertTrue(sanitized.contains("Keep favorite cities across updates"))
+        assertTrue(sanitized.contains("Improve particle frame rate"))
     }
 
     @Test
