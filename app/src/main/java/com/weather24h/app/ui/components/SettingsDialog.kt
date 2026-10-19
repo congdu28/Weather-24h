@@ -1713,17 +1713,26 @@ fun SettingsDialog(
 
                                         Spacer(modifier = Modifier.height(8.dp))
 
+                                        val effectiveWidgetIsDark = when (widgetThemeMode) {
+                                            com.weather24h.app.ui.theme.AppThemeMode.LIGHT -> false
+                                            com.weather24h.app.ui.theme.AppThemeMode.DARK -> true
+                                            com.weather24h.app.ui.theme.AppThemeMode.SYSTEM -> isDark
+                                        }
+                                        val previewTextColor = if (widgetStyle == WidgetStyle.SOLID_DARK || effectiveWidgetIsDark) Color.White else Color(0xFF0F172A)
+                                        val previewSubtextColor = (if (widgetStyle == WidgetStyle.SOLID_DARK || effectiveWidgetIsDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.72f)
+                                        val previewChipBg = if (widgetStyle == WidgetStyle.SOLID_DARK || effectiveWidgetIsDark) Color.White.copy(alpha = 0.12f) else Color.Black.copy(alpha = 0.08f)
+
                                         Surface(
                                             shape = RoundedCornerShape(18.dp),
                                             color = when (widgetStyle) {
                                                 WidgetStyle.MINIMAL_CLEAN -> Color.Transparent
-                                                WidgetStyle.SOLID_DARK -> Color.Black
+                                                WidgetStyle.SOLID_DARK -> Color(0xFF0F172A)
                                                 WidgetStyle.ADAPTIVE_COLOR -> Color(0xFF0369A1).copy(alpha = widgetOpacity.coerceAtLeast(0.4f))
-                                                WidgetStyle.FROSTED_GLASS -> (if (widgetThemeMode == com.weather24h.app.ui.theme.AppThemeMode.LIGHT) Color.White else Color(0xFF1E293B)).copy(alpha = widgetOpacity)
+                                                WidgetStyle.FROSTED_GLASS -> (if (effectiveWidgetIsDark) Color(0xFF1E293B) else Color.White).copy(alpha = widgetOpacity)
                                             },
                                             border = BorderStroke(
                                                 width = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN) 0.dp else 1.dp,
-                                                color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN) Color.Transparent else (if (isDark) Color.White.copy(alpha = 0.25f) else Color.Black.copy(alpha = 0.15f))
+                                                color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN) Color.Transparent else (if (effectiveWidgetIsDark) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.12f))
                                             ),
                                             modifier = if (previewWidgetType == 3) Modifier.size(130.dp).align(Alignment.CenterHorizontally) else Modifier.fillMaxWidth()
                                         ) {
@@ -1733,24 +1742,33 @@ fun SettingsDialog(
                                                     Column(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
-                                                            .padding(14.dp)
+                                                            .padding(12.dp)
                                                     ) {
                                                         Row(
                                                             modifier = Modifier.fillMaxWidth(),
                                                             horizontalArrangement = Arrangement.SpaceBetween,
                                                             verticalAlignment = Alignment.CenterVertically
                                                         ) {
-                                                            Column {
+                                                            Column(modifier = Modifier.weight(1f)) {
                                                                 Text(
                                                                     text = defaultCity.name,
-                                                                    color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
+                                                                    color = previewTextColor,
                                                                     fontSize = 15.sp,
-                                                                    fontWeight = FontWeight.Bold
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    maxLines = 1
                                                                 )
                                                                 Text(
                                                                     text = "Trời nắng • Cảm giác 31°C",
-                                                                    color = (if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.75f),
-                                                                    fontSize = 11.sp
+                                                                    color = previewSubtextColor,
+                                                                    fontSize = 11.sp,
+                                                                    maxLines = 1
+                                                                )
+                                                                Text(
+                                                                    text = "Cao: 32° • Thấp: 24°",
+                                                                    color = Color(0xFF38BDF8),
+                                                                    fontSize = 10.5.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    maxLines = 1
                                                                 )
                                                             }
                                                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1758,7 +1776,7 @@ fun SettingsDialog(
                                                                 Spacer(modifier = Modifier.width(6.dp))
                                                                 Text(
                                                                     text = "29°",
-                                                                    color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
+                                                                    color = previewTextColor,
                                                                     fontSize = 28.sp,
                                                                     fontWeight = FontWeight.Bold
                                                                 )
@@ -1779,16 +1797,16 @@ fun SettingsDialog(
                                                             ).forEach { (hour, icon, temp) ->
                                                                 Surface(
                                                                     shape = RoundedCornerShape(8.dp),
-                                                                    color = (if (isDark) Color.White else Color.Black).copy(alpha = 0.12f),
+                                                                    color = previewChipBg,
                                                                     modifier = Modifier.weight(1f)
                                                                 ) {
                                                                     Column(
                                                                         horizontalAlignment = Alignment.CenterHorizontally,
                                                                         modifier = Modifier.padding(vertical = 4.dp)
                                                                     ) {
-                                                                        Text(text = hour, color = (if (isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.7f), fontSize = 10.sp)
+                                                                        Text(text = hour, color = previewSubtextColor, fontSize = 10.sp, maxLines = 1)
                                                                         Text(text = icon, fontSize = 14.sp)
-                                                                        Text(text = temp, color = if (isDark) Color.White else Color(0xFF0F172A), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                                                        Text(text = temp, color = previewTextColor, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                                                                     }
                                                                 }
                                                             }
@@ -1803,20 +1821,20 @@ fun SettingsDialog(
                                                             .padding(10.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
-                                                        Column(modifier = Modifier.width(85.dp)) {
+                                                        Column(modifier = Modifier.widthIn(min = 72.dp, max = 84.dp)) {
                                                             Text(
                                                                 text = defaultCity.name,
-                                                                color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A),
-                                                                fontSize = 13.sp,
+                                                                color = previewTextColor,
+                                                                fontSize = 12.5.sp,
                                                                 fontWeight = FontWeight.Bold,
                                                                 maxLines = 1
                                                             )
                                                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                                                Text("☀️", fontSize = 18.sp)
-                                                                Spacer(modifier = Modifier.width(4.dp))
-                                                                Text("29°", color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                                                Text("☀️", fontSize = 17.sp)
+                                                                Spacer(modifier = Modifier.width(3.dp))
+                                                                Text("29°", color = previewTextColor, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                                                             }
-                                                            Text("C:32° T:24°", color = Color(0xFF38BDF8), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                                                            Text("C:32° T:24°", color = Color(0xFF38BDF8), fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                                                         }
 
                                                         Row(
@@ -1832,18 +1850,18 @@ fun SettingsDialog(
                                                             ).forEach { item ->
                                                                 Surface(
                                                                     shape = RoundedCornerShape(6.dp),
-                                                                    color = (if (isDark) Color.White else Color.Black).copy(alpha = 0.12f),
+                                                                    color = previewChipBg,
                                                                     modifier = Modifier.weight(1f)
                                                                 ) {
                                                                     Column(
                                                                         horizontalAlignment = Alignment.CenterHorizontally,
                                                                         modifier = Modifier.padding(vertical = 3.dp)
                                                                     ) {
-                                                                        Text(text = item.d, color = if (isDark) Color.White else Color(0xFF0F172A), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                                                                        Text(text = item.icon, fontSize = 13.sp)
-                                                                        Text(text = item.max, color = if (isDark) Color.White else Color(0xFF0F172A), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                                                        Text(text = item.min, color = (if (isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.6f), fontSize = 8.5.sp)
-                                                                        Text(text = item.rain, color = Color(0xFF38BDF8), fontSize = 8.sp)
+                                                                        Text(text = item.d, color = previewTextColor, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                                                        Text(text = item.icon, fontSize = 12.sp)
+                                                                        Text(text = item.max, color = previewTextColor, fontSize = 9.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                                                        Text(text = item.min, color = previewSubtextColor, fontSize = 8.5.sp, maxLines = 1)
+                                                                        Text(text = item.rain, color = Color(0xFF38BDF8), fontSize = 8.sp, maxLines = 1)
                                                                     }
                                                                 }
                                                             }
@@ -1860,12 +1878,12 @@ fun SettingsDialog(
                                                     ) {
                                                         Text("☀️", fontSize = 28.sp)
                                                         Spacer(modifier = Modifier.width(8.dp))
-                                                        Text("29°", color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 30.sp, fontWeight = FontWeight.Bold)
-                                                        Spacer(modifier = Modifier.width(12.dp))
+                                                        Text("29°", color = previewTextColor, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+                                                        Spacer(modifier = Modifier.width(10.dp))
                                                         Column(modifier = Modifier.weight(1f)) {
-                                                            Text(defaultCity.name, color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                                            Text("Trời nắng • Cảm giác 31°C", color = (if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A)).copy(alpha = 0.75f), fontSize = 10.5.sp)
-                                                            Text("Cao: 32° • Thấp: 24° • Mưa: 10%", color = Color(0xFF38BDF8), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                                            Text(defaultCity.name, color = previewTextColor, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                                            Text("Trời nắng • Cảm giác 31°C", color = previewSubtextColor, fontSize = 10.5.sp, maxLines = 1)
+                                                            Text("Cao: 32° • Thấp: 24° • Mưa: 10%", color = Color(0xFF38BDF8), fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                                                         }
                                                     }
                                                 }
@@ -1879,9 +1897,9 @@ fun SettingsDialog(
                                                         verticalArrangement = Arrangement.Center
                                                     ) {
                                                         Text("☀️", fontSize = 26.sp)
-                                                        Text("29°", color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                                                        Text(defaultCity.name, color = if (widgetStyle == WidgetStyle.MINIMAL_CLEAN || widgetStyle == WidgetStyle.SOLID_DARK || isDark) Color.White else Color(0xFF0F172A), fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                                                        Text("32° / 24°", color = Color(0xFF38BDF8), fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
+                                                        Text("29°", color = previewTextColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                                        Text(defaultCity.name, color = previewTextColor, fontSize = 11.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                                        Text("32° / 24°", color = Color(0xFF38BDF8), fontSize = 9.5.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                                                     }
                                                 }
                                             }

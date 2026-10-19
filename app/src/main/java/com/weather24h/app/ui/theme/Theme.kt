@@ -1,12 +1,17 @@
 package com.weather24h.app.ui.theme
 
+import android.app.Activity
+import android.content.ContextWrapper
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
+import androidx.core.view.WindowCompat
 
 enum class AppThemeMode(val title: String) {
     SYSTEM("Theo thiết bị"),
@@ -55,6 +60,26 @@ fun Weather24hTheme(
         AppThemeMode.LIGHT -> false
         AppThemeMode.DARK -> true
         AppThemeMode.SYSTEM -> isSystemInDarkTheme()
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            var ctx = view.context
+            var activity: Activity? = null
+            while (ctx is ContextWrapper) {
+                if (ctx is Activity) {
+                    activity = ctx
+                    break
+                }
+                ctx = ctx.baseContext
+            }
+            activity?.window?.let { window ->
+                val insetsController = WindowCompat.getInsetsController(window, view)
+                insetsController.isAppearanceLightStatusBars = !isDark
+                insetsController.isAppearanceLightNavigationBars = !isDark
+            }
+        }
     }
 
     val colorScheme = if (isDark) DarkColorScheme else LightColorScheme

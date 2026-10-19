@@ -24,6 +24,7 @@
             android:exported="true"
             android:launchMode="singleTask"
             android:hardwareAccelerated="true"
+            android:configChanges="uiMode|screenSize|smallestScreenSize|screenLayout|orientation"
             android:theme="@style/Theme.Weather24h">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

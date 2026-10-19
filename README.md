@@ -113,6 +113,17 @@
         - Tối giản hóa thẻ giới thiệu công nghệ và thẻ chọn nguồn chính (Open-Meteo vs WeatherAPI.com) dạng gạch đầu dòng súc tích, ngắn gọn.
         - Thu gọn danh sách mô hình khí tượng siêu máy tính (`ForecastModelSelectCard`) từ bố cục 4-5 dòng rườm rà xuống 2 dòng cô đọng: kết hợp tên cơ quan và mô tả ngắn gọn, dễ duyệt trên điện thoại.
         - Tinh giản thẻ cơ chế dự phòng thành 1 dòng tinh gọn.
+26. Từ v1.0.46, app tự động nhận diện và chuyển đổi theme Sáng/Tối hệ thống tức thì, tối ưu hóa toàn diện Widget và Live Preview đa hãng điện thoại:
+    - **Tự động nhận diện Theme Sáng/Tối của hệ thống và phản hồi ngay lập tức**:
+        - Khai báo `android:configChanges="uiMode|screenSize|smallestScreenSize|screenLayout|orientation"` cho `MainActivity` trong `AndroidManifest.xml`, giúp ứng dụng đón nhận sự kiện thay đổi Night Mode trực tiếp từ OS mà không cần tắt/mở lại app.
+        - Tạo thư mục tài nguyên `res/values-night/themes.xml` đồng bộ cùng `res/values/themes.xml`, giúp toàn bộ các hãng điện thoại (Samsung One UI, Xiaomi HyperOS/MIUI, Oppo/Realme ColorOS, Vivo OriginOS, Google Pixel) nhận diện app hỗ trợ DayNight chuẩn cấp hệ điều hành.
+        - Tích hợp `SideEffect` điều khiển `WindowCompat.getInsetsController` trong `Weather24hTheme`, tự động đảo màu icon thanh trạng thái (`isAppearanceLightStatusBars`) và thanh điều hướng (`isAppearanceLightNavigationBars`) lập tức theo theme sáng/tối.
+        - Tự động broadcast cập nhật tất cả widget màn hình chính trong `onConfigurationChanged` khi người dùng gạt đổi Dark/Light mode trong Quick Settings hoặc cài đặt của máy.
+    - **Tối ưu hóa toàn diện Widget và Tùy chỉnh Widget (Responsive & UI đa hãng)**:
+        - *Khung xem trước Live Widget Preview*: Sửa triệt để lỗi logic hiển thị; khung xem trước khi chọn "Theo thiết bị" (SYSTEM) sẽ tự động phản ánh chính xác theo theme hệ thống (`effectiveWidgetIsDark`), đồng bộ chuẩn màu nền, độ tương phản chữ và chip giờ/ngày theo đúng chế độ đã chọn.
+        - *Widget Dự báo 5 ngày (4x1)*: Bỏ giới hạn cứng `minWidth="95dp"`, thiết lập độ rộng co giãn linh hoạt và thêm `singleLine="true"` cho toàn bộ 5 cột ngày dự báo, đảm bảo nhiệt độ Max/Min và icon thời tiết luôn hiển thị trọn vẹn, không bị cắt chữ trên mọi kích thước lưới màn hình chính (4x5, 4x6, 5x5, 5x6).
+        - *Widget Chi tiết theo giờ (4x2)*: Giảm lề ngoài an toàn (`8dp`), chống gập dòng (`singleLine="true"`) cho 6 chip giờ, cân đối khoảng cách đều đặn giúp số đo nhiệt độ và xác suất mưa sắc nét.
+        - *Widget Tối giản (2x1) & Mini (1x1)*: Tinh chỉnh padding và cỡ chữ, bảo đảm không bị tràn viền hay lệch tỉ lệ trên các launcher của nhiều hãng điện thoại.
 
 ## Quy tắc hiển thị mưa
 

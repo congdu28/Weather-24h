@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Background Layer (dùng ImageView tương thích 100% với RemoteViews, hỗ trợ setImageAlpha và theme Sáng/Tối) -->
+    <!-- Background Layer (hỗ trợ setImageAlpha, theme Sáng/Tối, và WidgetStyle) -->
     <ImageView
         android:id="@+id/widget_bg_layer"
         android:layout_width="match_parent"
@@ -18,9 +18,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="10dp">
+        android:padding="8dp">
 
-        <!-- Top Row: City Name, Weather Icon & Main Temp -->
+        <!-- Top Row: City Name, Weather Icon, Main Temp & Refresh Button -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -39,9 +39,10 @@
                     android:layout_height="wrap_content"
                     android:ellipsize="end"
                     android:maxLines="1"
+                    android:singleLine="true"
                     android:text="Hà Nội"
                     android:textColor="#FFFFFF"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -51,9 +52,10 @@
                     android:layout_marginTop="1dp"
                     android:ellipsize="end"
                     android:maxLines="1"
+                    android:singleLine="true"
                     android:text="Trời nắng • Cảm giác 30°C"
                     android:textColor="#CBD5E1"
-                    android:textSize="11sp" />
+                    android:textSize="10.5sp" />
 
                 <TextView
                     android:id="@+id/widget_range"
@@ -62,9 +64,10 @@
                     android:layout_marginTop="1dp"
                     android:ellipsize="end"
                     android:maxLines="1"
+                    android:singleLine="true"
                     android:text="Cao: 32° • Thấp: 24°"
                     android:textColor="#38BDF8"
-                    android:textSize="10.5sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -74,25 +77,26 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="6dp"
                 android:text="☀️"
-                android:textSize="26sp" />
+                android:textSize="24sp" />
 
             <TextView
                 android:id="@+id/widget_temp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:singleLine="true"
                 android:text="28°"
                 android:textColor="#FFFFFF"
-                android:textSize="32sp"
+                android:textSize="28sp"
                 android:textStyle="bold" />
 
             <ImageView
                 android:id="@+id/widget_btn_refresh"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:layout_marginStart="8dp"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/widget_refresh_btn_bg_dark"
                 android:contentDescription="Làm mới thời tiết"
-                android:padding="6dp"
+                android:padding="5dp"
                 android:src="@drawable/ic_refresh" />
         </LinearLayout>
 
@@ -111,22 +115,23 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="2dp"
+                android:layout_marginEnd="1.5dp"
                 android:background="@drawable/widget_hour_chip_dark"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:paddingStart="2dp"
-                android:paddingEnd="2dp">
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:paddingStart="1.5dp"
+                android:paddingEnd="1.5dp">
 
                 <TextView
                     android:id="@+id/widget_h1_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="14:00"
                     android:textColor="#94A3B8"
-                    android:textSize="9.5sp" />
+                    android:textSize="9sp" />
 
                 <TextView
                     android:id="@+id/widget_h1_icon"
@@ -134,25 +139,27 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text="☀️"
-                    android:textSize="13sp" />
+                    android:textSize="12.5sp" />
 
                 <TextView
                     android:id="@+id/widget_h1_temp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
+                    android:singleLine="true"
                     android:text="30°"
                     android:textColor="#FFFFFF"
-                    android:textSize="11.5sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/widget_h1_rain"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="0%"
                     android:textColor="#38BDF8"
-                    android:textSize="9sp" />
+                    android:textSize="8.5sp" />
             </LinearLayout>
 
             <!-- Hour 2 -->
@@ -166,18 +173,19 @@
                 android:background="@drawable/widget_hour_chip_dark"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:paddingStart="2dp"
-                android:paddingEnd="2dp">
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:paddingStart="1.5dp"
+                android:paddingEnd="1.5dp">
 
                 <TextView
                     android:id="@+id/widget_h2_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="15:00"
                     android:textColor="#94A3B8"
-                    android:textSize="9.5sp" />
+                    android:textSize="9sp" />
 
                 <TextView
                     android:id="@+id/widget_h2_icon"
@@ -185,25 +193,27 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text="🌤️"
-                    android:textSize="13sp" />
+                    android:textSize="12.5sp" />
 
                 <TextView
                     android:id="@+id/widget_h2_temp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
+                    android:singleLine="true"
                     android:text="29°"
                     android:textColor="#FFFFFF"
-                    android:textSize="11.5sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/widget_h2_rain"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="10%"
                     android:textColor="#38BDF8"
-                    android:textSize="9sp" />
+                    android:textSize="8.5sp" />
             </LinearLayout>
 
             <!-- Hour 3 -->
@@ -217,18 +227,19 @@
                 android:background="@drawable/widget_hour_chip_dark"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:paddingStart="2dp"
-                android:paddingEnd="2dp">
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:paddingStart="1.5dp"
+                android:paddingEnd="1.5dp">
 
                 <TextView
                     android:id="@+id/widget_h3_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="16:00"
                     android:textColor="#94A3B8"
-                    android:textSize="9.5sp" />
+                    android:textSize="9sp" />
 
                 <TextView
                     android:id="@+id/widget_h3_icon"
@@ -236,25 +247,27 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text="☁️"
-                    android:textSize="13sp" />
+                    android:textSize="12.5sp" />
 
                 <TextView
                     android:id="@+id/widget_h3_temp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
+                    android:singleLine="true"
                     android:text="28°"
                     android:textColor="#FFFFFF"
-                    android:textSize="11.5sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/widget_h3_rain"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="20%"
                     android:textColor="#38BDF8"
-                    android:textSize="9sp" />
+                    android:textSize="8.5sp" />
             </LinearLayout>
 
             <!-- Hour 4 -->
@@ -268,18 +281,19 @@
                 android:background="@drawable/widget_hour_chip_dark"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:paddingStart="2dp"
-                android:paddingEnd="2dp">
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:paddingStart="1.5dp"
+                android:paddingEnd="1.5dp">
 
                 <TextView
                     android:id="@+id/widget_h4_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="17:00"
                     android:textColor="#94A3B8"
-                    android:textSize="9.5sp" />
+                    android:textSize="9sp" />
 
                 <TextView
                     android:id="@+id/widget_h4_icon"
@@ -287,25 +301,27 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text="🌦️"
-                    android:textSize="13sp" />
+                    android:textSize="12.5sp" />
 
                 <TextView
                     android:id="@+id/widget_h4_temp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
+                    android:singleLine="true"
                     android:text="27°"
                     android:textColor="#FFFFFF"
-                    android:textSize="11.5sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/widget_h4_rain"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="40%"
                     android:textColor="#38BDF8"
-                    android:textSize="9sp" />
+                    android:textSize="8.5sp" />
             </LinearLayout>
 
             <!-- Hour 5 -->
@@ -319,18 +335,19 @@
                 android:background="@drawable/widget_hour_chip_dark"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:paddingStart="2dp"
-                android:paddingEnd="2dp">
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:paddingStart="1.5dp"
+                android:paddingEnd="1.5dp">
 
                 <TextView
                     android:id="@+id/widget_h5_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="18:00"
                     android:textColor="#94A3B8"
-                    android:textSize="9.5sp" />
+                    android:textSize="9sp" />
 
                 <TextView
                     android:id="@+id/widget_h5_icon"
@@ -338,25 +355,27 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text="🌙"
-                    android:textSize="13sp" />
+                    android:textSize="12.5sp" />
 
                 <TextView
                     android:id="@+id/widget_h5_temp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
+                    android:singleLine="true"
                     android:text="26°"
                     android:textColor="#FFFFFF"
-                    android:textSize="11.5sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/widget_h5_rain"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="10%"
                     android:textColor="#38BDF8"
-                    android:textSize="9sp" />
+                    android:textSize="8.5sp" />
             </LinearLayout>
 
             <!-- Hour 6 -->
@@ -365,22 +384,23 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="2dp"
+                android:layout_marginStart="1.5dp"
                 android:background="@drawable/widget_hour_chip_dark"
                 android:gravity="center"
                 android:orientation="vertical"
-                android:paddingTop="5dp"
-                android:paddingBottom="5dp"
-                android:paddingStart="2dp"
-                android:paddingEnd="2dp">
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:paddingStart="1.5dp"
+                android:paddingEnd="1.5dp">
 
                 <TextView
                     android:id="@+id/widget_h6_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="19:00"
                     android:textColor="#94A3B8"
-                    android:textSize="9.5sp" />
+                    android:textSize="9sp" />
 
                 <TextView
                     android:id="@+id/widget_h6_icon"
@@ -388,25 +408,27 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
                     android:text="🌙"
-                    android:textSize="13sp" />
+                    android:textSize="12.5sp" />
 
                 <TextView
                     android:id="@+id/widget_h6_temp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="1dp"
+                    android:singleLine="true"
                     android:text="25°"
                     android:textColor="#FFFFFF"
-                    android:textSize="11.5sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/widget_h6_rain"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:singleLine="true"
                     android:text="0%"
                     android:textColor="#38BDF8"
-                    android:textSize="9sp" />
+                    android:textSize="8.5sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -426,18 +448,20 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
+                android:singleLine="true"
                 android:text="👔 AI Stylist: Áo thun mỏng nhẹ thoáng mát"
                 android:textColor="#F0ABFC"
-                android:textSize="10.5sp" />
+                android:textSize="10sp" />
 
             <TextView
                 android:id="@+id/widget_updated"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
+                android:singleLine="true"
                 android:text="Weather 24h"
                 android:textColor="#94A3B8"
-                android:textSize="9.5sp" />
+                android:textSize="9sp" />
         </LinearLayout>
 
     </LinearLayout>

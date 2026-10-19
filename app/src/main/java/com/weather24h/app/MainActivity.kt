@@ -105,6 +105,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Đồng bộ cập nhật tất cả Widget nếu Widget đang theo theme thiết bị
+        WeatherWidgetProvider.updateAllWidgets(this)
+    }
+
     private fun requestNotificationPermissionIfNeeded() {
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
