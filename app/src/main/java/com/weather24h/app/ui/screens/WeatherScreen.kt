@@ -22,8 +22,10 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.weather24h.app.util.WeatherShareHelper
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -250,6 +252,23 @@ fun WeatherScreen(
                             modifier = Modifier.size(22.dp)
                         )
                     }
+
+                    IconButton(onClick = {
+                        val state = uiState
+                        if (state is WeatherUiState.Success) {
+                            WeatherShareHelper.shareWeatherForecast(context, state.weather, state.outfit)
+                        } else {
+                            WeatherShareHelper.shareApp(context)
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Chia sẻ dự báo thời tiết",
+                            tint = if (isDarkTheme) Color.White else Color(0xFF0F172A),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
                     IconButton(onClick = { showSettingsDialog = true }) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -388,7 +407,10 @@ fun WeatherScreen(
                                     weather = weather,
                                     onLocationClick = { showSearchDialog = true },
                                     isFavorite = isFav,
-                                    onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) }
+                                    onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) },
+                                    onShareClick = {
+                                        WeatherShareHelper.shareWeatherForecast(context, weather, state.outfit)
+                                    }
                                 )
                             }
 

@@ -53,6 +53,10 @@
     - **Bảo mật WebView Radar**: Khóa `allowFileAccess = false`, `allowContentAccess = false` và `mixedContentMode = MIXED_CONTENT_NEVER_ALLOW`, ngăn chặn nguy cơ rò rỉ tệp cục bộ và mã độc chéo.
     - **Chống rò rỉ dữ liệu qua ADB Backup**: Đặt `android:allowBackup="false"` bảo vệ an toàn thông tin vị trí và khóa API cá nhân của người dùng.
     - **Bảo vệ khóa API & chống cạn kiệt Quota**: Loại bỏ khóa nhúng tĩnh, ưu tiên thuật toán Stylist nội bộ chạy ngoại tuyến 100% không tốn chi phí và tốc độ 0s; bổ sung throttle chống spam intent trên Widget.
+19. Từ v1.0.39, app bổ sung tính năng "Chia sẻ thời tiết" (Weather Share Sheet) và lan tỏa ứng dụng:
+    - **Chia sẻ dự báo thời tiết 1 chạm**: Nút Chia sẻ mới được bố trí tiện lợi ngay trên thanh TopBar và thẻ Thời tiết chính `CurrentWeatherCard`. Tự động tạo bản tin tóm tắt thời tiết đầy đủ (nhiệt độ, cảm giác thật, biên độ nhiệt, xác suất mưa, độ ẩm, chất lượng không khí AQI và gợi ý trang phục) mở trực tiếp Android Share Sheet để gửi qua Zalo, Messenger, Telegram, Facebook hoặc SMS.
+    - **Chia sẻ ứng dụng cho bạn bè**: Bổ sung tùy chọn chia sẻ link ứng dụng kèm lời giới thiệu tính năng trong danh mục Cài đặt chính và màn hình Giới thiệu (About), giúp người dùng dễ dàng gửi link tải bản APK mới nhất cho người thân và bạn bè.
+    - **Tiện ích tập trung `WeatherShareHelper`**: Quản lý logic soạn thảo thông điệp và kích hoạt `Intent.ACTION_SEND` an toàn, chuyên nghiệp.
 
 ## Quy tắc hiển thị mưa
 

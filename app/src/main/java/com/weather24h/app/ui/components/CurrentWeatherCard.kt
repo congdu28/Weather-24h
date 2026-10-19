@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Icon
@@ -39,6 +40,7 @@ fun CurrentWeatherCard(
     onLocationClick: () -> Unit,
     isFavorite: Boolean = false,
     onToggleFavorite: () -> Unit = {},
+    onShareClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val condition = weather.current.condition
@@ -117,6 +119,20 @@ fun CurrentWeatherCard(
                             .size(23.dp)
                             .graphicsLayer(scaleX = starScale, scaleY = starScale)
                     )
+                }
+
+                if (onShareClick != null) {
+                    IconButton(
+                        onClick = onShareClick,
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Chia sẻ dự báo",
+                            tint = textColor.copy(alpha = 0.70f),
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
                 }
             }
 
