@@ -81,28 +81,41 @@ fun TemperatureChart(
         // =========================================================================
         if (displayMode == ChartDisplayMode.PRECIPITATION || displayMode == ChartDisplayMode.COMBINED) {
             val rainBarBaseY = heightPx - 4.dp.toPx()
-            val maxBarHeight = if (displayMode == ChartDisplayMode.COMBINED) heightPx * 0.38f else heightPx * 0.70f
+            val maxBarHeight = if (displayMode == ChartDisplayMode.COMBINED) heightPx * 0.32f else heightPx * 0.70f
             val barWidth = 14.dp.toPx()
+
+            // Tìm lượng mưa lớn nhất trong 24h để chia tỷ lệ chuẩn xác
+            val maxRainInList = hourlyList.mapNotNull { it.precipitationMm }.maxOrNull() ?: 0.0
+            val rainScale = maxOf(maxRainInList, 5.0).toFloat()
 
             effectiveTemps.indices.forEach { index ->
                 val hourItem = hourlyList.getOrNull(index)
                 val prob = hourItem?.precipitationProbability ?: 0
                 val rainMm = hourItem?.precipitationMm ?: 0.0
 
-                if (prob > 0 || rainMm > 0.0) {
+                // Ở chế độ Tổng hợp: chỉ vẽ cột mưa khi có lượng mưa thực tế (>= 0.1 mm) để tránh rối mắt và nhầm lẫn với nhiệt độ
+                // Ở chế độ Lượng mưa: vẽ khi có lượng mưa thực tế hoặc xác suất mưa đáng kể (>= 25%)
+                val shouldDrawBar = if (displayMode == ChartDisplayMode.COMBINED) {
+                    rainMm >= 0.1
+                } else {
+                    rainMm >= 0.1 || prob >= 25
+                }
+
+                if (shouldDrawBar) {
                     val barCenterX = index * itemWidthPx + (itemWidthPx / 2f)
-                    val normalizedHeight = when {
-                        rainMm > 0.0 -> (rainMm / 10.0).coerceIn(0.18, 1.0).toFloat()
-                        else -> (prob / 100f).coerceIn(0.15f, 1.0f)
+                    val normalizedHeight = if (rainMm >= 0.1) {
+                        (rainMm.toFloat() / rainScale).coerceIn(0.12f, 1.0f)
+                    } else {
+                        (prob / 100f).coerceIn(0.10f, 0.85f)
                     }
                     val barHeight = maxBarHeight * normalizedHeight
                     val barTopY = rainBarBaseY - barHeight
 
-                    // Vẽ cột mưa bo tròn đỉnh với màu xanh dương khí tượng
+                    // Cột mưa bo góc đỉnh trang nhã, màu xanh dương khí tượng chuyên nghiệp
                     val barBrush = Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF38BDF8).copy(alpha = if (index == selectedIndex) 0.95f else 0.80f),
-                            Color(0xFF0284C7).copy(alpha = if (index == selectedIndex) 0.75f else 0.50f)
+                            Color(0xFF38BDF8).copy(alpha = if (index == selectedIndex) 0.95f else 0.75f),
+                            Color(0xFF0284C7).copy(alpha = if (index == selectedIndex) 0.70f else 0.45f)
                         ),
                         startY = barTopY,
                         endY = rainBarBaseY
@@ -113,13 +126,6 @@ fun TemperatureChart(
                         topLeft = Offset(barCenterX - barWidth / 2f, barTopY),
                         size = Size(barWidth, barHeight),
                         cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
-                    )
-
-                    // Điểm sáng đỉnh cột mưa
-                    drawCircle(
-                        color = Color.White.copy(alpha = 0.9f),
-                        radius = 1.8.dp.toPx(),
-                        center = Offset(barCenterX, barTopY + 2.dp.toPx())
                     )
                 }
             }

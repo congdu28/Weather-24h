@@ -386,15 +386,18 @@ fun HourlyForecastSection(
                                                 fontWeight = FontWeight.Medium
                                             )
                                             Spacer(modifier = Modifier.height(2.dp))
-                                            val rainDetail = if (selectedItem.precipitationMm != null && selectedItem.precipitationMm > 0) {
-                                                "${selectedItem.rainProbabilityText} (${selectedItem.precipitationMm}mm)"
-                                            } else {
-                                                selectedItem.rainProbabilityText
+                                            val rainDetail = when {
+                                                selectedItem.precipitationMm != null && selectedItem.precipitationMm >= 0.1 ->
+                                                    "${selectedItem.rainProbabilityText} (${selectedItem.precipitationMm}mm)"
+                                                selectedItem.precipitationProbability >= 20 ->
+                                                    selectedItem.rainProbabilityText
+                                                else ->
+                                                    "Tạnh ráo (${selectedItem.precipitationProbability}%)"
                                             }
                                             Text(
                                                 text = rainDetail,
                                                 color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                                fontSize = 12.5.sp,
+                                                fontSize = 12.sp,
                                                 fontWeight = FontWeight.ExtraBold
                                             )
                                         }
@@ -502,7 +505,7 @@ fun HourlyForecastSection(
 
                             val condition = item.condition
                             val icon = WeatherCondition.getWeatherIcon(condition.type, item.isDay)
-                            val iconTint = WeatherCondition.getWeatherIconTint(condition.type, item.isDay)
+                            val iconTint = WeatherCondition.getWeatherIconTint(condition.type, item.isDay, isDark = isDark)
 
                             Icon(
                                 imageVector = icon,
@@ -516,8 +519,10 @@ fun HourlyForecastSection(
                             // Hiển thị chỉ số phía trên biểu đồ tùy theo chế độ
                             when (displayMode) {
                                 ChartDisplayMode.COMBINED, ChartDisplayMode.PRECIPITATION -> {
-                                    // Khả năng có mưa (Màu xanh dương, biểu tượng ô/dù ☔ tránh nhầm độ ẩm)
-                                    if (item.precipitationProbability > 0) {
+                                    // Khả năng có mưa: chỉ hiện huy hiệu khi có nguy cơ mưa thực tế (>= 20% hoặc có lượng mưa mm)
+                                    val hasMeasurableRain = (item.precipitationMm ?: 0.0) >= 0.1
+                                    val hasNotableProb = item.precipitationProbability >= 20
+                                    if (hasMeasurableRain || hasNotableProb) {
                                         Surface(
                                             shape = RoundedCornerShape(4.dp),
                                             color = (if (isDark) Color(0xFF0284C7) else Color(0xFF38BDF8)).copy(alpha = 0.16f),
@@ -612,11 +617,11 @@ fun HourlyForecastSection(
                                         fontWeight = FontWeight.ExtraBold
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
-                                    // 2. Độ ẩm màu xanh ngọc teal với icon giọt nước
+                                    // 2. Độ ẩm màu xanh ngọc teal với chữ "Ẩm" rõ ràng, tách biệt hoàn toàn khỏi lượng mưa
                                     Text(
-                                        text = "💧${item.humidity}%",
+                                        text = "Ẩm ${item.humidity}%",
                                         color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
-                                        fontSize = 10.5.sp,
+                                        fontSize = 10.sp,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }

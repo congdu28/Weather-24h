@@ -103,7 +103,7 @@ fun DailyForecastSection(
                     baseCondition
                 }
                 val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
-                val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
+                val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true, isDark = isDark)
 
                 val leftRatio = ((day.minTemp - globalMin) / tempSpan).toFloat().coerceIn(0f, 1f)
                 val rightRatio = ((day.maxTemp - globalMin) / tempSpan).toFloat().coerceIn(0f, 1f)
@@ -254,9 +254,9 @@ fun DayForecastDetailDialog(
     } else {
         baseCondition
     }
-    val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
-    val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true)
     val isDark = LocalIsDarkTheme.current
+    val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
+    val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true, isDark = isDark)
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
     val cardBg = if (isDark) Color(0xFF131A2A) else Color.White
@@ -477,7 +477,7 @@ fun DayForecastDetailDialog(
 
                                                 val c = item.condition
                                                 val ic = WeatherCondition.getWeatherIcon(c.type, item.isDay)
-                                                val icTint = WeatherCondition.getWeatherIconTint(c.type, item.isDay)
+                                                val icTint = WeatherCondition.getWeatherIconTint(c.type, item.isDay, isDark = isDark)
 
                                                 Icon(
                                                     imageVector = ic,

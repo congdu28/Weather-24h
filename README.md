@@ -124,6 +124,18 @@
         - *Widget Dự báo 5 ngày (4x1)*: Bỏ giới hạn cứng `minWidth="95dp"`, thiết lập độ rộng co giãn linh hoạt và thêm `singleLine="true"` cho toàn bộ 5 cột ngày dự báo, đảm bảo nhiệt độ Max/Min và icon thời tiết luôn hiển thị trọn vẹn, không bị cắt chữ trên mọi kích thước lưới màn hình chính (4x5, 4x6, 5x5, 5x6).
         - *Widget Chi tiết theo giờ (4x2)*: Giảm lề ngoài an toàn (`8dp`), chống gập dòng (`singleLine="true"`) cho 6 chip giờ, cân đối khoảng cách đều đặn giúp số đo nhiệt độ và xác suất mưa sắc nét.
         - *Widget Tối giản (2x1) & Mini (1x1)*: Tinh chỉnh padding và cỡ chữ, bảo đảm không bị tràn viền hay lệch tỉ lệ trên các launcher của nhiều hãng điện thoại.
+27. Từ v1.0.47, thay mới logo 3D toàn diện app, tối ưu icon tương phản theo theme Sáng/Tối và chuẩn hóa hiển thị Mưa - Độ ẩm khí tượng:
+    - **Logo 3D Glossy thế hệ mới đồng bộ toàn app**:
+        - Xuất đè logo mới chuẩn HD lên `res/drawable/app_logo.png`, `ic_launcher.png` và `ic_launcher_round.png` ở tất cả các mật độ điểm ảnh (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi).
+        - Cập nhật gradient nền adaptive icon (`ic_launcher_background.xml`) hòa quyện tự nhiên với dải màu xanh biển - tím vương giả của logo mới.
+    - **Icon thời tiết thích ứng Theme Sáng/Tối (High Contrast & Clarity)**:
+        - Tối ưu màu icon mặt trăng (ban đêm) trên giao diện sáng sang màu vàng hổ phách ấm áp (`#D97706`), sắc nét và nổi bật trên nền trời sáng mà không bị chìm hay mờ nhạt như trước.
+        - Chuyển màu icon mây (Cloudy / Partly Cloudy) ở giao diện sáng sang tone Slate-600 (`#475569`), mang lại đường nét tương phản rõ ràng và cao cấp.
+    - **Chuẩn hóa hiển thị Lượng mưa, Độ ẩm và Logic khí tượng**:
+        - *Loại bỏ hoang mang về mưa*: Thiết lập ngưỡng hiển thị xác suất mưa thông minh; chỉ hiện huy hiệu `☔ %` khi xác suất thực tế `>= 20%` hoặc có lượng mưa mm. Với các giờ tạnh ráo (`< 20%`), hiển thị dấu `—` thanh lịch, không báo động giả.
+        - *Tách biệt hoàn toàn Độ ẩm và Lượng mưa*: Thay thế nhãn `💧%` bên dưới biểu đồ nhiệt độ ở chế độ Tổng hợp thành `Ẩm: X%`, người dùng không còn bị nhầm lẫn giữa độ ẩm không khí và xác suất mưa.
+        - *Tối ưu cột mưa trong biểu đồ*: Ở chế độ Tổng hợp, chỉ vẽ cột mưa khi có lượng mưa thực tế (`>= 0.1 mm`); loại bỏ điểm sáng viên thuốc lơ lửng trên số nhiệt độ, giúp biểu đồ trực quan, thoáng đãng và chuẩn xác.
+        - *Đồng bộ trạng thái giờ*: Nếu bầu trời quang nhưng xác suất mưa cao (`>= 40%`) hoặc có mưa đo được, tự động chuyển biểu tượng sang "Nắng xen mây, có thể mưa" hoặc "Có lúc mưa rào", loại bỏ mâu thuẫn giữa icon nắng gắt và chỉ số mưa.
 
 ## Quy tắc hiển thị mưa
 
