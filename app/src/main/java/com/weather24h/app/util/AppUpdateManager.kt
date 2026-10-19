@@ -67,32 +67,38 @@ class AppUpdateManager(private val context: Context) {
                 val trimmed = line.trim()
                 if (trimmed.isBlank()) continue
 
-                // Bỏ qua các dòng tiêu đề máy chủ tự sinh hoặc chứa liên kết changelog/github
-                if (trimmed.contains("github.com", ignoreCase = true) ||
-                    trimmed.contains("Full Changelog", ignoreCase = true) ||
-                    trimmed.contains("What's Changed", ignoreCase = true) ||
-                    trimmed.contains("compare/", ignoreCase = true) ||
-                    trimmed.contains("commit/", ignoreCase = true) ||
-                    trimmed.contains("pull/", ignoreCase = true) ||
-                    trimmed.startsWith("##") ||
+                // Bỏ qua các tiêu đề markdown hoặc các dòng chỉ chứa link changelog thuần túy
+                if (trimmed.startsWith("##") ||
                     trimmed.startsWith("http://") ||
-                    trimmed.startsWith("https://")
+                    trimmed.startsWith("https://") ||
+                    trimmed.contains("Full Changelog", ignoreCase = true) ||
+                    trimmed.contains("What's Changed", ignoreCase = true)
                 ) {
                     continue
                 }
 
-                // Loại bỏ các cú pháp URL http/https còn sót lại trong dòng
+                // Loại bỏ các cú pháp URL http/https trong dòng
                 var clean = trimmed.replace(Regex("""https?://\S+"""), "").trim()
 
                 // Loại bỏ cú pháp Markdown link [Text](url) -> Text
                 clean = clean.replace(Regex("""\[(.*?)\]\(.*?\)"""), "$1").trim()
 
-                // Loại bỏ phần đuôi " by @user in ..." hoặc " in #..." nếu có
+                // Loại bỏ phần đuôi " by @user ..." hoặc " in #..." hoặc " in ..." nếu có
                 clean = clean.replace(Regex("""\s+by\s+@[a-zA-Z0-9_\-]+.*$"""), "").trim()
                 clean = clean.replace(Regex("""\s+in\s+#[0-9]+.*$"""), "").trim()
+                clean = clean.replace(Regex("""\s+in\s*$"""), "").trim()
 
                 // Loại bỏ markdown in đậm / in nghiêng
                 clean = clean.replace("**", "").replace("__", "").trim()
+
+                // Bỏ qua nếu dòng sau khi lọc chỉ còn từ khóa git/github hoặc quá ngắn
+                if (clean.contains("github", ignoreCase = true) ||
+                    clean.contains("compare/", ignoreCase = true) ||
+                    clean.contains("commit/", ignoreCase = true) ||
+                    clean.contains("pull/", ignoreCase = true)
+                ) {
+                    continue
+                }
 
                 // Chuẩn hóa dấu đầu dòng
                 if (clean.startsWith("* ") || clean.startsWith("- ")) {
@@ -101,7 +107,7 @@ class AppUpdateManager(private val context: Context) {
                     clean = "• $clean"
                 }
 
-                if (clean.length > 2 && !clean.contains("github", ignoreCase = true)) {
+                if (clean.length > 2 && clean != "•") {
                     cleanedLines.add(clean)
                 }
             }
