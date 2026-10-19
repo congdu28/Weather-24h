@@ -57,6 +57,10 @@
     - **Chia sẻ dự báo thời tiết 1 chạm**: Nút Chia sẻ mới được bố trí tiện lợi ngay trên thanh TopBar và thẻ Thời tiết chính `CurrentWeatherCard`. Tự động tạo bản tin tóm tắt thời tiết đầy đủ (nhiệt độ, cảm giác thật, biên độ nhiệt, xác suất mưa, độ ẩm, chất lượng không khí AQI và gợi ý trang phục) mở trực tiếp Android Share Sheet để gửi qua Zalo, Messenger, Telegram, Facebook hoặc SMS.
     - **Chia sẻ ứng dụng cho bạn bè**: Bổ sung tùy chọn chia sẻ link ứng dụng kèm lời giới thiệu tính năng trong danh mục Cài đặt chính và màn hình Giới thiệu (About), giúp người dùng dễ dàng gửi link tải bản APK mới nhất cho người thân và bạn bè.
     - **Tiện ích tập trung `WeatherShareHelper`**: Quản lý logic soạn thảo thông điệp và kích hoạt `Intent.ACTION_SEND` an toàn, chuyên nghiệp.
+20. Từ v1.0.40, app khắc phục triệt để lỗi biên dịch trên CI và củng cố độ ổn định:
+    - **Sửa lỗi tham chiếu thuộc tính AirQuality**: Chuẩn hóa gọi `aqiIndex` và `statusText` trong `WeatherShareHelper`, bảo đảm `./gradlew testDebugUnitTest` và `assembleRelease` chạy thành công 100%.
+    - **Kiểm thử đơn vị tự động**: Bổ sung bộ test `WeatherShareHelperTest` xác thực độ chính xác của chuỗi chia sẻ dự báo thời tiết và chia sẻ ứng dụng.
+    - **Mô đun hóa & ProGuard**: Tách hàm tạo văn bản chia sẻ (`buildForecastShareText`, `buildAppShareText`) giúp kiểm thử độc lập và cập nhật bộ quy tắc ProGuard R8 bảo vệ toàn diện các lớp tiện ích `util`.
 
 ## Quy tắc hiển thị mưa
 

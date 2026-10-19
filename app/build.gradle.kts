@@ -22,11 +22,11 @@ val defaultWeatherApiKey: String = localProps.getProperty("WEATHER_API_KEY")?.ta
 
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.39"
+    ?: "1.0.40"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 139
+    ?: 140
 
 android {
     namespace = "com.weather24h.app"

@@ -12,13 +12,12 @@ object WeatherShareHelper {
     const val APP_RELEASE_URL = "https://github.com/congdu28/Weather-24h/releases/latest"
 
     /**
-     * Chia sẻ bản tin dự báo thời tiết chi tiết kèm gợi ý trang phục & link tải app
+     * Tạo nội dung văn bản dự báo thời tiết chi tiết kèm gợi ý trang phục & link tải app
      */
-    fun shareWeatherForecast(
-        context: Context,
+    fun buildForecastShareText(
         weather: WeatherData,
         outfit: OutfitRecommendation? = null
-    ) {
+    ): String {
         val curr = weather.current
         val locationName = weather.location.name
         val temp = curr.temperature.roundToInt()
@@ -40,7 +39,7 @@ object WeatherShareHelper {
         }
 
         val aqiInfo = weather.airQuality?.let { aqi ->
-            " • AQI: ${aqi.aqi} (${aqi.category})"
+            " • AQI: ${aqi.aqiIndex} (${aqi.statusText})"
         } ?: ""
 
         val outfitTip = outfit?.let {
@@ -48,7 +47,7 @@ object WeatherShareHelper {
                 (if (it.accessories.isNotEmpty()) "\n• Phụ kiện: ${it.accessories.take(3).joinToString(", ")}" else "")
         } ?: ""
 
-        val shareText = buildString {
+        return buildString {
             append("$emoji Dự báo thời tiết tại $locationName:\n")
             append("🌡️ Nhiệt độ: $temp°C (Cảm giác: $feelsLike°C)\n")
             append("📈 Biên độ: $minTemp°C - $maxTemp°C • $desc\n")
@@ -59,7 +58,17 @@ object WeatherShareHelper {
             }
             append("\n📲 Xem radar trực tiếp & dự báo chi tiết tại Weather 24h:\n$APP_RELEASE_URL")
         }
+    }
 
+    /**
+     * Chia sẻ bản tin dự báo thời tiết chi tiết kèm gợi ý trang phục & link tải app
+     */
+    fun shareWeatherForecast(
+        context: Context,
+        weather: WeatherData,
+        outfit: OutfitRecommendation? = null
+    ) {
+        val shareText = buildForecastShareText(weather, outfit)
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_TEXT, shareText)
@@ -70,10 +79,10 @@ object WeatherShareHelper {
     }
 
     /**
-     * Chia sẻ liên kết giới thiệu ứng dụng cho bạn bè
+     * Tạo nội dung văn bản giới thiệu ứng dụng cho bạn bè
      */
-    fun shareApp(context: Context) {
-        val shareText = """
+    fun buildAppShareText(): String {
+        return """
         🌤️ Tải ngay Weather 24h - Ứng dụng dự báo thời tiết trực quan & chính xác:
         
         ✨ Giao diện nền khí quyển sống động theo thời tiết thực (nắng, mưa, sấm chớp, sao đêm).
@@ -85,7 +94,13 @@ object WeatherShareHelper {
         📲 Tải miễn phí bản mới nhất tại:
         $APP_RELEASE_URL
         """.trimIndent()
+    }
 
+    /**
+     * Chia sẻ liên kết giới thiệu ứng dụng cho bạn bè
+     */
+    fun shareApp(context: Context) {
+        val shareText = buildAppShareText()
         val sendIntent = Intent().apply {
             action = Intent.ACTION_SEND
             putExtra(Intent.EXTRA_TEXT, shareText)
