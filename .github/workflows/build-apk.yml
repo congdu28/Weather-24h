@@ -98,6 +98,15 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           WEATHER_API_KEY: ${{ secrets.WEATHER_API_KEY }}
 
+      - name: Print Test Failure Details
+        if: failure()
+        run: |
+          echo "=== Unit Test / Compilation Failures ==="
+          for f in $(find app/build/test-results -name "*.xml"); do
+            echo "--- $f ---"
+            cat "$f"
+          done
+
       - name: Build Release APK with Gradle
         run: ./gradlew assembleRelease -PversionName="${{ steps.versioning.outputs.version_name }}" -PversionCode="${{ steps.versioning.outputs.version_code }}" --stacktrace
         env:

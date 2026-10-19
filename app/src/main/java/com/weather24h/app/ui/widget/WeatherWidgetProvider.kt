@@ -412,11 +412,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                             views.setTextViewText(hourTimeIds[i], timeLabel)
                             views.setTextViewText(hourIconIds[i], getWeatherEmoji(h.condition, h.isDay))
                             views.setTextViewText(hourTempIds[i], "${h.temperature.roundToInt()}°")
-                            val rainLabel = if (h.rainProbability != null && h.rainProbability < 20 && h.precipitation < 0.1) {
-                                "—"
-                            } else {
-                                h.rainProbabilityText
-                            }
+                            val isDry = (h.precipitationProbability in 0..19) && ((h.precipitationMm ?: 0.0) < 0.1)
+                            val rainLabel = if (isDry) "—" else h.rainProbabilityText
                             views.setTextViewText(hourRainIds[i], rainLabel)
                         }
                     }
