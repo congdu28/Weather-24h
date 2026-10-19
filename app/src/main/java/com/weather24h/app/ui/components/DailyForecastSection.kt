@@ -494,23 +494,16 @@ fun DayForecastDetailDialog(
                                                     modifier = Modifier.height(16.dp)
                                                 ) {
                                                     if (item.precipitationProbability > 0) {
-                                                        Icon(
-                                                            imageVector = Icons.Default.WaterDrop,
-                                                            contentDescription = null,
-                                                            tint = Color(0xFF0284C7),
-                                                            modifier = Modifier.size(9.dp)
-                                                        )
-                                                        Spacer(modifier = Modifier.width(1.5.dp))
                                                         Text(
-                                                            text = item.rainProbabilityText,
-                                                            color = Color(0xFF0284C7),
-                                                            fontSize = 10.5.sp,
+                                                            text = "☔ ${item.precipitationProbability}%",
+                                                            color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                                            fontSize = 10.sp,
                                                             fontWeight = FontWeight.Bold
                                                         )
                                                     } else {
                                                         Text(
-                                                            text = item.rainProbabilityText,
-                                                            color = subtextColor.copy(alpha = 0.70f),
+                                                            text = "—",
+                                                            color = subtextColor.copy(alpha = 0.45f),
                                                             fontSize = 10.sp,
                                                             fontWeight = FontWeight.Normal
                                                         )
@@ -520,13 +513,14 @@ fun DayForecastDetailDialog(
                                         }
                                     }
 
-                                    // Row 2: Biểu đồ đường cong nhiệt độ Bezier
+                                    // Row 2: Biểu đồ đường cong nhiệt độ Bezier (Màu Đỏ Cam)
                                     TemperatureChart(
                                         temperatures = temps,
-                                        itemWidth = itemWidth
+                                        itemWidth = itemWidth,
+                                        hourlyList = day.hourly24h
                                     )
 
-                                    // Row 3: Nhiệt độ số và tốc độ gió
+                                    // Row 3: Nhiệt độ số (Đỏ cam) và độ ẩm / tốc độ gió
                                     Row {
                                         day.hourly24h.forEach { item ->
                                             Column(
@@ -535,14 +529,15 @@ fun DayForecastDetailDialog(
                                             ) {
                                                 Text(
                                                     text = "${item.temperature.roundToInt()}°",
-                                                    color = contentColor,
+                                                    color = Color(0xFFFF6B00),
                                                     fontSize = 14.sp,
-                                                    fontWeight = FontWeight.SemiBold
+                                                    fontWeight = FontWeight.ExtraBold
                                                 )
                                                 Text(
-                                                    text = "${item.windSpeed.roundToInt()} km/h",
-                                                    color = subtextColor,
-                                                    fontSize = 9.5.sp
+                                                    text = "💧${item.humidity}%",
+                                                    color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
+                                                    fontSize = 9.5.sp,
+                                                    fontWeight = FontWeight.Medium
                                                 )
                                             }
                                         }

@@ -86,6 +86,19 @@
         - Cập nhật logo nhận diện thương hiệu mới chính thức trên toàn hệ thống (512x512 drawable, mipmap mdpi đến xxxhdpi cho cả launcher thông thường và launcher tròn).
     - **Bảo mật tuyệt đối thông tin cập nhật OTA**:
         - Thêm bộ lọc `sanitizeReleaseNotes` trong `AppUpdateManager` loại bỏ 100% các đường dẫn GitHub, URL, commit SHA, PR số hiệu, và tên tài khoản; chỉ hiển thị danh sách tính năng nâng cấp thân thiện bằng tiếng Việt, không để lộ bất kỳ thông tin nào về kho mã nguồn.
+24. Từ v1.0.44, app tối ưu hóa toàn diện khối "Dự báo 24 giờ tới", cập nhật logo nhận diện mới và thông báo cập nhật ngầm:
+    - **Logo toàn hệ thống mới**:
+        - Cập nhật logo mới từ thiết kế sắc nét (hình mặt trời vàng ấm cùng biểu tượng "CD" trắng cách điệu) cho toàn bộ hệ thống: app logo 512x512, launcher icons mipmap (mdpi đến xxxhdpi) dạng tiêu chuẩn và bo tròn.
+    - **Thông báo nhỏ khi có bản cập nhật mới (Floating Mini Update Notice)**:
+        - Tự động kiểm tra bản cập nhật mới ngầm sau 2.5s khi mở ứng dụng.
+        - Nếu có phiên bản mới, hiển thị một banner thông báo nhỏ gọn gàng, tinh tế dạng kính mờ ngay dưới TopBar với nội dung `🚀 Có bản cập nhật mới: v...`, nút `Cập nhật` 1 chạm và nút `✕` để đóng.
+        - Không làm gián đoạn hay che khuất việc xem thời tiết của người dùng.
+    - **Tối ưu hóa hiển thị khối Dự báo 24 giờ tới (Không nhầm lẫn Nhiệt độ - Mưa - Độ ẩm)**:
+        - **Nhiệt độ (Đỏ Cam rực rỡ `#FF6B00` / `#FF7A00`)**: Đường biểu đồ spline Bezier nhiệt độ và các điểm cực trị chuyển hoàn toàn sang màu đỏ cam ấm áp kèm dải gradient đổ bóng đỏ cam; các số đo nhiệt độ hiển thị màu đỏ cam nổi bật, tách bạch hoàn toàn khỏi các chỉ số liên quan đến nước.
+        - **Khả năng mưa & Lượng mưa (Xanh Biển `#0284C7` / `#38BDF8`)**: Hiển thị rõ ràng với biểu tượng ô/dù `☔` hoặc `🌧️` cùng tỉ lệ phần trăm `%` và cột lượng mưa `mm`, tránh tuyệt đối tình trạng người dùng nhầm lẫn với độ ẩm không khí.
+        - **Độ ẩm (Xanh Ngọc Teal `#0D9488` / `#2DD4BF`)**: Thêm chế độ xem chuyên sâu "Độ ẩm" (`💧 Độ ẩm`) với đường cong độ ẩm và gradient xanh ngọc riêng biệt; hiển thị độ ẩm `💧 %` bên dưới nhiệt độ ở chế độ Tổng hợp.
+        - **Thanh chú thích trực quan (Visual Legend)**: Bổ sung thanh chú thích màu sắc trực tiếp dưới các nút chuyển đổi (🟠 Nhiệt độ • 🔵 Lượng mưa • 💧 Độ ẩm) giúp người dùng nhận diện ngay tức thì.
+        - **Thẻ chi tiết giờ tương tác (Interactive Detail Banner)**: Khi bấm chọn một giờ, hiển thị 3 thẻ chỉ số riêng biệt với màu sắc và biểu tượng trực quan (🌡️ Thẻ Nhiệt độ cam, 🌧️ Thẻ Mưa xanh biển, 💧 Thẻ Độ ẩm teal, 💨 Tốc độ gió).
 
 ## Quy tắc hiển thị mưa
 

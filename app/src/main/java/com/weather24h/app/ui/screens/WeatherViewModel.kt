@@ -68,6 +68,22 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _updateUiState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
     val updateUiState: StateFlow<UpdateUiState> = _updateUiState.asStateFlow()
 
+    // Thông báo nhỏ về bản cập nhật mới khi mở app
+    private val _newUpdateAvailableInfo = MutableStateFlow<AppUpdateInfo?>(null)
+    val newUpdateAvailableInfo: StateFlow<AppUpdateInfo?> = _newUpdateAvailableInfo.asStateFlow()
+
+    fun dismissUpdateBanner() {
+        _newUpdateAvailableInfo.value = null
+    }
+
+    fun openUpdateDialogFromBanner() {
+        val info = _newUpdateAvailableInfo.value
+        if (info != null) {
+            _updateUiState.value = UpdateUiState.UpdateAvailable(info)
+            _newUpdateAvailableInfo.value = null
+        }
+    }
+
     private var downloadJob: Job? = null
 
     private val _uiState = MutableStateFlow<WeatherUiState>(
@@ -331,6 +347,24 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
         startAutoRefreshTimer(_autoRefreshMinutes.value)
         refreshFavoriteSummaries()
+
+        // Tự động kiểm tra bản cập nhật mới ngầm khi khởi động app
+        checkUpdateOnStartup()
+    }
+
+    private fun checkUpdateOnStartup() {
+        viewModelScope.launch {
+            try {
+                // Đợi 2.5s sau khi mở app để tải thời tiết và GPS ổn định mượt mà trước
+                delay(2500)
+                val result = appUpdateManager.checkForUpdates(com.weather24h.app.BuildConfig.VERSION_NAME)
+                result.onSuccess { info ->
+                    if (info.isUpdateAvailable) {
+                        _newUpdateAvailableInfo.value = info
+                    }
+                }
+            } catch (_: Exception) {}
+        }
     }
 
     /** Dùng thành phố đã lưu nếu lần định vị đầu tiên bị từ chối hoặc thất bại. */

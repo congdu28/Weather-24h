@@ -13,12 +13,14 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -58,6 +60,7 @@ fun WeatherScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val updateState by viewModel.updateUiState.collectAsState()
+    val newUpdateInfo by viewModel.newUpdateAvailableInfo.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
     val isSearching by viewModel.isSearching.collectAsState()
@@ -249,6 +252,85 @@ fun WeatherScreen(
                             tint = Color.White,
                             modifier = Modifier.size(22.dp)
                         )
+                    }
+                }
+            }
+
+            // Thông báo nhỏ khi có bản cập nhật mới (Floating Mini Update Banner)
+            AnimatedVisibility(
+                visible = newUpdateInfo != null,
+                enter = slideInVertically(initialOffsetY = { -it / 2 }) + fadeIn(),
+                exit = slideOutVertically(targetOffsetY = { -it / 2 }) + fadeOut()
+            ) {
+                newUpdateInfo?.let { info ->
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = (if (isDarkTheme) Color(0xFF0F172A) else Color(0xFF0284C7)).copy(alpha = 0.95f),
+                        border = BorderStroke(1.dp, (if (isDarkTheme) Color(0xFF38BDF8) else Color.White).copy(alpha = 0.45f)),
+                        shadowElevation = 6.dp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.openUpdateDialogFromBanner() }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(text = "🚀", fontSize = 16.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "Có bản cập nhật mới: v${info.latestVersion}",
+                                        color = Color.White,
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "Chạm để nâng cấp trải nghiệm",
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    shape = RoundedCornerShape(20.dp),
+                                    color = if (isDarkTheme) Color(0xFF38BDF8) else Color.White,
+                                    modifier = Modifier.clickable { viewModel.openUpdateDialogFromBanner() }
+                                ) {
+                                    Text(
+                                        text = "Cập nhật",
+                                        color = if (isDarkTheme) Color(0xFF0F172A) else Color(0xFF0284C7),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(6.dp))
+
+                                IconButton(
+                                    onClick = { viewModel.dismissUpdateBanner() },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Đóng thông báo",
+                                        tint = Color.White.copy(alpha = 0.85f),
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }

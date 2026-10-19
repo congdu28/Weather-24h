@@ -110,20 +110,31 @@ fun HourlyForecastSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ChartDisplayMode.values().forEach { mode ->
                     val isSelected = displayMode == mode
+                    val (modeColor, modeDarkColor) = when (mode) {
+                        ChartDisplayMode.TEMPERATURE -> Color(0xFFFF6B00) to Color(0xFFFF7A00)
+                        ChartDisplayMode.PRECIPITATION -> Color(0xFF0284C7) to Color(0xFF38BDF8)
+                        ChartDisplayMode.HUMIDITY -> Color(0xFF0D9488) to Color(0xFF2DD4BF)
+                        ChartDisplayMode.COMBINED -> Color(0xFF0284C7) to Color(0xFF38BDF8)
+                    }
+
                     val pillBg = if (isSelected) {
-                        if (isDark) Color(0xFF0284C7).copy(alpha = 0.35f) else Color(0xFF0284C7).copy(alpha = 0.18f)
+                        (if (isDark) modeDarkColor else modeColor).copy(alpha = if (isDark) 0.28f else 0.15f)
                     } else {
                         Color.Transparent
                     }
-                    val pillBorder = if (isSelected) Color(0xFF0284C7).copy(alpha = 0.5f) else subtextColor.copy(alpha = 0.15f)
+                    val pillBorder = if (isSelected) {
+                        (if (isDark) modeDarkColor else modeColor).copy(alpha = 0.60f)
+                    } else {
+                        subtextColor.copy(alpha = 0.15f)
+                    }
                     val pillTextColor = if (isSelected) {
-                        if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
+                        if (isDark) modeDarkColor else modeColor
                     } else {
                         subtextColor
                     }
@@ -150,6 +161,111 @@ fun HourlyForecastSection(
                 }
             }
 
+            // Thanh chú thích trực quan (Visual Legend) giúp người dùng không bao giờ nhầm lẫn các chỉ số
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                when (displayMode) {
+                    ChartDisplayMode.COMBINED -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFFF6B00))
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Nhiệt độ (°C)",
+                                color = Color(0xFFFF6B00),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(Color(0xFF0284C7))
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Cột mưa (mm)",
+                                color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text = "💧", fontSize = 9.sp)
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = "Độ ẩm (%)",
+                                color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    ChartDisplayMode.TEMPERATURE -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFFF6B00))
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Đường biểu đồ nhiệt độ (°C) - Dao động từ $minTemp° đến $maxTemp°C",
+                                color = Color(0xFFFF6B00),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    ChartDisplayMode.PRECIPITATION -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(Color(0xFF0284C7))
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Cột lượng mưa (mm) & Khả năng mưa (☔ %)",
+                                color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    ChartDisplayMode.HUMIDITY -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF0D9488))
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Đường biểu đồ độ ẩm không khí (%) theo từng giờ",
+                                color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
             // Hộp chi tiết khi người dùng nhấn chọn một khung giờ (Interactive Detail Banner)
             AnimatedVisibility(
                 visible = selectedIndex != null,
@@ -160,64 +276,165 @@ fun HourlyForecastSection(
                     val selectedItem = hourlyList.getOrNull(idx)
                     if (selectedItem != null) {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = (if (isDark) Color(0xFF0C4A6E) else Color(0xFFE0F2FE)).copy(alpha = 0.55f),
+                            shape = RoundedCornerShape(14.dp),
+                            color = (if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9)).copy(alpha = 0.92f),
                             border = androidx.compose.foundation.BorderStroke(
                                 0.5.dp,
-                                Color(0xFF0284C7).copy(alpha = 0.25f)
+                                LocalCardBorder.current
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .padding(horizontal = 16.dp, vertical = 6.dp)
                         ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = "${selectedItem.hourLabel} • ${selectedItem.condition.description}",
-                                            color = contentColor,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text(
-                                            text = "${selectedItem.temperature.roundToInt()}°C",
-                                            color = Color(0xFF0284C7),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.ExtraBold
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${selectedItem.hourLabel} • ${selectedItem.condition.description}",
+                                        color = contentColor,
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+
+                                    IconButton(
+                                        onClick = { selectedIndex = null },
+                                        modifier = Modifier.size(22.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Đóng",
+                                            tint = subtextColor,
+                                            modifier = Modifier.size(15.dp)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    val rainNote = if (selectedItem.precipitationProbability in 40..70 && selectedItem.condition.type in listOf(com.weather24h.app.data.model.WeatherType.CLEAR, com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)) {
-                                        " • Khả năng mưa rào rải rác"
-                                    } else ""
-                                    Text(
-                                        text = "Xác suất mưa: ${selectedItem.rainProbabilityText}" +
-                                                (if (selectedItem.precipitationMm != null && selectedItem.precipitationMm > 0) " (${selectedItem.precipitationMm} mm)" else "") +
-                                                rainNote +
-                                                " • Gió: ${selectedItem.windSpeed.roundToInt()} km/h" +
-                                                " • Độ ẩm: ${selectedItem.humidity}%",
-                                        color = contentColor.copy(alpha = 0.85f),
-                                        fontSize = 11.sp
-                                    )
                                 }
 
-                                IconButton(
-                                    onClick = { selectedIndex = null },
-                                    modifier = Modifier.size(24.dp)
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // 3 Thẻ chỉ số hiển thị màu sắc và icon riêng biệt: Nhiệt độ - Mưa - Độ ẩm
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Đóng",
-                                        tint = subtextColor,
-                                        modifier = Modifier.size(15.dp)
+                                    // 1. Thẻ Nhiệt độ (Đỏ Cam)
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFFFF6B00).copy(alpha = if (isDark) 0.18f else 0.10f),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            0.5.dp,
+                                            Color(0xFFFF6B00).copy(alpha = 0.35f)
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "🌡️ Nhiệt độ",
+                                                color = Color(0xFFFF6B00),
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "${selectedItem.temperature.roundToInt()}°C",
+                                                color = Color(0xFFFF6B00),
+                                                fontSize = 13.5.sp,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
+                                    }
+
+                                    // 2. Thẻ Lượng mưa / Xác suất mưa (Xanh Biển)
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFF0284C7).copy(alpha = if (isDark) 0.18f else 0.10f),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            0.5.dp,
+                                            Color(0xFF0284C7).copy(alpha = 0.35f)
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "🌧️ Mưa",
+                                                color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            val rainDetail = if (selectedItem.precipitationMm != null && selectedItem.precipitationMm > 0) {
+                                                "${selectedItem.rainProbabilityText} (${selectedItem.precipitationMm}mm)"
+                                            } else {
+                                                selectedItem.rainProbabilityText
+                                            }
+                                            Text(
+                                                text = rainDetail,
+                                                color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                                fontSize = 12.5.sp,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
+                                    }
+
+                                    // 3. Thẻ Độ ẩm (Xanh Ngọc Teal)
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = Color(0xFF0D9488).copy(alpha = if (isDark) 0.18f else 0.10f),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            0.5.dp,
+                                            Color(0xFF0D9488).copy(alpha = 0.35f)
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(vertical = 6.dp, horizontal = 6.dp),
+                                            horizontalAlignment = Alignment.CenterHorizontally
+                                        ) {
+                                            Text(
+                                                text = "💧 Độ ẩm",
+                                                color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(
+                                                text = "${selectedItem.humidity}%",
+                                                color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
+                                                fontSize = 13.5.sp,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(6.dp))
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "💨 Gió: ${selectedItem.windSpeed.roundToInt()} km/h",
+                                        color = subtextColor,
+                                        fontSize = 10.5.sp
                                     )
+                                    if (selectedItem.precipitationProbability in 40..70 && selectedItem.condition.type in listOf(WeatherType.CLEAR, WeatherType.PARTLY_CLOUDY)) {
+                                        Text(
+                                            text = "⚠️ Có thể mưa rào bất chợt",
+                                            color = Color(0xFFF59E0B),
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -228,8 +445,8 @@ fun HourlyForecastSection(
             // Gợi ý nhỏ nếu chưa chọn giờ
             if (selectedIndex == null) {
                 Text(
-                    text = if (maxRainProb >= 50) "Khả năng mưa cao nhất: $maxRainProb% lúc ${maxRainHour?.hourLabel ?: ""}. Nhấn vào cột giờ để xem chi tiết."
-                           else "Dự báo thời tiết 24 giờ tới. Nhấn vào từng giờ để xem chi tiết.",
+                    text = if (maxRainProb >= 50) "Khả năng mưa cao nhất: $maxRainProb% lúc ${maxRainHour?.hourLabel ?: ""}. Nhấn vào từng giờ để xem chi tiết."
+                           else "Dự báo thời tiết 24 giờ tới. Nhấn vào từng giờ để xem chi tiết nhiệt độ, mưa và độ ẩm.",
                     color = subtextColor,
                     fontSize = 10.5.sp,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp)
@@ -244,7 +461,7 @@ fun HourlyForecastSection(
                     .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 8.dp)
             ) {
-                // Row 1: Giờ, Icon, Xác suất mưa
+                // Row 1: Giờ, Icon thời tiết, Chỉ số theo từng chế độ
                 Row {
                     hourlyList.forEachIndexed { index, item ->
                         val isSelected = selectedIndex == index
@@ -260,7 +477,7 @@ fun HourlyForecastSection(
                         ) {
                             Text(
                                 text = item.hourLabel,
-                                color = if (isSelected) Color(0xFF0284C7) else contentColor.copy(alpha = 0.9f),
+                                color = if (isSelected) Color(0xFFFF6B00) else contentColor.copy(alpha = 0.9f),
                                 fontSize = 12.sp,
                                 fontWeight = if (index == 0 || isSelected) FontWeight.Bold else FontWeight.Normal
                             )
@@ -280,40 +497,73 @@ fun HourlyForecastSection(
 
                             Spacer(modifier = Modifier.height(4.dp))
 
-                            // Hiển thị % mưa hoặc mm lượng mưa
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center,
-                                modifier = Modifier.height(16.dp)
-                            ) {
-                                if (item.precipitationProbability > 0) {
-                                    Icon(
-                                        imageVector = Icons.Default.WaterDrop,
-                                        contentDescription = null,
-                                        tint = Color(0xFF0284C7),
-                                        modifier = Modifier.size(9.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(1.5.dp))
+                            // Hiển thị chỉ số phía trên biểu đồ tùy theo chế độ
+                            when (displayMode) {
+                                ChartDisplayMode.COMBINED, ChartDisplayMode.PRECIPITATION -> {
+                                    // Khả năng có mưa (Màu xanh dương, biểu tượng ô/dù ☔ tránh nhầm độ ẩm)
+                                    if (item.precipitationProbability > 0) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = (if (isDark) Color(0xFF0284C7) else Color(0xFF38BDF8)).copy(alpha = 0.16f),
+                                            modifier = Modifier.height(16.dp)
+                                        ) {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                modifier = Modifier.padding(horizontal = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = "☔ ${item.precipitationProbability}%",
+                                                    color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        Text(
+                                            text = "—",
+                                            color = subtextColor.copy(alpha = 0.40f),
+                                            fontSize = 10.5.sp,
+                                            modifier = Modifier.height(16.dp)
+                                        )
+                                    }
+                                }
+                                ChartDisplayMode.TEMPERATURE -> {
+                                    // Nhiệt độ phía trên
                                     Text(
-                                        text = item.rainProbabilityText,
-                                        color = Color(0xFF0284C7),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold
+                                        text = "${item.temperature.roundToInt()}°",
+                                        color = Color(0xFFFF6B00),
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.height(16.dp)
                                     )
-                                } else {
-                                    Text(
-                                        text = item.rainProbabilityText,
-                                        color = subtextColor.copy(alpha = 0.70f),
-                                        fontSize = 10.5.sp,
-                                        fontWeight = FontWeight.Normal
-                                    )
+                                }
+                                ChartDisplayMode.HUMIDITY -> {
+                                    // Độ ẩm phía trên (Màu xanh ngọc Teal)
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Color(0xFF0D9488).copy(alpha = 0.16f),
+                                        modifier = Modifier.height(16.dp)
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(horizontal = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = "💧 ${item.humidity}%",
+                                                color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                // Row 2: Biểu đồ trực quan tương tác (Temperature / Precipitation / Combined)
+                // Row 2: Biểu đồ trực quan tương tác (Temperature / Precipitation / Humidity / Combined)
                 TemperatureChart(
                     temperatures = temps,
                     itemWidth = itemWidth,
@@ -322,7 +572,7 @@ fun HourlyForecastSection(
                     selectedIndex = selectedIndex
                 )
 
-                // Row 3: Nhiệt độ số và tốc độ gió / lượng mưa
+                // Row 3: Các chỉ số chi tiết phía dưới biểu đồ
                 Row {
                     hourlyList.forEachIndexed { index, item ->
                         val isSelected = selectedIndex == index
@@ -336,28 +586,75 @@ fun HourlyForecastSection(
                                 }
                                 .padding(vertical = 2.dp)
                         ) {
-                            Text(
-                                text = "${item.temperature.roundToInt()}°",
-                                color = if (isSelected) Color(0xFF0284C7) else contentColor,
-                                fontSize = 15.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
-                            )
-
-                            // Tùy theo chế độ: hiện mm mưa hoặc tốc độ gió
-                            if (displayMode == ChartDisplayMode.PRECIPITATION && item.precipitationMm != null && item.precipitationMm > 0) {
-                                Text(
-                                    text = "${item.precipitationMm} mm",
-                                    color = Color(0xFF0284C7),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            } else {
-                                Text(
-                                    text = "${item.windSpeed.roundToInt()} km/h",
-                                    color = subtextColor,
-                                    fontSize = 10.5.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
+                            when (displayMode) {
+                                ChartDisplayMode.COMBINED -> {
+                                    // 1. Nhiệt độ màu đỏ cam rực rỡ
+                                    Text(
+                                        text = "${item.temperature.roundToInt()}°",
+                                        color = Color(0xFFFF6B00),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    // 2. Độ ẩm màu xanh ngọc teal với icon giọt nước
+                                    Text(
+                                        text = "💧${item.humidity}%",
+                                        color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                                ChartDisplayMode.TEMPERATURE -> {
+                                    Text(
+                                        text = "${item.temperature.roundToInt()}°C",
+                                        color = Color(0xFFFF6B00),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "${item.windSpeed.roundToInt()} km/h",
+                                        color = subtextColor,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                                ChartDisplayMode.PRECIPITATION -> {
+                                    val rainMmText = if (item.precipitationMm != null && item.precipitationMm > 0) "${item.precipitationMm} mm" else "0 mm"
+                                    Text(
+                                        text = rainMmText,
+                                        color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(
+                                        text = "${item.temperature.roundToInt()}°",
+                                        color = Color(0xFFFF6B00),
+                                        fontSize = 10.5.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                                ChartDisplayMode.HUMIDITY -> {
+                                    Text(
+                                        text = "${item.humidity}%",
+                                        color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.ExtraBold
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    val comfortText = when {
+                                        item.humidity < 40 -> "Khô"
+                                        item.humidity <= 70 -> "Dễ chịu"
+                                        else -> "Ẩm ướt"
+                                    }
+                                    Text(
+                                        text = comfortText,
+                                        color = subtextColor,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
                             }
                         }
                     }
