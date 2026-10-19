@@ -670,15 +670,15 @@ private fun configureRadarWebView(
             javaScriptEnabled = true
             domStorageEnabled = true
             databaseEnabled = true
-            allowFileAccess = true
-            allowContentAccess = true
+            allowFileAccess = false
+            allowContentAccess = false
             mediaPlaybackRequiresUserGesture = false
             setSupportMultipleWindows(false)
             javaScriptCanOpenWindowsAutomatically = false
             cacheMode = WebSettings.LOAD_DEFAULT
             useWideViewPort = true
             loadWithOverviewMode = true
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         }
 
         webViewClient = object : WebViewClient() {

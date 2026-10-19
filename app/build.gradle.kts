@@ -22,11 +22,11 @@ val defaultWeatherApiKey: String = localProps.getProperty("WEATHER_API_KEY")?.ta
 
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.37"
+    ?: "1.0.38"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 137
+    ?: 138
 
 android {
     namespace = "com.weather24h.app"
@@ -70,7 +70,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

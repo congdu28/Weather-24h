@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Chặn hoàn toàn lưu lượng HTTP không mã hóa (Cleartext) trên toàn bộ ứng dụng -->
+    <!-- Đảm bảo mọi kết nối thời tiết, radar, gợi ý AI đều truyền qua HTTPS mã hóa an toàn -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

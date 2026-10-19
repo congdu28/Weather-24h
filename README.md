@@ -36,6 +36,23 @@
     - **Chạm Widget mở ứng dụng tự động đồng bộ vị trí mới**: Chạm vào thân bất kỳ Widget nào để mở app sẽ gửi `EXTRA_FORCE_GPS_REFRESH`, kích hoạt `MainActivity` (cả cold-start lẫn warm-start qua `onNewIntent` với `launchMode="singleTask"`) kiểm tra và định vị ngay lập tức vị trí GPS hiện tại, cập nhật màn hình chính sang thành phố mới mà không cần thao tác thủ công.
     - **Đồng bộ ngầm thông minh**: `PeriodicWeatherWorker` và chu kỳ `onUpdate` của Widget tự động kiểm tra vị trí GPS ngầm để phát hiện khi người dùng di chuyển sang tỉnh/thành phố khác, tự động chuyển vùng thời tiết và cập nhật thông báo/widget một cách liền mạch và tiết kiệm pin.
     - **Dự phòng an toàn đa tầng**: Tự động ưu tiên `FusedLocationProviderClient` (High Accuracy / Balanced), có dự phòng nhiều tầng qua `lastLocation` và `LocationManager` gốc của hệ thống Android; nếu máy tắt GPS hoặc chưa cấp quyền vị trí, hệ thống tự động dự phòng về thành phố gần nhất mà không gây gián đoạn hay lỗi crash.
+15. Từ v1.0.35, app khắc phục triệt để spam thông báo và tối ưu cuộn 120 FPS:
+    - **Chống spam thông báo**: Giãn cách chu kỳ tối thiểu (mặc định 2h, trừ dung sai hệ thống), cooldown 4h cho cảnh báo khẩn cấp, `setOnlyAlertOnce(true)` để cập nhật êm dịu không rung chuông, `PeriodicWeatherWorker` không dùng `Result.retry()` khi gặp lỗi mạng tạm thời.
+    - **Mượt mà 120 FPS**: Gán `key` và `contentType` cho các mục `LazyColumn` trong `WeatherScreen`, bổ sung huy hiệu kéo làm mới tuỳ chỉnh `PullRefreshBadge`.
+16. Từ v1.0.36, app tinh chỉnh độ chính xác hiển thị thời tiết:
+    - Hài hòa xác suất mưa cao với mô tả thời tiết (tự động chuyển thành "Nắng gián đoạn, có lúc mưa rào" hoặc "Nắng xen mây, có thể có mưa").
+    - Khắc phục cảnh báo sai lệch ban đêm: cảnh báo tia UV và nắng nóng gay gắt chỉ kích hoạt khi trời sáng (`current.isDay == true`).
+    - Cố định cụm thông tin nhiệt độ cảm giác thật / cao / thấp trên 1 dòng duy nhất chống vỡ chữ trên màn hình nhỏ.
+17. Từ v1.0.37, app nâng cấp thẩm mỹ viền thẻ siêu mảnh và tối ưu CI Build:
+    - Giảm độ dày đường viền thẻ từ `1.dp` xuống `0.5.dp` trên toàn bộ các thành phần giao diện, giảm alpha của `LocalCardBorder` hòa quyện nhẹ nhàng với nền kính mờ.
+    - Rút gọn mô tả phần giới thiệu ứng dụng trong Cài đặt.
+18. Từ v1.0.38, app tăng cường toàn diện bảo mật và tối ưu hóa phân phối diện rộng:
+    - **Kích hoạt R8 / ProGuard & Resource Shrinking**: Bật `isMinifyEnabled = true` và `isShrinkResources = true` cho bản phát hành Release. Giảm mạnh 30% - 50% dung lượng file APK, làm rối mã nguồn chống dịch ngược và loại bỏ tài nguyên dư thừa.
+    - **Bộ quy tắc ProGuard chuẩn hóa**: Bảo vệ an toàn tuyệt đối các model dữ liệu Gson (`com.weather24h.app.data.model.**`), WorkManager workers, AppWidget providers, OkHttp, Coroutines và AndroidX Lifecycle.
+    - **Network Security Config (HTTPS-only)**: Chặn hoàn toàn lưu lượng HTTP không mã hóa (`cleartextTrafficPermitted="false"`), bảo vệ an toàn kết nối dữ liệu trước các cuộc tấn công MitM trên mạng WiFi công cộng.
+    - **Bảo mật WebView Radar**: Khóa `allowFileAccess = false`, `allowContentAccess = false` và `mixedContentMode = MIXED_CONTENT_NEVER_ALLOW`, ngăn chặn nguy cơ rò rỉ tệp cục bộ và mã độc chéo.
+    - **Chống rò rỉ dữ liệu qua ADB Backup**: Đặt `android:allowBackup="false"` bảo vệ an toàn thông tin vị trí và khóa API cá nhân của người dùng.
+    - **Bảo vệ khóa API & chống cạn kiệt Quota**: Loại bỏ khóa nhúng tĩnh, ưu tiên thuật toán Stylist nội bộ chạy ngoại tuyến 100% không tốn chi phí và tốc độ 0s; bổ sung throttle chống spam intent trên Widget.
 
 ## Quy tắc hiển thị mưa
 

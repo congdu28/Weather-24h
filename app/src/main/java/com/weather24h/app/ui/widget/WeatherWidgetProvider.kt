@@ -62,6 +62,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         const val ACTION_REFRESH_WIDGET = "com.weather24h.app.ACTION_REFRESH_WIDGET"
         const val EXTRA_FORCE_GPS_REFRESH = "EXTRA_FORCE_GPS_REFRESH"
         private var lastAutoRefreshTime = 0L
+        private var lastManualRefreshTime = 0L
 
         /**
          * Tự động xác định vị trí GPS thời gian thực và cập nhật thời tiết cho tất cả Widget
@@ -78,7 +79,16 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 pendingResult?.finish()
                 return
             }
-            lastAutoRefreshTime = now
+            if (!isSilent && now - lastManualRefreshTime < 3_000L) {
+                // Chặn spam làm mới liên tục để bảo vệ pin và dữ liệu
+                pendingResult?.finish()
+                return
+            }
+            if (isSilent) {
+                lastAutoRefreshTime = now
+            } else {
+                lastManualRefreshTime = now
+            }
 
             // Phản hồi giao diện tức thì nếu người dùng bấm nút làm mới trực tiếp trên Widget
             if (!isSilent) {
