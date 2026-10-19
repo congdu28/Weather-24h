@@ -91,7 +91,7 @@ fun FavoriteCitiesQuickBar(
                     Icon(
                         imageVector = Icons.Default.MyLocation,
                         contentDescription = "GPS",
-                        tint = if (isGpsActive) activeColor else (if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)),
+                        tint = if (isGpsActive) activeColor else (if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)),
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -189,13 +189,13 @@ fun FavoriteCitiesQuickBar(
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Thêm thành phố",
-                        tint = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
+                        tint = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155),
                         modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "Thêm",
-                        color = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B),
+                        color = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155),
                         fontSize = 11.5.sp,
                         fontWeight = FontWeight.Medium
                     )

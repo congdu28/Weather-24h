@@ -43,7 +43,7 @@ fun AppUpdateDialog(
     val isDark = LocalIsDarkTheme.current
     val dialogBg = if (isDark) Color(0xFF1E293B) else Color.White
     val titleColor = if (isDark) Color.White else Color(0xFF0F172A)
-    val bodyColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+    val bodyColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
     val accentColor = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
 
     Dialog(

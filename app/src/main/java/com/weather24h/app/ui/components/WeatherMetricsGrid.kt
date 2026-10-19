@@ -164,7 +164,7 @@ fun WeatherMetricsGrid(
                 title = "ÁP SUẤT",
                 value = "${current.surfacePressure.roundToInt()} hPa",
                 subtext = "Áp suất chuẩn",
-                accentColor = if (isDark) Color.White.copy(alpha = 0.8f) else Color(0xFF64748B),
+                accentColor = if (isDark) Color.White.copy(alpha = 0.85f) else Color(0xFF334155),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()

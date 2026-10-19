@@ -791,7 +791,7 @@ private fun LayerPill(
     ) {
         Text(
             text = title,
-            color = if (isSelected) activeColor else (if (isDark) Color.White.copy(alpha = 0.75f) else Color(0xFF475569)),
+            color = if (isSelected) activeColor else (if (isDark) Color.White.copy(alpha = 0.75f) else Color(0xFF334155)),
             fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -818,7 +818,7 @@ private fun RadarLegendBar(isDark: Boolean = true) {
         ) {
             Text(
                 text = "Lượng mưa:",
-                color = if (isDark) Color.White.copy(alpha = 0.65f) else Color(0xFF64748B),
+                color = if (isDark) Color.White.copy(alpha = 0.65f) else Color(0xFF334155),
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium
             )

@@ -99,6 +99,20 @@
         - **Độ ẩm (Xanh Ngọc Teal `#0D9488` / `#2DD4BF`)**: Thêm chế độ xem chuyên sâu "Độ ẩm" (`💧 Độ ẩm`) với đường cong độ ẩm và gradient xanh ngọc riêng biệt; hiển thị độ ẩm `💧 %` bên dưới nhiệt độ ở chế độ Tổng hợp.
         - **Thanh chú thích trực quan (Visual Legend)**: Bổ sung thanh chú thích màu sắc trực tiếp dưới các nút chuyển đổi (🟠 Nhiệt độ • 🔵 Lượng mưa • 💧 Độ ẩm) giúp người dùng nhận diện ngay tức thì.
         - **Thẻ chi tiết giờ tương tác (Interactive Detail Banner)**: Khi bấm chọn một giờ, hiển thị 3 thẻ chỉ số riêng biệt với màu sắc và biểu tượng trực quan (🌡️ Thẻ Nhiệt độ cam, 🌧️ Thẻ Mưa xanh biển, 💧 Thẻ Độ ẩm teal, 💨 Tốc độ gió).
+25. Từ v1.0.45, app khắc phục triệt để lỗi responsive khối "Dự báo 24 giờ tới", tối ưu hiển thị giao diện sáng và tinh gọn thông tin nguồn:
+    - **Khắc phục triệt để lỗi Responsive khối Dự báo 24 giờ tới**:
+        - Bổ sung thanh cuộn ngang `horizontalScroll(rememberScrollState())` cho hàng nút chọn chế độ (Mode Pills: Tổng hợp, Nhiệt độ, Lượng mưa, Độ ẩm) và hàng chú thích trực quan (Visual Legend).
+        - Thiết lập `maxLines = 1` và `softWrap = false` cho toàn bộ nhãn chế độ và chú thích, loại bỏ hoàn toàn hiện tượng vỡ chữ hay bị ép co chữ theo chiều dọc trên màn hình hẹp (`Đ \n ộ \n 💧 \n ẩ \n m`).
+        - Nâng cấp độ tương phản viền và màu chữ của pill ở trạng thái chưa chọn (`Color(0xFF1E293B)` trên nền sáng, `Color(0xFF94A3B8)` viền rõ nét).
+    - **Tối ưu hóa độ tương phản chữ trên Giao diện sáng (Light Theme)**:
+        - Chuẩn hóa màu chữ phụ (`subtextColor`) và các nhãn thông số trên giao diện sáng từ màu xám mờ (`0xFF64748B` / `0xFF475569`) sang màu xám đậm sắc nét (`Color(0xFF334155)` và `Color(0xFF1E293B)`), cải thiện đáng kể độ rõ và độ dễ đọc trong Cài đặt, Hộp thoại tìm kiếm thành phố, Cập nhật ứng dụng, Thanh chọn nhanh GPS và Thẻ chỉ số khí tượng.
+    - **Tinh gọn Footer cuối trang (Chỉ hiển thị Nguồn)**:
+        - Rút gọn nội dung footer cuối trang chính: loại bỏ giờ cập nhật thừa (đã có ở phần đầu màn hình) và mô hình chi tiết rườm rà; chỉ hiển thị ngắn gọn và sang trọng: `Nguồn: Open-Meteo` (hoặc `WeatherAPI.com`), kèm nhãn ngoại tuyến nếu có.
+        - Đổi màu chữ footer sang `Color(0xFF1E293B)` ở theme sáng và `Color.White.copy(0.70f)` ở theme tối, nổi bật và rõ ràng trên mọi nền trời.
+    - **Tinh gọn mục "Nguồn dữ liệu & Mô hình" trong Cài đặt**:
+        - Tối giản hóa thẻ giới thiệu công nghệ và thẻ chọn nguồn chính (Open-Meteo vs WeatherAPI.com) dạng gạch đầu dòng súc tích, ngắn gọn.
+        - Thu gọn danh sách mô hình khí tượng siêu máy tính (`ForecastModelSelectCard`) từ bố cục 4-5 dòng rườm rà xuống 2 dòng cô đọng: kết hợp tên cơ quan và mô tả ngắn gọn, dễ duyệt trên điện thoại.
+        - Tinh giản thẻ cơ chế dự phòng thành 1 dòng tinh gọn.
 
 ## Quy tắc hiển thị mưa
 

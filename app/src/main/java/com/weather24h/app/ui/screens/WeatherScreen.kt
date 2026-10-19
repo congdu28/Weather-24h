@@ -513,8 +513,15 @@ fun WeatherScreen(
                                 WeatherMetricsGrid(weather = weather)
                             }
 
-                            // Footer Updated Time & Nguồn dữ liệu
+                            // Footer Nguồn dữ liệu thời tiết (tối giản, sắc nét)
                             item(key = "weather_footer", contentType = "footer") {
+                                val cleanProvider = when {
+                                    weather.providerName.contains("Open-Meteo", ignoreCase = true) -> "Open-Meteo"
+                                    weather.providerName.contains("WeatherAPI", ignoreCase = true) -> "WeatherAPI.com"
+                                    weather.providerName.contains("Google", ignoreCase = true) -> "Google Weather"
+                                    else -> weather.providerName.substringBefore("(").trim()
+                                }
+                                val offlineTag = if (weather.isOffline) " • Ngoại tuyến" else ""
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -522,9 +529,10 @@ fun WeatherScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = "Nguồn: ${weather.providerName}${if (weather.isOffline) " • Dữ liệu ngoại tuyến" else ""} • Cập nhật lúc ${weather.lastUpdated}",
-                                        color = if (isDarkTheme) Color.White.copy(alpha = 0.55f) else Color(0xFF475569),
-                                        fontSize = 11.5.sp,
+                                        text = "Nguồn: $cleanProvider$offlineTag",
+                                        color = if (isDarkTheme) Color.White.copy(alpha = 0.70f) else Color(0xFF1E293B),
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium,
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
                                 }

@@ -110,7 +110,8 @@ fun HourlyForecastSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -131,21 +132,21 @@ fun HourlyForecastSection(
                     val pillBorder = if (isSelected) {
                         (if (isDark) modeDarkColor else modeColor).copy(alpha = 0.60f)
                     } else {
-                        subtextColor.copy(alpha = 0.15f)
+                        if (isDark) subtextColor.copy(alpha = 0.20f) else Color(0xFF94A3B8).copy(alpha = 0.45f)
                     }
                     val pillTextColor = if (isSelected) {
                         if (isDark) modeDarkColor else modeColor
                     } else {
-                        subtextColor
+                        if (isDark) subtextColor else Color(0xFF1E293B)
                     }
 
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
                             .background(pillBg)
-                            .border(if (isSelected) 1.dp else 0.5.dp, pillBorder, RoundedCornerShape(20.dp))
+                            .border(if (isSelected) 1.dp else 0.6.dp, pillBorder, RoundedCornerShape(20.dp))
                             .clickable { displayMode = mode }
-                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                            .padding(horizontal = 11.dp, vertical = 6.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(text = mode.iconEmoji, fontSize = 11.sp)
@@ -153,8 +154,10 @@ fun HourlyForecastSection(
                             Text(
                                 text = mode.label,
                                 color = pillTextColor,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                fontSize = 11.5.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -165,6 +168,7 @@ fun HourlyForecastSection(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -183,7 +187,9 @@ fun HourlyForecastSection(
                                 text = "Nhiệt độ (°C)",
                                 color = Color(0xFFFF6B00),
                                 fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -198,7 +204,9 @@ fun HourlyForecastSection(
                                 text = "Cột mưa (mm)",
                                 color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
                                 fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -208,7 +216,9 @@ fun HourlyForecastSection(
                                 text = "Độ ẩm (%)",
                                 color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
                                 fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -225,7 +235,9 @@ fun HourlyForecastSection(
                                 text = "Đường biểu đồ nhiệt độ (°C) - Dao động từ $minTemp° đến $maxTemp°C",
                                 color = Color(0xFFFF6B00),
                                 fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -242,7 +254,9 @@ fun HourlyForecastSection(
                                 text = "Cột lượng mưa (mm) & Khả năng mưa (☔ %)",
                                 color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
                                 fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
@@ -259,7 +273,9 @@ fun HourlyForecastSection(
                                 text = "Đường biểu đồ độ ẩm không khí (%) theo từng giờ",
                                 color = if (isDark) Color(0xFF2DD4BF) else Color(0xFF0D9488),
                                 fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }

@@ -326,7 +326,7 @@ fun OutfitItemRow(
 ) {
     val isDark = LocalIsDarkTheme.current
     val iconTint = if (isDark) Color(0xFFC084FC) else Color(0xFF9333EA)
-    val labelColor = if (isDark) Color.White.copy(alpha = 0.7f) else Color(0xFF64748B)
+    val labelColor = if (isDark) Color.White.copy(alpha = 0.7f) else Color(0xFF334155)
     val valueColor = if (isDark) Color.White else Color(0xFF0F172A)
 
     Row(

@@ -51,7 +51,7 @@ fun CitySearchDialog(
 
     val isDark = LocalIsDarkTheme.current
     val contentColor = if (isDark) Color.White else Color(0xFF0F172A)
-    val subtextColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+    val subtextColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
     val dialogBg = if (isDark) Color(0xFF0F172A) else Color(0xFFF8FAFC)
     val cardBg = if (isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFE2E8F0)
     val chipBg = if (isDark) Color.White.copy(alpha = 0.08f) else Color(0xFFF1F5F9)

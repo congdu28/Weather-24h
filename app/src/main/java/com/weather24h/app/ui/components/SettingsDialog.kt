@@ -173,7 +173,7 @@ fun SettingsDialog(
     val cardBg = if (isDark) Color(0xFF131A2A) else Color.White
     val cardBorder = if (isDark) Color.White.copy(alpha = 0.06f) else Color(0xFFE2E8F0)
     val contentColor = if (isDark) Color.White else Color(0xFF0F172A)
-    val subtextColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF64748B)
+    val subtextColor = if (isDark) Color(0xFF94A3B8) else Color(0xFF334155)
     val sectionHeaderColor = if (isDark) Color.White.copy(alpha = 0.8f) else Color(0xFF334155)
     val dividerColor = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.06f)
     val chipBg = if (isDark) Color(0xFF1E293B) else Color(0xFFF1F5F9)
@@ -1104,11 +1104,11 @@ fun SettingsDialog(
                                 verticalArrangement = Arrangement.spacedBy(14.dp)
                             ) {
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
-                                    Column(modifier = Modifier.padding(16.dp)) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
                                         Row(verticalAlignment = Alignment.CenterVertically) {
                                             Box(
                                                 modifier = Modifier
-                                                    .size(38.dp)
+                                                    .size(34.dp)
                                                     .clip(CircleShape)
                                                     .background(Color(0xFF0EA5E9).copy(alpha = 0.15f)),
                                                 contentAlignment = Alignment.Center
@@ -1117,37 +1117,37 @@ fun SettingsDialog(
                                                     imageVector = Icons.Default.Public,
                                                     contentDescription = null,
                                                     tint = Color(0xFF0EA5E9),
-                                                    modifier = Modifier.size(22.dp)
+                                                    modifier = Modifier.size(18.dp)
                                                 )
                                             }
-                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Spacer(modifier = Modifier.width(10.dp))
                                             Column {
                                                 Text(
-                                                    text = "CÔNG NGHỆ DỮ LIỆU THỜI TIẾT",
+                                                    text = "NGUỒN DỮ LIỆU & MÔ HÌNH",
                                                     color = sectionHeaderColor,
                                                     fontSize = 11.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     letterSpacing = 0.7.sp
                                                 )
                                                 Text(
-                                                    text = "Dữ liệu dự báo từ WeatherAPI.com và Open-Meteo",
+                                                    text = "Đa mô hình khí tượng toàn cầu",
                                                     color = contentColor,
-                                                    fontSize = 14.sp,
+                                                    fontSize = 13.5.sp,
                                                     fontWeight = FontWeight.SemiBold
                                                 )
                                             }
                                         }
-                                        Spacer(modifier = Modifier.height(10.dp))
+                                        Spacer(modifier = Modifier.height(6.dp))
                                         Text(
-                                            text = "WeatherAPI.com cung cấp thời tiết hiện tại và 3 ngày dự báo đầu. Open-Meteo bổ sung các ngày còn lại và dự phòng khi nguồn chính không khả dụng.",
+                                            text = "Tự động kết hợp Open-Meteo và WeatherAPI.com, hỗ trợ cache ngoại tuyến khi mất mạng.",
                                             color = subtextColor,
-                                            fontSize = 12.sp,
-                                            lineHeight = 17.sp
+                                            fontSize = 11.5.sp,
+                                            lineHeight = 15.sp
                                         )
                                     }
                                 }
 
-                                // 1. CHỌN NHÀ CUNG CẤP DỮ LIỆU CHÍNH (WEATHERAPI VS GOOGLE WEATHER VS OPEN-METEO)
+                                // 1. CHỌN NHÀ CUNG CẤP DỮ LIỆU CHÍNH (OPEN-METEO VS WEATHERAPI)
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
                                     Column(
                                         modifier = Modifier.padding(14.dp),
@@ -1162,25 +1162,10 @@ fun SettingsDialog(
                                         )
 
                                         KeyModeSelectCard(
-                                            title = "WeatherAPI.com",
-                                            badge = "Nguồn tùy chọn",
-                                            badgeColor = Color(0xFF10B981),
-                                            description = "Nguồn có API key. Gói miễn phí hỗ trợ 3 ngày dự báo; Open-Meteo bổ sung những ngày tiếp theo nếu có dữ liệu.",
-                                            isSelected = currentWeatherProvider == WeatherProvider.WEATHER_API,
-                                            isDark = isDark,
-                                            contentColor = contentColor,
-                                            subtextColor = subtextColor,
-                                            onClick = {
-                                                onSelectWeatherProvider(WeatherProvider.WEATHER_API)
-                                                Toast.makeText(context, "Đã chọn WeatherAPI.com", Toast.LENGTH_SHORT).show()
-                                            }
-                                        )
-
-                                        KeyModeSelectCard(
-                                            title = "Open-Meteo (Đa mô hình khí tượng)",
-                                            badge = "Khuyên dùng • Mặc định",
+                                            title = "Open-Meteo",
+                                            badge = "Khuyên dùng",
                                             badgeColor = Color(0xFFA855F7),
-                                            description = "Không cần API key. Best Match tự chọn mô hình theo tọa độ và vùng phủ; mặc định toàn cầu dùng ECMWF IFS HRES 9 km khi không có mô hình khu vực chi tiết hơn.",
+                                            description = "Miễn phí • Đa mô hình toàn cầu • Tự động chọn mô hình tối ưu theo vị trí • Không cần API key",
                                             isSelected = currentWeatherProvider == WeatherProvider.OPEN_METEO,
                                             isDark = isDark,
                                             contentColor = contentColor,
@@ -1188,6 +1173,21 @@ fun SettingsDialog(
                                             onClick = {
                                                 onSelectWeatherProvider(WeatherProvider.OPEN_METEO)
                                                 Toast.makeText(context, "Đã chọn: Open-Meteo", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+
+                                        KeyModeSelectCard(
+                                            title = "WeatherAPI.com",
+                                            badge = "Tùy chọn",
+                                            badgeColor = Color(0xFF10B981),
+                                            description = "Dự báo 3 ngày • Tự cấu hình API key cá nhân",
+                                            isSelected = currentWeatherProvider == WeatherProvider.WEATHER_API,
+                                            isDark = isDark,
+                                            contentColor = contentColor,
+                                            subtextColor = subtextColor,
+                                            onClick = {
+                                                onSelectWeatherProvider(WeatherProvider.WEATHER_API)
+                                                Toast.makeText(context, "Đã chọn WeatherAPI.com", Toast.LENGTH_SHORT).show()
                                             }
                                         )
                                     }
@@ -1453,28 +1453,22 @@ fun SettingsDialog(
 
                                 // 4. Mô tả cơ chế dự phòng khi nguồn chính lỗi
                                 InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
-                                    Column(modifier = Modifier.padding(14.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
-                                            Icon(
-                                                imageVector = Icons.Default.Security,
-                                                contentDescription = null,
-                                                tint = Color(0xFF10B981),
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text(
-                                                text = "CƠ CHẾ DỰ PHÒNG DỮ LIỆU",
-                                                color = contentColor,
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold
-                                            )
-                                        }
-                                        Spacer(modifier = Modifier.height(6.dp))
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Security,
+                                            contentDescription = null,
+                                            tint = Color(0xFF10B981),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         Text(
-                                                text = "Nếu WeatherAPI.com lỗi, ứng dụng thử Open-Meteo. Nếu cả hai nguồn không khả dụng, ứng dụng chỉ hiển thị cache của đúng vị trí hoặc báo lỗi.",
+                                            text = "Tự động kích hoạt nguồn dự phòng và lưu cache ngoại tuyến khi mất kết nối mạng.",
                                             color = subtextColor,
                                             fontSize = 11.5.sp,
-                                            lineHeight = 16.sp
+                                            lineHeight = 15.sp
                                         )
                                     }
                                 }
@@ -2587,11 +2581,11 @@ private fun ForecastModelSelectCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .background(bg)
-            .border(if (isSelected) 1.5.dp else 1.dp, border, RoundedCornerShape(16.dp))
+            .border(if (isSelected) 1.5.dp else 1.dp, border, RoundedCornerShape(14.dp))
             .clickable(onClick = onClick)
-            .padding(14.dp)
+            .padding(12.dp)
     ) {
         Column {
             Row(
@@ -2608,46 +2602,39 @@ private fun ForecastModelSelectCard(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = null,
                             tint = Color(0xFF0284C7),
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(17.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
                     }
                     Text(
                         text = model.title,
                         color = contentColor,
-                        fontSize = 14.sp,
+                        fontSize = 13.5.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(6.dp))
                         .background(badgeColor.copy(alpha = if (isDark) 0.22f else 0.15f))
-                        .border(1.dp, badgeColor.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 7.dp, vertical = 2.5.dp)
+                        .border(1.dp, badgeColor.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = model.badge,
                         color = if (isDark) Color.White else badgeColor,
-                        fontSize = 10.5.sp,
+                        fontSize = 10.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Cơ quan: ${model.provider}",
-                color = Color(0xFF0284C7),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = model.description,
+                text = "${model.provider} • ${model.description}",
                 color = subtextColor,
                 fontSize = 11.5.sp,
-                lineHeight = 16.sp
+                lineHeight = 15.sp
             )
         }
     }
