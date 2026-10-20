@@ -19,7 +19,12 @@
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="vertical"
-        android:padding="8dp">
+        android:paddingLeft="14dp"
+        android:paddingRight="14dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="10dp">
 
         <!-- Top Row: City Name, Weather Icon, Main Temp & Refresh Button -->
         <LinearLayout

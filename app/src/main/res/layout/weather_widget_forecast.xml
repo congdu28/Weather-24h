@@ -19,7 +19,12 @@
         android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="7dp">
+        android:paddingLeft="13dp"
+        android:paddingRight="13dp"
+        android:paddingStart="13dp"
+        android:paddingEnd="13dp"
+        android:paddingTop="11dp"
+        android:paddingBottom="9dp">
 
         <!-- Left: Current City & Temp Summary (Compact & Flexible Width) -->
         <LinearLayout

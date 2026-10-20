@@ -1742,7 +1742,7 @@ fun SettingsDialog(
                                                     Column(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
-                                                            .padding(12.dp)
+                                                            .padding(horizontal = 14.dp, vertical = 12.dp)
                                                     ) {
                                                         Row(
                                                             modifier = Modifier.fillMaxWidth(),
@@ -1818,7 +1818,7 @@ fun SettingsDialog(
                                                     Row(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
-                                                            .padding(10.dp),
+                                                            .padding(horizontal = 13.dp, vertical = 10.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
                                                         Column(modifier = Modifier.widthIn(min = 72.dp, max = 84.dp)) {
@@ -1873,7 +1873,7 @@ fun SettingsDialog(
                                                     Row(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
-                                                            .padding(12.dp),
+                                                            .padding(horizontal = 14.dp, vertical = 10.dp),
                                                         verticalAlignment = Alignment.CenterVertically
                                                     ) {
                                                         Text("☀️", fontSize = 28.sp)
