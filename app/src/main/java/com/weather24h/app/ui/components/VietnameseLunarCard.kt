@@ -186,12 +186,6 @@ fun VietnameseLunarCard(
                     }
                 }
             }
-                            tint = contentColor.copy(alpha = 0.8f),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
 
             Spacer(modifier = Modifier.height(14.dp))
 
