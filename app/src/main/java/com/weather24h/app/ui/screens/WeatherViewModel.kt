@@ -84,6 +84,17 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun openUpdateDialogFromNotification() {
+        viewModelScope.launch {
+            val info = _newUpdateAvailableInfo.value
+            if (info != null && info.isUpdateAvailable) {
+                _updateUiState.value = UpdateUiState.UpdateAvailable(info)
+            } else {
+                checkForUpdates(silent = false)
+            }
+        }
+    }
+
     private var downloadJob: Job? = null
 
     private val _uiState = MutableStateFlow<WeatherUiState>(
@@ -376,6 +387,8 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         checkUpdateOnStartup()
     }
 
+    private var hasDismissedUpdateThisSession = false
+
     private fun checkUpdateOnStartup() {
         viewModelScope.launch {
             try {
@@ -385,6 +398,12 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 result.onSuccess { info ->
                     if (info.isUpdateAvailable) {
                         _newUpdateAvailableInfo.value = info
+                        // Tự động mở hộp thoại cập nhật cho người dùng nếu chưa bấm bỏ qua phiên này
+                        if (!hasDismissedUpdateThisSession) {
+                            _updateUiState.value = UpdateUiState.UpdateAvailable(info)
+                        }
+                        // Gửi thông báo hệ thống lên thanh thông báo để nhắc nhở người dùng
+                        WeatherNotificationHelper.sendAppUpdateNotification(getApplication(), info)
                     }
                 }
             } catch (_: Exception) {}
@@ -838,6 +857,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun dismissUpdateDialog() {
+        hasDismissedUpdateThisSession = true
         downloadJob?.cancel()
         _updateUiState.value = UpdateUiState.Idle
     }

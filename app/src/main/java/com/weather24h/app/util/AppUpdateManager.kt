@@ -136,8 +136,11 @@ class AppUpdateManager(private val context: Context) {
         }
 
         fun isFallbackReleaseNotes(notes: String): Boolean {
-            return notes.contains("Tối ưu hóa hiệu năng và độ ổn định toàn hệ thống") &&
-                    notes.contains("Cải tiến giao diện trực quan và trải nghiệm người dùng")
+            if (notes.isBlank()) return true
+            val lower = notes.lowercase()
+            return (lower.contains("tối ưu hóa") && lower.contains("trải nghiệm người dùng")) ||
+                    (lower.contains("tinh chỉnh hiển thị") && lower.contains("ổn định")) ||
+                    (lower.contains("tối ưu hóa hiệu năng") && lower.contains("ổn định toàn hệ thống"))
         }
     }
 
@@ -171,11 +174,16 @@ class AppUpdateManager(private val context: Context) {
             val releaseTitle = rawTitle.replace(Regex("""https?://\S+"""), "").trim().ifBlank { "Bản cập nhật v$latestVersion" }
             var releaseNotes = sanitizeReleaseNotes(jsonObject.get("body")?.asString)
 
-            // Nếu releaseNotes rỗng hoặc chỉ có link compare khiến rơi vào fallback, tự động lấy thông tin từ commit thật của tag
+            // Nếu releaseNotes rỗng hoặc chỉ có câu fallback chung chung, tự động lấy thông tin từ commits thật của Git
             if (isFallbackReleaseNotes(releaseNotes) && rawTag.isNotBlank()) {
-                val commitNotes = fetchCommitReleaseNotes(rawTag)
-                if (!commitNotes.isNullOrBlank() && !isFallbackReleaseNotes(commitNotes)) {
-                    releaseNotes = commitNotes
+                val compareNotes = fetchCompareReleaseNotes(currentVersion, rawTag)
+                if (!compareNotes.isNullOrBlank() && !isFallbackReleaseNotes(compareNotes)) {
+                    releaseNotes = compareNotes
+                } else {
+                    val commitNotes = fetchCommitReleaseNotes(rawTag)
+                    if (!commitNotes.isNullOrBlank() && !isFallbackReleaseNotes(commitNotes)) {
+                        releaseNotes = commitNotes
+                    }
                 }
             }
 
@@ -314,6 +322,48 @@ class AppUpdateManager(private val context: Context) {
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Lấy danh sách commit messages thực tế giữa phiên bản hiện tại và phiên bản mới nhất
+     * từ GitHub Compare API: /compare/v{currentVersion}...v{latestVersion}
+     */
+    private fun fetchCompareReleaseNotes(currentVersion: String, latestTag: String): String? {
+        return try {
+            val cleanCurrent = currentVersion.trim().removePrefix("v").removePrefix("V")
+            val cleanLatest = latestTag.trim().removePrefix("v").removePrefix("V")
+            val compareUrl = "https://api.github.com/repos/congdu28/Weather-24h/compare/v${cleanCurrent}...v${cleanLatest}"
+            val request = Request.Builder()
+                .url(compareUrl)
+                .header("Accept", "application/vnd.github.v3+json")
+                .header("User-Agent", "Weather24h-Android/${BuildConfig.VERSION_NAME}")
+                .build()
+
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) return null
+
+            val body = response.body?.string() ?: return null
+            val jsonObject = JsonParser.parseString(body).asJsonObject
+            val commitsArray = jsonObject.getAsJsonArray("commits") ?: return null
+
+            val commitMessages = mutableListOf<String>()
+            for (element in commitsArray) {
+                val commitObj = element.asJsonObject.getAsJsonObject("commit") ?: continue
+                val msg = commitObj.get("message")?.asString ?: continue
+                val firstLine = msg.lines().firstOrNull()?.trim() ?: ""
+                if (firstLine.isNotBlank()) {
+                    commitMessages.add(firstLine)
+                }
+            }
+
+            if (commitMessages.isNotEmpty()) {
+                sanitizeReleaseNotes(commitMessages.joinToString("\n"))
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 

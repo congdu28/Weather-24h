@@ -94,6 +94,11 @@ class MainActivity : ComponentActivity() {
         } else {
             requestNotificationPermissionIfNeeded()
         }
+
+        // Kiểm tra nếu được mở từ thông báo cập nhật ứng dụng mới
+        if (intent?.getBooleanExtra(WeatherNotificationHelper.EXTRA_OPEN_UPDATE_DIALOG, false) == true) {
+            viewModel.openUpdateDialogFromNotification()
+        }
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
@@ -102,6 +107,10 @@ class MainActivity : ComponentActivity() {
         val forceGps = intent.getBooleanExtra(WeatherWidgetProvider.EXTRA_FORCE_GPS_REFRESH, false)
         if (forceGps) {
             checkLocationPermissions(isPullRefresh = true, isInitial = false)
+        }
+        val openUpdate = intent.getBooleanExtra(WeatherNotificationHelper.EXTRA_OPEN_UPDATE_DIALOG, false)
+        if (openUpdate) {
+            viewModel.openUpdateDialogFromNotification()
         }
     }
 

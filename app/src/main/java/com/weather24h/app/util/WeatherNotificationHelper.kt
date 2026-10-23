@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import com.weather24h.app.MainActivity
 import com.weather24h.app.R
 import com.weather24h.app.data.model.AlertSeverity
+import com.weather24h.app.data.model.AppUpdateInfo
 import com.weather24h.app.data.model.OutfitRecommendation
 import com.weather24h.app.data.model.SevereWeatherDetector
 import com.weather24h.app.data.model.WeatherCondition
@@ -22,6 +23,8 @@ object WeatherNotificationHelper {
     private const val CHANNEL_ALERT_ID = "weather_severe_alerts"
     const val CHANNEL_PERIODIC_ID = "weather_periodic_status"
     private const val CHANNEL_LUNAR_ID = "weather_lunar_festivals"
+    private const val CHANNEL_UPDATE_ID = "weather_app_updates"
+    const val EXTRA_OPEN_UPDATE_DIALOG = "extra_open_update_dialog"
 
     fun initChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -68,10 +71,23 @@ object WeatherNotificationHelper {
                 enableLights(true)
             }
 
+            // Kênh 5: Cập nhật ứng dụng phiên bản mới
+            val updateChannel = NotificationChannel(
+                CHANNEL_UPDATE_ID,
+                "Bản cập nhật ứng dụng",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Thông báo khi có bản cập nhật mới của ứng dụng Weather 24h"
+                enableLights(true)
+                enableVibration(true)
+                setShowBadge(true)
+            }
+
             manager.createNotificationChannel(morningChannel)
             manager.createNotificationChannel(alertChannel)
             manager.createNotificationChannel(periodicChannel)
             manager.createNotificationChannel(lunarChannel)
+            manager.createNotificationChannel(updateChannel)
         }
     }
 
@@ -383,6 +399,73 @@ object WeatherNotificationHelper {
             .build()
 
         manager.notify(9998, notification)
+    }
+
+    /**
+     * Bắn thông báo khi phát hiện bản cập nhật ứng dụng mới từ GitHub
+     * Kèm deduplication: tránh spam người dùng liên tục, chỉ nhắc lại sau 24h nếu chưa cập nhật
+     */
+    fun sendAppUpdateNotification(context: Context, info: AppUpdateInfo, force: Boolean = false) {
+        val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+        val lastNotifiedVersion = prefs.getString("last_notified_update_version", "") ?: ""
+        val lastNotifiedTime = prefs.getLong("last_notified_update_time", 0L)
+        val now = System.currentTimeMillis()
+
+        val isNewVersion = info.latestVersionName != lastNotifiedVersion
+        val is24HoursPassed = (now - lastNotifiedTime) > 24 * 60 * 60 * 1000L
+
+        if (!force && !isNewVersion && !is24HoursPassed) {
+            return
+        }
+
+        initChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_OPEN_UPDATE_DIALOG, true)
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            2002,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val appLogo = getAppLogoBitmap(context)
+        val title = "🚀 Đã có bản cập nhật mới v${info.latestVersionName}!"
+        val content = "Tải ngay để trải nghiệm các tính năng mới và cải tiến hiệu năng."
+        val bigText = buildString {
+            append("Phiên bản: v${info.latestVersionName}")
+            if (info.formattedApkSize.isNotBlank()) append(" (${info.formattedApkSize})")
+            append("\n\n✨ Tóm tắt nâng cấp:\n")
+            append(info.releaseNotes.ifBlank { "• Tối ưu hóa hiệu năng và trải nghiệm giao diện người dùng." })
+            append("\n\n👉 Chạm để mở ứng dụng và cập nhật ngay!")
+        }
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_UPDATE_ID)
+            .setSmallIcon(R.drawable.ic_stat_weather)
+            .apply {
+                if (appLogo != null) setLargeIcon(appLogo)
+            }
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(bigText))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .addAction(
+                R.drawable.ic_stat_weather,
+                "Cập nhật ngay",
+                pendingIntent
+            )
+            .build()
+
+        manager.notify(2002, notification)
+        prefs.edit()
+            .putString("last_notified_update_version", info.latestVersionName)
+            .putLong("last_notified_update_time", now)
+            .apply()
     }
 
     private fun getAppLogoBitmap(context: Context) = try {

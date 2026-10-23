@@ -385,33 +385,53 @@ fun VietnameseLunarCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 5. Nút mở rộng xem lịch tháng đầy đủ (Âm - Dương)
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = if (isDark) Color(0xFFFFB703).copy(alpha = 0.12f) else Color(0xFFFFB703).copy(alpha = 0.18f),
-                border = BorderStroke(0.5.dp, Color(0xFFFFB703).copy(alpha = 0.40f)),
+            // 5. Nút xem lịch tháng đầy đủ (Nổi bật, đẹp mắt, 1 dòng gọn gàng)
+            val btnGradient = if (isDark) {
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFFFFB703).copy(alpha = 0.22f),
+                        Color(0xFFFB8500).copy(alpha = 0.32f)
+                    )
+                )
+            } else {
+                Brush.horizontalGradient(
+                    listOf(
+                        Color(0xFFFFB703).copy(alpha = 0.28f),
+                        Color(0xFFF59E0B).copy(alpha = 0.38f)
+                    )
+                )
+            }
+            val btnBorderColor = if (isDark) Color(0xFFFFB703).copy(alpha = 0.55f) else Color(0xFFD97706).copy(alpha = 0.50f)
+            val btnContentColor = if (isDark) Color(0xFFFFD166) else Color(0xFF92400E)
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(btnGradient)
+                    .border(1.dp, btnBorderColor, RoundedCornerShape(14.dp))
                     .clickable { showFullMonthDialog = true }
+                    .padding(vertical = 10.dp, horizontal = 14.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(vertical = 9.dp, horizontal = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Default.CalendarMonth,
                         contentDescription = null,
-                        tint = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
-                        modifier = Modifier.size(16.dp)
+                        tint = btnContentColor,
+                        modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "🗓️ Mở rộng xem lịch tháng đầy đủ (Âm - Dương)",
-                        color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.SemiBold
+                        text = "Xem lịch tháng đầy đủ",
+                        color = btnContentColor,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.3.sp,
+                        maxLines = 1
                     )
                 }
             }

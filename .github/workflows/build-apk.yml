@@ -137,7 +137,7 @@ jobs:
         run: |
           git fetch --tags || true
           TARGET_TAG="${{ steps.versioning.outputs.tag_name }}"
-          PREV_TAG=$(git tag --sort=-creatordate | grep -v "^${TARGET_TAG}$" | head -n 1 || echo "")
+          PREV_TAG=$(git tag -l "v*" --sort=-v:refname | grep -v "^${TARGET_TAG}$" | head -n 1 || echo "")
           echo "Target tag: $TARGET_TAG"
           echo "Previous tag: $PREV_TAG"
 

@@ -190,7 +190,7 @@ fun AppUpdateDialog(
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 140.dp, max = 280.dp),
+                                .heightIn(min = 140.dp, max = 320.dp),
                             shape = RoundedCornerShape(14.dp),
                             color = if (isDark) Color(0xFF0F172A).copy(alpha = 0.65f) else Color(0xFFF1F5F9),
                             border = androidx.compose.foundation.BorderStroke(
@@ -203,20 +203,36 @@ fun AppUpdateDialog(
                                     .padding(14.dp)
                                     .verticalScroll(rememberScrollState())
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
                                     Text(
-                                        text = "✨ Nội dung nâng cấp:",
-                                        fontSize = 13.sp,
+                                        text = "✨ Tóm tắt thay đổi từ Git:",
+                                        fontSize = 13.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = titleColor
                                     )
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = accentColor.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "Changelog",
+                                            color = accentColor,
+                                            fontSize = 10.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
                                 }
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
                                 Text(
                                     text = info.releaseNotes.ifBlank { "• Tối ưu hóa hiệu năng và độ ổn định toàn hệ thống.\n• Cải tiến giao diện trực quan và trải nghiệm người dùng." },
                                     fontSize = 13.sp,
                                     color = bodyColor,
-                                    lineHeight = 20.sp
+                                    lineHeight = 21.sp
                                 )
                             }
                         }

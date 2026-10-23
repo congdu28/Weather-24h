@@ -2,6 +2,7 @@ package com.weather24h.app.util
 
 import android.content.Context
 import androidx.work.*
+import com.weather24h.app.BuildConfig
 import com.weather24h.app.data.remote.GeminiStylistService
 import com.weather24h.app.data.remote.WeatherApiService
 import com.weather24h.app.data.repository.WeatherRepository
@@ -86,6 +87,17 @@ class PeriodicWeatherWorker(
                 WeatherNotificationHelper.checkAndSendLunarFestivalNotification(context)
             }
 
+            // Tự động kiểm tra bản cập nhật app mới ngầm từ GitHub để bắn thông báo cho người dùng
+            try {
+                val updateManager = AppUpdateManager(context)
+                val updateResult = updateManager.checkForUpdates(BuildConfig.VERSION_NAME)
+                updateResult.onSuccess { info ->
+                    if (info.isUpdateAvailable) {
+                        WeatherNotificationHelper.sendAppUpdateNotification(context, info)
+                    }
+                }
+            } catch (_: Exception) {}
+
             Result.success()
         } catch (e: Exception) {
             // Tránh Result.retry() gây spam thông báo liên tục mỗi vài phút khi gặp lỗi mạng tạm thời
@@ -107,14 +119,15 @@ class PeriodicWeatherWorker(
             val notifHours = intervalHours ?: repository.getPeriodicNotifIntervalHours()
             val isWidgetAuto = repository.isWidgetAutoRefreshEnabled()
 
-            if (!isWidgetAuto && notifHours <= 0) {
-                workManager.cancelUniqueWork(WORK_NAME)
-                WeatherNotificationHelper.cancelCurrentWeatherNotification(context)
-                return
+            // Tự động làm mới:
+            // - 1h/lần nếu Widget bật tự làm mới
+            // - theo chu kỳ người dùng chọn nếu thông báo định kỳ bật
+            // - 6h/lần nếu chỉ chạy nền kiểm tra bản cập nhật app và ngày lễ
+            val effectiveHours = when {
+                notifHours > 0 -> notifHours.toLong()
+                isWidgetAuto -> 1L
+                else -> 6L
             }
-
-            // Tự động làm mới 1h/lần (hoặc theo chu kỳ thông báo định kỳ nếu người dùng chọn)
-            val effectiveHours = if (notifHours > 0) notifHours.toLong() else 1L
 
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)

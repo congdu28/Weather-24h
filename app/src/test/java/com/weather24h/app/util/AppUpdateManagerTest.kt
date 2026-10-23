@@ -69,4 +69,12 @@ class AppUpdateManagerTest {
         val sanitized = AppUpdateManager.sanitizeReleaseNotes("")
         assertTrue(sanitized.contains("Tối ưu hóa hiệu năng"))
     }
+
+    @Test
+    fun testIsFallbackReleaseNotes() {
+        assertTrue(AppUpdateManager.isFallbackReleaseNotes(""))
+        assertTrue(AppUpdateManager.isFallbackReleaseNotes("• Tối ưu hóa trải nghiệm người dùng và giao diện."))
+        assertTrue(AppUpdateManager.isFallbackReleaseNotes("• Tối ưu hóa hiệu năng và độ ổn định toàn hệ thống."))
+        assertFalse(AppUpdateManager.isFallbackReleaseNotes("• Cập nhật khối âm lịch và full month calendar."))
+    }
 }
