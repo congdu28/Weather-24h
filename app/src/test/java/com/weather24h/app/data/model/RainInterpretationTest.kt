@@ -53,4 +53,41 @@ class RainInterpretationTest {
         assertNotEquals("Khô hanh", moisture.status)
         assertFalse(moisture.shortTip.contains("thấp"))
     }
+
+    @Test fun tropicalHeatWithTracePrecipitationDoesNotShowDrizzleOrRain() {
+        // Tái hiện trường hợp tại Thanh Hóa: trưa hè nắng nóng 32°C, cảm giác 38°C, Open-Meteo trả mã 51 (mưa phùn) nhưng lượng mưa 0.1mm
+        val current = CurrentWeather(
+            temperature = 32.0,
+            feelsLike = 38.0,
+            weatherCode = 51,
+            humidity = 68,
+            windSpeed = 12.0,
+            windDirection = 90,
+            uvIndex = 6.0,
+            surfacePressure = 1010.0,
+            visibilityKm = 15.0,
+            precipitation = 0.1,
+            isDay = true,
+            time = "12:15"
+        )
+        assertNotEquals(WeatherType.DRIZZLE, current.condition.type)
+        assertNotEquals(WeatherType.RAIN, current.condition.type)
+        assertEquals(WeatherType.PARTLY_CLOUDY, current.condition.type)
+        assertTrue(current.condition.description.contains("nắng", ignoreCase = true))
+
+        val weatherData = WeatherData(
+            location = CityLocation("Thanh Hóa", "Việt Nam", latitude = 19.8075, longitude = 105.7764),
+            current = current,
+            hourly24h = listOf(hour(25, 0.1, code = 51)),
+            daily7Days = emptyList(),
+            airQuality = null,
+            lastUpdated = "12:15"
+        )
+        val alerts = SevereWeatherDetector.detectAlerts(weatherData)
+        // Phải kích hoạt cảnh báo nắng nóng
+        assertTrue(alerts.any { it.id == "alert_heat" })
+        // Tuyệt đối không kích hoạt cảnh báo mưa dông hay mưa lớn
+        assertFalse(alerts.any { it.id == "alert_heavy_rain" })
+        assertFalse(alerts.any { it.id == "alert_thunder" })
+    }
 }

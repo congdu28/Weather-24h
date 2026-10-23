@@ -95,7 +95,14 @@ fun DailyForecastSection(
 
             // 7 Days List
             dailyList.forEachIndexed { index, day ->
-                val baseCondition = WeatherCondition.fromWmoCode(day.weatherCode)
+                val rawCondition = WeatherCondition.fromWmoCode(day.weatherCode)
+                val baseCondition = if ((rawCondition.type == com.weather24h.app.data.model.WeatherType.DRIZZLE || rawCondition.type == com.weather24h.app.data.model.WeatherType.RAIN) &&
+                    day.precipitationProbability in 0..35 && day.maxTemp >= 28.0
+                ) {
+                    WeatherCondition("Nắng xen mây", com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)
+                } else {
+                    rawCondition
+                }
                 val condition = if (day.precipitationProbability >= 60 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
                     WeatherCondition("Nắng gián đoạn, có lúc mưa rào", com.weather24h.app.data.model.WeatherType.DRIZZLE)
                 } else if (day.precipitationProbability >= 40 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
@@ -267,7 +274,14 @@ fun DayForecastDetailDialog(
     day: DailyForecast,
     onDismiss: () -> Unit
 ) {
-    val baseCondition = WeatherCondition.fromWmoCode(day.weatherCode)
+    val rawCondition = WeatherCondition.fromWmoCode(day.weatherCode)
+    val baseCondition = if ((rawCondition.type == com.weather24h.app.data.model.WeatherType.DRIZZLE || rawCondition.type == com.weather24h.app.data.model.WeatherType.RAIN) &&
+        day.precipitationProbability in 0..35 && day.maxTemp >= 28.0
+    ) {
+        WeatherCondition("Nắng xen mây", com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)
+    } else {
+        rawCondition
+    }
     val condition = if (day.precipitationProbability >= 60 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
         WeatherCondition("Nắng gián đoạn, có lúc mưa rào", com.weather24h.app.data.model.WeatherType.DRIZZLE)
     } else if (day.precipitationProbability >= 40 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {

@@ -478,7 +478,19 @@ fun WeatherScreen(
                                 HourlyForecastSection(hourlyList = weather.hourly24h)
                             }
 
-                            // 3. AI Smart Stylist Card (Renders shimmer skeleton when loading)
+                            // 3. Bản đồ Radar Mưa & Mây động trực tiếp (RainViewer / Satellite)
+                            item(key = "weather_radar_card", contentType = "radar") {
+                                WeatherRadarCard(weather = weather)
+                            }
+
+                            // 4. Khối Âm lịch Việt Nam & Tiết khí chuẩn xác (được đưa lên sau Radar)
+                            if (isLunarCalendarEnabled) {
+                                item(key = "vietnamese_lunar_card", contentType = "lunar") {
+                                    VietnameseLunarCard()
+                                }
+                            }
+
+                            // 5. AI Smart Stylist Card (được đưa xuống dưới Radar & Âm lịch)
                             item(key = "outfit_stylist_card", contentType = "stylist") {
                                 OutfitStylistCard(
                                     outfit = state.outfit,
@@ -488,29 +500,17 @@ fun WeatherScreen(
                                 )
                             }
 
-                            // 4. Bản đồ Radar Mưa & Mây động trực tiếp (RainViewer / Satellite)
-                            item(key = "weather_radar_card", contentType = "radar") {
-                                WeatherRadarCard(weather = weather)
-                            }
-
-                            // 5. Chất lượng không khí & Bụi mịn PM2.5 / PM10 (AQI chuyên sâu)
+                            // 6. Chất lượng không khí & Bụi mịn PM2.5 / PM10 (AQI chuyên sâu)
                             item(key = "air_quality_card", contentType = "aqi") {
                                 AirQualityCard(weather = weather)
                             }
 
-                            // 6. 7-Day Forecast Section
+                            // 7. 7-Day Forecast Section
                             item(key = "daily_forecast_section", contentType = "daily") {
                                 DailyForecastSection(
                                     dailyList = weather.daily7Days,
                                     showLunarCalendar = isLunarCalendarEnabled
                                 )
-                            }
-
-                            // 6b. Khối Âm lịch Việt Nam & Tiết khí chuẩn xác (Vietnamese Lunar Calendar Card)
-                            if (isLunarCalendarEnabled) {
-                                item(key = "vietnamese_lunar_card", contentType = "lunar") {
-                                    VietnameseLunarCard()
-                                }
                             }
 
                             // 7. Chỉ số Sức khỏe & Hoạt động Ngoài trời (Phơi đồ, Rửa xe, Nồm ẩm, v.v.)

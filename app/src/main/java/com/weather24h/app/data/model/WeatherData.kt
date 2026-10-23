@@ -19,7 +19,30 @@ data class CurrentWeather(
     val sourceCondition: WeatherCondition? = null
 ) {
     val condition: WeatherCondition
-        get() = sourceCondition ?: WeatherCondition.fromWmoCode(weatherCode)
+        get() {
+            val base = sourceCondition ?: WeatherCondition.fromWmoCode(weatherCode)
+            // Loại bỏ hoàn toàn lỗi mâu thuẫn thời tiết: Trời nắng nóng nhiệt độ cao (>= 28°C hoặc cảm giác >= 33°C)
+            // nhưng mô hình khí tượng gắn nhầm mã mưa phùn/mưa nhẹ (51, 53, 55, 61) do độ ẩm tầng cao, trong khi lượng mưa <= 0.2mm
+            if ((base.type == WeatherType.DRIZZLE || (base.type == WeatherType.RAIN && precipitation <= 0.2)) &&
+                precipitation <= 0.2 &&
+                isDay && (temperature >= 28.0 || feelsLike >= 33.0)
+            ) {
+                return if (temperature >= 32.0 || feelsLike >= 36.0) {
+                    WeatherCondition("Trời nắng, mây thay đổi", WeatherType.PARTLY_CLOUDY)
+                } else {
+                    WeatherCondition("Nắng xen mây", WeatherType.PARTLY_CLOUDY)
+                }
+            }
+            // Nếu lượng mưa = 0.0mm mà báo mưa phùn (drizzle):
+            if (base.type == WeatherType.DRIZZLE && precipitation <= 0.05) {
+                return if (temperature >= 24.0) {
+                    WeatherCondition(if (isDay) "Nhiều mây, có lúc hửng nắng" else "Nhiều mây", WeatherType.PARTLY_CLOUDY)
+                } else {
+                    WeatherCondition("Nhiều mây, âm u", WeatherType.CLOUDY)
+                }
+            }
+            return base
+        }
 
     val windDirectionText: String
         get() {
@@ -42,7 +65,23 @@ data class HourlyForecast(
     val sourceCondition: WeatherCondition? = null
 ) {
     val condition: WeatherCondition
-        get() = sourceCondition ?: WeatherCondition.fromWmoCode(weatherCode)
+        get() {
+            val base = sourceCondition ?: WeatherCondition.fromWmoCode(weatherCode)
+            val precip = precipitationMm ?: 0.0
+            // Nếu nhiệt độ cao (>= 28°C) hoặc xác suất mưa thấp (<= 35%), mà lượng mưa thực tế <= 0.2mm
+            // nhưng mã dự báo Open-Meteo lại gán mưa phùn/mưa nhẹ (51, 53, 55, 61):
+            if ((base.type == WeatherType.DRIZZLE || (base.type == WeatherType.RAIN && precip <= 0.2)) &&
+                precip <= 0.2 &&
+                (temperature >= 28.0 || precipitationProbability in 0..35)
+            ) {
+                return if (precipitationProbability in 20..35) {
+                    WeatherCondition(if (isDay) "Nắng xen mây, có thể có mưa nhẹ" else "Có mây, khả năng mưa thấp", WeatherType.PARTLY_CLOUDY)
+                } else {
+                    WeatherCondition(if (isDay) "Trời nắng, có mây" else "Trời quang, có mây", WeatherType.PARTLY_CLOUDY)
+                }
+            }
+            return base
+        }
     val rainProbabilityText: String
         get() = if (precipitationProbability in 0..100) "$precipitationProbability%" else "—"
 }
