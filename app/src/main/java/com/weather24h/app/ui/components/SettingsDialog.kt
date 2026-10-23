@@ -99,6 +99,7 @@ fun SettingsDialog(
     ambientGlowIntensity: Float,
     atmospherePerformanceMode: AtmospherePerformanceMode = AtmospherePerformanceMode.BALANCED,
     cardOpacity: Float = 0.60f,
+    isLunarCalendarEnabled: Boolean = true,
     widgetThemeMode: com.weather24h.app.ui.theme.AppThemeMode = com.weather24h.app.ui.theme.AppThemeMode.SYSTEM,
     widgetOpacity: Float = 0.85f,
     widgetStyle: WidgetStyle = WidgetStyle.FROSTED_GLASS,
@@ -119,6 +120,7 @@ fun SettingsDialog(
     onSetAmbientGlowIntensity: (Float) -> Unit,
     onSelectAtmospherePerformanceMode: (AtmospherePerformanceMode) -> Unit = {},
     onSetCardOpacity: (Float) -> Unit = {},
+    onToggleLunarCalendar: (Boolean) -> Unit = {},
     onSelectWidgetThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit = {},
     onSetWidgetOpacity: (Float) -> Unit = {},
     onSelectWidgetStyle: (WidgetStyle) -> Unit = {},
@@ -292,7 +294,7 @@ fun SettingsDialog(
                                         icon = Icons.Default.Palette,
                                         iconTint = Color(0xFFA855F7),
                                         title = "Giao diện & Theme",
-                                        subtitle = "${currentThemeMode.title} • Độ mờ khối: ${(cardOpacity * 100).toInt()}% • Ambient: ${ambientGlowStyle.title}",
+                                        subtitle = "${currentThemeMode.title} • Độ mờ: ${(cardOpacity * 100).toInt()}% • ${if (isLunarCalendarEnabled) "Âm lịch: Bật" else "Âm lịch: Tắt"}",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.THEME }
@@ -829,6 +831,66 @@ fun SettingsDialog(
                                                 }
                                             }
                                             ItemDivider(dividerColor = dividerColor)
+                                        }
+                                    }
+                                }
+
+                                // 6. Âm lịch Việt Nam & Tiết khí
+                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = "ÂM LỊCH & TIẾT KHÍ VIỆT NAM",
+                                            color = sectionHeaderColor,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.7.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .clickable {
+                                                    val nextState = !isLunarCalendarEnabled
+                                                    onToggleLunarCalendar(nextState)
+                                                    Toast.makeText(
+                                                        context,
+                                                        if (nextState) "Đã bật Âm lịch Việt Nam" else "Đã tắt Âm lịch",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                                .padding(vertical = 8.dp, horizontal = 4.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                Text(
+                                                    text = "Hiển thị Âm lịch Việt Nam",
+                                                    color = contentColor,
+                                                    fontSize = 14.5.sp,
+                                                    fontWeight = FontWeight.SemiBold
+                                                )
+                                                Spacer(modifier = Modifier.height(3.dp))
+                                                Text(
+                                                    text = "Tích hợp lịch Âm chuẩn múi giờ GMT+7, Can Chi, 24 Tiết khí, ngày Hoàng đạo và giờ tốt trên màn hình chính và dự báo 7 ngày",
+                                                    color = subtextColor,
+                                                    fontSize = 11.5.sp,
+                                                    lineHeight = 16.sp
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Switch(
+                                                checked = isLunarCalendarEnabled,
+                                                onCheckedChange = {
+                                                    onToggleLunarCalendar(it)
+                                                    Toast.makeText(
+                                                        context,
+                                                        if (it) "Đã bật Âm lịch Việt Nam" else "Đã tắt Âm lịch",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            )
                                         }
                                     }
                                 }

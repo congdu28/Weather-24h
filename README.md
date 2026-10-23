@@ -12,6 +12,7 @@
 ## ✨ Tính năng nổi bật
 
 - 🌤️ **Khí quyển sống động (Living Dynamic Atmosphere)**: Hoạt ảnh nền thời tiết theo thời gian thực (tia nắng God Rays, mây thể tích 3D, vệt mưa, bọt nước đáy, dông sét đa xung, sao băng và cực quang).
+- 🗓️ **Âm lịch Việt Nam & Tiết khí (UTC+7)**: Tích hợp lịch Âm chính thống chuẩn xác 100% ngoại tuyến (thuật toán thiên văn TS. Hồ Ngọc Đức), Can Chi (Năm, Tháng, Ngày), 24 Tiết khí, ngày Hoàng đạo/Hắc đạo, 6 khung giờ tốt trong ngày, đếm ngược ngày Rằm (15 ÂL) / Mùng Một và ngày lễ truyền thống. Đồng bộ trực tiếp lên thẻ thời tiết chính, dự báo 7 ngày và Widget.
 - 📈 **Dự báo 24 giờ trực quan**: Biểu đồ nhiệt độ đỏ cam, lượng mưa xanh biển và độ ẩm xanh ngọc được phân tách màu sắc riêng biệt, loại bỏ hoàn toàn nhầm lẫn.
 - 📅 **Dự báo 7 ngày chi tiết**: Theo dõi biên độ nhiệt cao/thấp, xác suất mưa và chi tiết từng ngày với modal toàn màn hình.
 - 🛰️ **Bản đồ Radar trực tiếp**: Quan sát hướng di chuyển của mây và lượng mưa tức thì qua trạm vệ tinh RainViewer 2D.

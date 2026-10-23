@@ -397,9 +397,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                         R.id.widget_weather_desc,
                         "${condition.description} • Cảm giác ${weather.current.feelsLike.roundToInt()}°C"
                     )
+                    val lunar = com.weather24h.app.util.VietnameseLunarCalendar.getTodayLunar()
                     views.setTextViewText(
                         R.id.widget_range,
-                        "Cao: ${weather.maxTemp24h.roundToInt()}° • Thấp: ${weather.minTemp24h.roundToInt()}°"
+                        "Cao: ${weather.maxTemp24h.roundToInt()}° • Thấp: ${weather.minTemp24h.roundToInt()}° • ${lunar.formattedLunarShort}"
                     )
                     views.setTextViewText(R.id.widget_updated, "Cập nhật ${weather.lastUpdated} 🔄")
 

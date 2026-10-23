@@ -46,6 +46,7 @@ fun CurrentWeatherCard(
     onLocationClick: () -> Unit,
     isFavorite: Boolean = false,
     onToggleFavorite: () -> Unit = {},
+    showLunarCalendar: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val condition = weather.current.condition
@@ -161,6 +162,26 @@ fun CurrentWeatherCard(
                         text = "📡 Ngoại tuyến (Đã lưu lúc ${weather.lastUpdated})",
                         color = Color.White,
                         fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        style = TextStyle(shadow = heroTextShadow),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            // Nhãn Âm lịch Việt Nam chuẩn xác
+            if (showLunarCalendar) {
+                val todayLunar = com.weather24h.app.util.VietnameseLunarCalendar.getTodayLunar()
+                Spacer(modifier = Modifier.height(6.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.Black.copy(alpha = 0.22f),
+                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.22f))
+                ) {
+                    Text(
+                        text = "🗓️ ${todayLunar.formattedLunarShort} (${todayLunar.dayCanChi}) • ${todayLunar.solarTerm}",
+                        color = Color.White.copy(alpha = 0.95f),
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.Medium,
                         style = TextStyle(shadow = heroTextShadow),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)

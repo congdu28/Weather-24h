@@ -626,6 +626,17 @@ class WeatherRepository(
     }
 
     // ==========================================
+    // CÀI ĐẶT ÂM LỊCH VIỆT NAM (VIETNAMESE LUNAR CALENDAR)
+    // ==========================================
+    fun isLunarCalendarEnabled(): Boolean {
+        return prefs.getBoolean("vietnamese_lunar_calendar_enabled", true)
+    }
+
+    fun setLunarCalendarEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("vietnamese_lunar_calendar_enabled", enabled).apply()
+    }
+
+    // ==========================================
     // CÀI ĐẶT MÔ HÌNH DỰ BÁO KHÍ TƯỢNG (FORECAST MODEL)
     // ==========================================
     fun getForecastModel(): com.weather24h.app.data.model.WeatherForecastModel {

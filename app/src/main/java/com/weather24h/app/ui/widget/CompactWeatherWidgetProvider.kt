@@ -146,9 +146,10 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                         R.id.compact_widget_desc,
                         "${condition.description} • Cảm giác ${weather.current.feelsLike.roundToInt()}°C"
                     )
+                    val lunar = com.weather24h.app.util.VietnameseLunarCalendar.getTodayLunar()
                     views.setTextViewText(
                         R.id.compact_widget_sub,
-                        "Cao: ${weather.maxTemp24h.roundToInt()}° • Thấp: ${weather.minTemp24h.roundToInt()}° • Ẩm: ${weather.current.humidity}%"
+                        "Cao: ${weather.maxTemp24h.roundToInt()}° • Thấp: ${weather.minTemp24h.roundToInt()}° • ${lunar.formattedLunarShort}"
                     )
                 } else {
                     views.setTextViewText(R.id.compact_widget_icon, "☀️")

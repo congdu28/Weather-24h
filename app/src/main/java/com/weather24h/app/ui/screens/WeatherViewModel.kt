@@ -139,6 +139,15 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _themeMode = MutableStateFlow(repository.getThemeMode())
     val themeMode: StateFlow<com.weather24h.app.ui.theme.AppThemeMode> = _themeMode.asStateFlow()
 
+    // Cài đặt Âm lịch Việt Nam
+    private val _isLunarCalendarEnabled = MutableStateFlow(repository.isLunarCalendarEnabled())
+    val isLunarCalendarEnabled: StateFlow<Boolean> = _isLunarCalendarEnabled.asStateFlow()
+
+    fun setLunarCalendarEnabled(enabled: Boolean) {
+        _isLunarCalendarEnabled.value = enabled
+        repository.setLunarCalendarEnabled(enabled)
+    }
+
     // Cài đặt độ tối nền (0.0f đến 0.8f) & Ambient Glow
     private val _bgDimmingLevel = MutableStateFlow(repository.getBgDimmingLevel())
     val bgDimmingLevel: StateFlow<Float> = _bgDimmingLevel.asStateFlow()

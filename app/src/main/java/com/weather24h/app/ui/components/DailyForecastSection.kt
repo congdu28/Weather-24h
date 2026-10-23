@@ -38,6 +38,7 @@ import kotlin.math.roundToInt
 @Composable
 fun DailyForecastSection(
     dailyList: List<DailyForecast>,
+    showLunarCalendar: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     if (dailyList.isEmpty()) return
@@ -117,14 +118,34 @@ fun DailyForecastSection(
                         .clickable { selectedDay = day }
                         .padding(horizontal = 4.dp, vertical = 6.dp)
                 ) {
-                    // Day of Week
-                    Text(
-                        text = day.dayOfWeek,
-                        color = contentColor,
-                        fontSize = 14.sp,
-                        fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Medium,
-                        modifier = Modifier.width(70.dp)
-                    )
+                    // Day of Week + Lunar Date
+                    Column(
+                        modifier = Modifier.width(72.dp),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = day.dayOfWeek,
+                            color = contentColor,
+                            fontSize = 13.5.sp,
+                            fontWeight = if (index == 0) FontWeight.Bold else FontWeight.Medium
+                        )
+                        if (showLunarCalendar) {
+                            val lunar = com.weather24h.app.util.VietnameseLunarCalendar.getLunarDateFromIso(day.dateString)
+                            val isFullMoon = lunar.day == 15
+                            val isNewMoon = lunar.day == 1
+                            val lunarColor = when {
+                                isFullMoon -> if (isDark) Color(0xFFFFD166) else Color(0xFFD97706)
+                                isNewMoon -> if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
+                                else -> subtextColor.copy(alpha = 0.85f)
+                            }
+                            Text(
+                                text = "${if (isFullMoon) "🌕 " else if (isNewMoon) "🌑 " else ""}${lunar.formattedLunarShort}",
+                                color = lunarColor,
+                                fontSize = 10.sp,
+                                fontWeight = if (isFullMoon || isNewMoon) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
 
                     // Weather Icon & Rain %
                     Row(
@@ -415,6 +436,76 @@ fun DayForecastDetailDialog(
                                     )
                                 }
                             }
+                        }
+                    }
+
+                    // Khối Âm lịch Việt Nam của ngày được chọn
+                    val lunar = com.weather24h.app.util.VietnameseLunarCalendar.getLunarDateFromIso(day.dateString)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = cardBg,
+                        border = BorderStroke(0.5.dp, cardBorderColor),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.NightsStay,
+                                        contentDescription = null,
+                                        tint = if (isDark) Color(0xFFFFB703) else Color(0xFFD97706),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Âm lịch: ${lunar.formattedLunarMedium}",
+                                        color = contentColor,
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (lunar.isAuspiciousDay) Color(0xFF10B981).copy(alpha = 0.15f) else Color(0xFF64748B).copy(alpha = 0.15f),
+                                    border = BorderStroke(0.5.dp, (if (lunar.isAuspiciousDay) Color(0xFF10B981) else Color(0xFF64748B)).copy(alpha = 0.35f))
+                                ) {
+                                    Text(
+                                        text = lunar.auspiciousDayType,
+                                        color = if (lunar.isAuspiciousDay) (if (isDark) Color(0xFF34D399) else Color(0xFF059669)) else (if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Năm ${lunar.yearCanChi} • Tháng ${lunar.monthCanChi} • Tiết khí: ${lunar.solarTerm}",
+                                color = subtextColor,
+                                fontSize = 12.sp
+                            )
+
+                            if (lunar.festival != null) {
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = "✨ ${lunar.festival}",
+                                    color = if (isDark) Color(0xFFFCA5A5) else Color(0xFFDC2626),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Giờ hoàng đạo: ${lunar.auspiciousHours.joinToString(", ")}",
+                                color = subtextColor,
+                                fontSize = 11.5.sp
+                            )
                         }
                     }
 

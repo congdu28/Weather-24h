@@ -144,9 +144,10 @@ class Forecast5DayWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(R.id.forecast_widget_city, weather.location.name)
                     views.setTextViewText(R.id.forecast_widget_icon, emoji)
                     views.setTextViewText(R.id.forecast_widget_temp, "${weather.current.temperature.roundToInt()}°")
+                    val lunar = com.weather24h.app.util.VietnameseLunarCalendar.getTodayLunar()
                     views.setTextViewText(
                         R.id.forecast_widget_desc,
-                        "C: ${weather.maxTemp24h.roundToInt()}° • T: ${weather.minTemp24h.roundToInt()}°"
+                        "C: ${weather.maxTemp24h.roundToInt()}° • T: ${weather.minTemp24h.roundToInt()}° • ${lunar.formattedLunarShort}"
                     )
 
                     // Cập nhật 5 ngày dự báo

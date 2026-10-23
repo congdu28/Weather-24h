@@ -75,6 +75,7 @@ fun WeatherScreen(
     val periodicNotifHours by viewModel.periodicNotifHours.collectAsState()
     val bgDimmingLevel by viewModel.bgDimmingLevel.collectAsState()
     val cardOpacity by viewModel.cardOpacity.collectAsState()
+    val isLunarCalendarEnabled by viewModel.isLunarCalendarEnabled.collectAsState()
     val ambientGlowStyle by viewModel.ambientGlowStyle.collectAsState()
     val ambientGlowIntensity by viewModel.ambientGlowIntensity.collectAsState()
     val widgetThemeMode by viewModel.widgetThemeMode.collectAsState()
@@ -460,7 +461,8 @@ fun WeatherScreen(
                                     weather = weather,
                                     onLocationClick = { showSearchDialog = true },
                                     isFavorite = isFav,
-                                    onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) }
+                                    onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) },
+                                    showLunarCalendar = isLunarCalendarEnabled
                                 )
                             }
 
@@ -498,7 +500,17 @@ fun WeatherScreen(
 
                             // 6. 7-Day Forecast Section
                             item(key = "daily_forecast_section", contentType = "daily") {
-                                DailyForecastSection(dailyList = weather.daily7Days)
+                                DailyForecastSection(
+                                    dailyList = weather.daily7Days,
+                                    showLunarCalendar = isLunarCalendarEnabled
+                                )
+                            }
+
+                            // 6b. Khối Âm lịch Việt Nam & Tiết khí chuẩn xác (Vietnamese Lunar Calendar Card)
+                            if (isLunarCalendarEnabled) {
+                                item(key = "vietnamese_lunar_card", contentType = "lunar") {
+                                    VietnameseLunarCard()
+                                }
                             }
 
                             // 7. Chỉ số Sức khỏe & Hoạt động Ngoài trời (Phơi đồ, Rửa xe, Nồm ẩm, v.v.)
@@ -586,6 +598,7 @@ fun WeatherScreen(
                 periodicNotifHours = periodicNotifHours,
                 bgDimmingLevel = bgDimmingLevel,
                 cardOpacity = cardOpacity,
+                isLunarCalendarEnabled = isLunarCalendarEnabled,
                 ambientGlowStyle = ambientGlowStyle,
                 ambientGlowIntensity = ambientGlowIntensity,
                 atmospherePerformanceMode = atmospherePerformanceMode,
@@ -610,6 +623,7 @@ fun WeatherScreen(
                 },
                 onSetBgDimmingLevel = { viewModel.setBgDimmingLevel(it) },
                 onSetCardOpacity = { viewModel.setCardOpacity(it) },
+                onToggleLunarCalendar = { viewModel.setLunarCalendarEnabled(it) },
                 onSelectAmbientGlowStyle = { viewModel.setAmbientGlowStyle(it) },
                 onSetAmbientGlowIntensity = { viewModel.setAmbientGlowIntensity(it) },
                 onSelectAtmospherePerformanceMode = { viewModel.setAtmospherePerformanceMode(it) },
