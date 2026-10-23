@@ -97,9 +97,28 @@ class VietnameseLunarCalendarTest {
 
     @Test
     fun testApproachingFestivalEvent() {
-        // Ngày 09/02/2024 là ngày áp Tết (hôm sau 10/02/2024 là Mùng 1 Tết Nguyên Đán Giáp Thìn)
-        val event = VietnameseLunarCalendar.getApproachingFestivalEvent(java.time.LocalDate.of(2024, 2, 9))
-        assertNotNull(event)
-        assertTrue(event!!.first.contains("Tết") || event.first.contains("Mùng Một"))
+        // 1. Ngày 09/02/2024 là ngày 30 Tết (Đêm Giao Thừa / Tất Niên Giáp Thìn)
+        val eventEve = VietnameseLunarCalendar.getApproachingFestivalEvent(java.time.LocalDate.of(2024, 2, 9))
+        assertNotNull(eventEve)
+        assertTrue(
+            eventEve!!.first.contains("Giao Thừa") ||
+            eventEve.first.contains("Tất Niên") ||
+            eventEve.first.contains("Tết")
+        )
+
+        // 2. Ngày 10/02/2024 là Mùng 1 Tết Nguyên Đán Giáp Thìn
+        val eventTet = VietnameseLunarCalendar.getApproachingFestivalEvent(java.time.LocalDate.of(2024, 2, 10))
+        assertNotNull(eventTet)
+        assertTrue(eventTet!!.first.contains("Tết Nguyên Đán"))
+
+        // 3. Ngày 23/02/2024 là 14 tháng Giêng (ngày mai là Rằm tháng Giêng - Tết Nguyên Tiêu)
+        val eventRam = VietnameseLunarCalendar.getApproachingFestivalEvent(java.time.LocalDate.of(2024, 2, 23))
+        assertNotNull(eventRam)
+        assertTrue(eventRam!!.first.contains("Ngày mai") || eventRam.first.contains("Rằm") || eventRam.first.contains("Nguyên Tiêu"))
+
+        // 4. Ngày 17/09/2024 là Tết Trung Thu (Rằm tháng 8)
+        val eventMidAutumn = VietnameseLunarCalendar.getApproachingFestivalEvent(java.time.LocalDate.of(2024, 9, 17))
+        assertNotNull(eventMidAutumn)
+        assertTrue(eventMidAutumn!!.first.contains("Trung Thu"))
     }
 }
