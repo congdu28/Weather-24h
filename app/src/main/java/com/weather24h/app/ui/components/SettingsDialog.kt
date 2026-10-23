@@ -58,6 +58,7 @@ private enum class SettingsSubScreen {
     MAIN,
     THEME,
     NOTIFICATIONS,
+    LUNAR_CALENDAR,
     LOCATION_CITIES,
     FORECAST_MODEL,
     GEMINI_API,
@@ -100,6 +101,7 @@ fun SettingsDialog(
     atmospherePerformanceMode: AtmospherePerformanceMode = AtmospherePerformanceMode.BALANCED,
     cardOpacity: Float = 0.60f,
     isLunarCalendarEnabled: Boolean = true,
+    isLunarFestivalNotifEnabled: Boolean = true,
     widgetThemeMode: com.weather24h.app.ui.theme.AppThemeMode = com.weather24h.app.ui.theme.AppThemeMode.SYSTEM,
     widgetOpacity: Float = 0.85f,
     widgetStyle: WidgetStyle = WidgetStyle.FROSTED_GLASS,
@@ -121,6 +123,7 @@ fun SettingsDialog(
     onSelectAtmospherePerformanceMode: (AtmospherePerformanceMode) -> Unit = {},
     onSetCardOpacity: (Float) -> Unit = {},
     onToggleLunarCalendar: (Boolean) -> Unit = {},
+    onToggleLunarFestivalNotif: (Boolean) -> Unit = {},
     onSelectWidgetThemeMode: (com.weather24h.app.ui.theme.AppThemeMode) -> Unit = {},
     onSetWidgetOpacity: (Float) -> Unit = {},
     onSelectWidgetStyle: (WidgetStyle) -> Unit = {},
@@ -255,6 +258,7 @@ fun SettingsDialog(
                             SettingsSubScreen.MAIN -> "Cài đặt"
                             SettingsSubScreen.THEME -> "Giao diện & Theme"
                             SettingsSubScreen.NOTIFICATIONS -> "Thông báo thời tiết"
+                            SettingsSubScreen.LUNAR_CALENDAR -> "Âm lịch Việt Nam & Tiết khí"
                             SettingsSubScreen.LOCATION_CITIES -> "Cài đặt vị trí"
                             SettingsSubScreen.FORECAST_MODEL -> "Nguồn dữ liệu & Mô hình"
                             SettingsSubScreen.GEMINI_API -> "Quản lý API Key Gemini"
@@ -294,10 +298,25 @@ fun SettingsDialog(
                                         icon = Icons.Default.Palette,
                                         iconTint = Color(0xFFA855F7),
                                         title = "Giao diện & Theme",
-                                        subtitle = "${currentThemeMode.title} • Độ mờ: ${(cardOpacity * 100).toInt()}% • ${if (isLunarCalendarEnabled) "Âm lịch: Bật" else "Âm lịch: Tắt"}",
+                                        subtitle = "${currentThemeMode.title} • Độ mờ: ${(cardOpacity * 100).toInt()}%",
                                         titleColor = contentColor,
                                         subtitleColor = subtextColor,
                                         onClick = { currentSubScreen = SettingsSubScreen.THEME }
+                                    )
+                                }
+
+                                // NHÓM: ÂM LỊCH VIỆT NAM & TIẾT KHÍ
+                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    val lunarStatus = if (isLunarCalendarEnabled) "Đang bật" else "Đang tắt"
+                                    val notifStatus = if (isLunarFestivalNotifEnabled) "Nhắc lễ bật" else "Nhắc lễ tắt"
+                                    SettingsRowItem(
+                                        icon = Icons.Default.NightsStay,
+                                        iconTint = Color(0xFFFFB703),
+                                        title = "Âm lịch Việt Nam & Tiết khí",
+                                        subtitle = "$lunarStatus • $notifStatus • Tra cứu ngày Hoàng đạo, lịch tháng",
+                                        titleColor = contentColor,
+                                        subtitleColor = subtextColor,
+                                        onClick = { currentSubScreen = SettingsSubScreen.LUNAR_CALENDAR }
                                     )
                                 }
 
@@ -835,66 +854,6 @@ fun SettingsDialog(
                                     }
                                 }
 
-                                // 6. Âm lịch Việt Nam & Tiết khí
-                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
-                                    Column(modifier = Modifier.padding(14.dp)) {
-                                        Text(
-                                            text = "ÂM LỊCH & TIẾT KHÍ VIỆT NAM",
-                                            color = sectionHeaderColor,
-                                            fontSize = 11.5.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            letterSpacing = 0.7.sp
-                                        )
-                                        Spacer(modifier = Modifier.height(10.dp))
-
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .clip(RoundedCornerShape(12.dp))
-                                                .clickable {
-                                                    val nextState = !isLunarCalendarEnabled
-                                                    onToggleLunarCalendar(nextState)
-                                                    Toast.makeText(
-                                                        context,
-                                                        if (nextState) "Đã bật Âm lịch Việt Nam" else "Đã tắt Âm lịch",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                                .padding(vertical = 8.dp, horizontal = 4.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column(modifier = Modifier.weight(1f)) {
-                                                Text(
-                                                    text = "Hiển thị Âm lịch Việt Nam",
-                                                    color = contentColor,
-                                                    fontSize = 14.5.sp,
-                                                    fontWeight = FontWeight.SemiBold
-                                                )
-                                                Spacer(modifier = Modifier.height(3.dp))
-                                                Text(
-                                                    text = "Tích hợp lịch Âm chuẩn múi giờ GMT+7, Can Chi, 24 Tiết khí, ngày Hoàng đạo và giờ tốt trên màn hình chính và dự báo 7 ngày",
-                                                    color = subtextColor,
-                                                    fontSize = 11.5.sp,
-                                                    lineHeight = 16.sp
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.width(12.dp))
-                                            Switch(
-                                                checked = isLunarCalendarEnabled,
-                                                onCheckedChange = {
-                                                    onToggleLunarCalendar(it)
-                                                    Toast.makeText(
-                                                        context,
-                                                        if (it) "Đã bật Âm lịch Việt Nam" else "Đã tắt Âm lịch",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-
                                 Spacer(modifier = Modifier.height(16.dp))
                             }
                         }
@@ -1047,6 +1006,109 @@ fun SettingsDialog(
                                         Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFBBF24), modifier = Modifier.size(16.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("Gửi thử cảnh báo Dông bão", color = contentColor, fontSize = 13.sp)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+
+                        // 2.5 SUB-SCREEN: ÂM LỊCH VIỆT NAM & TIẾT KHÍ
+                        SettingsSubScreen.LUNAR_CALENDAR -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .verticalScroll(rememberScrollState()),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                // 1. Bật/Tắt hiển thị Âm lịch trên giao diện
+                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    ToggleRowItem(
+                                        title = "Hiển thị Âm lịch Việt Nam",
+                                        subtitle = "Hiển thị khối Âm lịch trên màn hình chính và thông tin ngày Âm trong dự báo 7 ngày",
+                                        isChecked = isLunarCalendarEnabled,
+                                        titleColor = contentColor,
+                                        subtitleColor = subtextColor,
+                                        onCheckedChange = {
+                                            onToggleLunarCalendar(it)
+                                            Toast.makeText(
+                                                context,
+                                                if (it) "Đã bật Âm lịch Việt Nam" else "Đã tắt Âm lịch",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    )
+                                }
+
+                                // 2. Bật/Tắt thông báo nhắc nhở ngày lễ / Rằm / Mùng Một
+                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    Column {
+                                        ToggleRowItem(
+                                            title = "Thông báo ngày lễ & Rằm, Mùng Một",
+                                            subtitle = "Tự động nhắc nhở trước ngày Rằm (15 ÂL), Mùng Một (1 ÂL) và các ngày lễ truyền thống Việt Nam",
+                                            isChecked = isLunarFestivalNotifEnabled,
+                                            titleColor = contentColor,
+                                            subtitleColor = subtextColor,
+                                            onCheckedChange = {
+                                                onToggleLunarFestivalNotif(it)
+                                                Toast.makeText(
+                                                    context,
+                                                    if (it) "Đã bật nhắc nhở ngày lễ & Rằm, Mùng Một" else "Đã tắt nhắc nhở ngày lễ",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        )
+
+                                        HorizontalDivider(
+                                            color = dividerColor,
+                                            thickness = 0.5.dp,
+                                            modifier = Modifier.padding(horizontal = 14.dp)
+                                        )
+
+                                        Button(
+                                            onClick = {
+                                                WeatherNotificationHelper.sendTestLunarFestivalNotification(context)
+                                                Toast.makeText(context, "Đã gửi thông báo thử nghiệm Âm lịch & Lễ hội", Toast.LENGTH_SHORT).show()
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = chipBg),
+                                            shape = RoundedCornerShape(12.dp),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Send,
+                                                contentDescription = null,
+                                                tint = Color(0xFFFFB703),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                "Gửi thử thông báo nhắc lễ & Rằm",
+                                                color = contentColor,
+                                                fontSize = 13.sp
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // 3. Thuật toán & Độ chuẩn xác
+                                InsetGroupCard(cardBg = cardBg, cardBorder = cardBorder) {
+                                    Column(modifier = Modifier.padding(14.dp)) {
+                                        Text(
+                                            text = "THUẬT TOÁN & ĐỘ CHUẨN XÁC",
+                                            color = sectionHeaderColor,
+                                            fontSize = 11.5.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.7.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "• Múi giờ chuẩn: Việt Nam (UTC+7, kinh tuyến 105° Đông).\n• Tự động tính toán Can Chi (Năm, Tháng, Ngày, Giờ) theo chu kỳ Lục Thập Hoa Giáp.\n• 24 Tiết khí thiên văn học theo vị trí kinh độ Mặt Trời (Solar Longitude).\n• Phân loại ngày Hoàng đạo / Hắc đạo theo 12 Trực và Ngọc Hạp Thông Thư.\n• Hỗ trợ mở rộng xem Lịch tháng đối chiếu Âm - Dương đầy đủ trên màn hình chính.",
+                                            color = subtextColor,
+                                            fontSize = 12.sp,
+                                            lineHeight = 18.sp
+                                        )
                                     }
                                 }
 

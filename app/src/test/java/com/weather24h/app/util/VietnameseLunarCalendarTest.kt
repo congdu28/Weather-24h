@@ -86,4 +86,20 @@ class VietnameseLunarCalendarTest {
         assertEquals(6, days2)
         assertTrue(desc2.contains("Mùng Một"))
     }
+
+    @Test
+    fun testGetMonthDays() {
+        val days = VietnameseLunarCalendar.getMonthDays(2026, 10)
+        assertEquals(31, days.size)
+        assertEquals(1, days.first().solarDay)
+        assertEquals(31, days.last().solarDay)
+    }
+
+    @Test
+    fun testApproachingFestivalEvent() {
+        // Ngày 09/02/2024 là ngày áp Tết (hôm sau 10/02/2024 là Mùng 1 Tết Nguyên Đán Giáp Thìn)
+        val event = VietnameseLunarCalendar.getApproachingFestivalEvent(java.time.LocalDate.of(2024, 2, 9))
+        assertNotNull(event)
+        assertTrue(event!!.first.contains("Tết") || event.first.contains("Mùng Một"))
+    }
 }

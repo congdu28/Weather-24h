@@ -76,6 +76,7 @@ fun WeatherScreen(
     val bgDimmingLevel by viewModel.bgDimmingLevel.collectAsState()
     val cardOpacity by viewModel.cardOpacity.collectAsState()
     val isLunarCalendarEnabled by viewModel.isLunarCalendarEnabled.collectAsState()
+    val isLunarFestivalNotifEnabled by viewModel.isLunarFestivalNotifEnabled.collectAsState()
     val ambientGlowStyle by viewModel.ambientGlowStyle.collectAsState()
     val ambientGlowIntensity by viewModel.ambientGlowIntensity.collectAsState()
     val widgetThemeMode by viewModel.widgetThemeMode.collectAsState()
@@ -599,6 +600,7 @@ fun WeatherScreen(
                 bgDimmingLevel = bgDimmingLevel,
                 cardOpacity = cardOpacity,
                 isLunarCalendarEnabled = isLunarCalendarEnabled,
+                isLunarFestivalNotifEnabled = isLunarFestivalNotifEnabled,
                 ambientGlowStyle = ambientGlowStyle,
                 ambientGlowIntensity = ambientGlowIntensity,
                 atmospherePerformanceMode = atmospherePerformanceMode,
@@ -624,6 +626,7 @@ fun WeatherScreen(
                 onSetBgDimmingLevel = { viewModel.setBgDimmingLevel(it) },
                 onSetCardOpacity = { viewModel.setCardOpacity(it) },
                 onToggleLunarCalendar = { viewModel.setLunarCalendarEnabled(it) },
+                onToggleLunarFestivalNotif = { viewModel.setLunarFestivalNotifEnabled(it) },
                 onSelectAmbientGlowStyle = { viewModel.setAmbientGlowStyle(it) },
                 onSetAmbientGlowIntensity = { viewModel.setAmbientGlowIntensity(it) },
                 onSelectAtmospherePerformanceMode = { viewModel.setAtmospherePerformanceMode(it) },

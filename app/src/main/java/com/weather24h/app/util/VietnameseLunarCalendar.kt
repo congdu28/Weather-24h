@@ -334,4 +334,84 @@ object VietnameseLunarCalendar {
         }
         return intArrayOf(lDay, lMonth, lYear, lLeap)
     }
+
+    // ==========================================
+    // TIỆN ÍCH LỊCH THÁNG & SỰ KIỆN LỄ HỘI
+    // ==========================================
+
+    data class MonthDayInfo(
+        val solarDay: Int,
+        val solarMonth: Int,
+        val solarYear: Int,
+        val dayOfWeek: Int, // 1: Thứ Hai .. 7: Chủ Nhật
+        val lunarDate: LunarDate,
+        val isToday: Boolean
+    )
+
+    /**
+     * Tạo dữ liệu cho toàn bộ các ngày trong tháng Dương lịch
+     */
+    fun getMonthDays(year: Int, month: Int): List<MonthDayInfo> {
+        val daysInMonth = java.time.YearMonth.of(year, month).lengthOfMonth()
+        val today = LocalDate.now()
+        val result = mutableListOf<MonthDayInfo>()
+        for (d in 1..daysInMonth) {
+            val date = LocalDate.of(year, month, d)
+            val lunar = getLunarDate(d, month, year)
+            result.add(
+                MonthDayInfo(
+                    solarDay = d,
+                    solarMonth = month,
+                    solarYear = year,
+                    dayOfWeek = date.dayOfWeek.value,
+                    lunarDate = lunar,
+                    isToday = date == today
+                )
+            )
+        }
+        return result
+    }
+
+    /**
+     * Kiểm tra sự kiện lễ hội hoặc Rằm/Mùng Một đang đến gần (hôm nay hoặc ngày mai)
+     */
+    fun getApproachingFestivalEvent(currentLocalDate: LocalDate = LocalDate.now()): Pair<String, String>? {
+        val todayLunar = getLunarDate(currentLocalDate.dayOfMonth, currentLocalDate.monthValue, currentLocalDate.year)
+        val tomorrow = currentLocalDate.plusDays(1)
+        val tomorrowLunar = getLunarDate(tomorrow.dayOfMonth, tomorrow.monthValue, tomorrow.year)
+
+        // 1. Nếu hôm nay có lễ hội
+        val todayFest = todayLunar.festival
+        if (todayFest != null && !todayFest.contains("Ngày Rằm") && !todayFest.contains("Mùng Một")) {
+            return Pair("Hôm nay: $todayFest", "${todayLunar.formattedLunarFull} (${todayLunar.dayCanChi}) • ${todayLunar.solarTerm}")
+        }
+
+        // 2. Nếu ngày mai có lễ hội
+        val tomorrowFest = tomorrowLunar.festival
+        if (tomorrowFest != null && !tomorrowFest.contains("Ngày Rằm") && !tomorrowFest.contains("Mùng Một")) {
+            return Pair("Ngày mai: $tomorrowFest", "Ngày mai là ${tomorrowLunar.formattedLunarFull} (${tomorrowLunar.dayCanChi})")
+        }
+
+        // 3. Nếu ngày mai là Rằm (hôm nay là 14 ÂL)
+        if (todayLunar.day == 14) {
+            return Pair("Ngày mai là Ngày Rằm (15 ÂL)", "Rằm tháng ${todayLunar.month} ÂL (${tomorrowLunar.dayCanChi}) - ${tomorrowLunar.auspiciousDayType}")
+        }
+
+        // 4. Nếu hôm nay là Rằm
+        if (todayLunar.day == 15) {
+            return Pair("Hôm nay là Ngày Rằm (15 ÂL) 🌕", "${todayLunar.formattedLunarFull} (${todayLunar.dayCanChi}) - ${todayLunar.auspiciousDayType}")
+        }
+
+        // 5. Nếu ngày mai là Mùng Một
+        if (tomorrowLunar.day == 1) {
+            return Pair("Ngày mai là Mùng Một đầu tháng mới 🌑", "Mùng 1 tháng ${tomorrowLunar.month} ÂL (${tomorrowLunar.dayCanChi}) - Chúc bạn tháng mới an lành!")
+        }
+
+        // 6. Nếu hôm nay là Mùng Một
+        if (todayLunar.day == 1) {
+            return Pair("Hôm nay là Mùng Một đầu tháng 🌑", "Mùng 1 tháng ${todayLunar.month} ÂL (${todayLunar.dayCanChi}) - Khởi đầu tháng mới may mắn, hanh thông!")
+        }
+
+        return null
+    }
 }

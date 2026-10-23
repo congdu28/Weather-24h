@@ -28,9 +28,10 @@ class PeriodicWeatherWorker(
 
             val isWidgetAutoRefresh = repository.isWidgetAutoRefreshEnabled()
             val notifInterval = repository.getPeriodicNotifIntervalHours()
+            val isLunarFestivalNotif = repository.isLunarFestivalNotifEnabled()
 
-            // Nếu người dùng tắt cả cập nhật Widget lẫn thông báo
-            if (!isWidgetAutoRefresh && notifInterval <= 0) {
+            // Nếu người dùng tắt cả cập nhật Widget lẫn thông báo thời tiết và nhắc lễ
+            if (!isWidgetAutoRefresh && notifInterval <= 0 && !isLunarFestivalNotif) {
                 WeatherNotificationHelper.cancelCurrentWeatherNotification(context)
                 return Result.success()
             }
@@ -78,6 +79,11 @@ class PeriodicWeatherWorker(
                 WeatherNotificationHelper.showCurrentWeatherNotification(context, finalWeather, force = false)
             } else {
                 WeatherNotificationHelper.cancelCurrentWeatherNotification(context)
+            }
+
+            // Kiểm tra và gửi thông báo lễ hội / Rằm / Mùng Một nếu có
+            if (isLunarFestivalNotif) {
+                WeatherNotificationHelper.checkAndSendLunarFestivalNotification(context)
             }
 
             Result.success()

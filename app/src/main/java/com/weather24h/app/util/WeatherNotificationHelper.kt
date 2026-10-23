@@ -21,6 +21,7 @@ object WeatherNotificationHelper {
     private const val CHANNEL_MORNING_ID = "weather_morning_briefing"
     private const val CHANNEL_ALERT_ID = "weather_severe_alerts"
     const val CHANNEL_PERIODIC_ID = "weather_periodic_status"
+    private const val CHANNEL_LUNAR_ID = "weather_lunar_festivals"
 
     fun initChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -57,9 +58,20 @@ object WeatherNotificationHelper {
                 setShowBadge(false)
             }
 
+            // Kênh 4: Lễ hội & Sự kiện Âm lịch
+            val lunarChannel = NotificationChannel(
+                CHANNEL_LUNAR_ID,
+                "Lễ hội & Sự kiện Âm lịch",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Nhắc nhở ngày Rằm (15 ÂL), Mùng Một và các ngày lễ truyền thống Việt Nam"
+                enableLights(true)
+            }
+
             manager.createNotificationChannel(morningChannel)
             manager.createNotificationChannel(alertChannel)
             manager.createNotificationChannel(periodicChannel)
+            manager.createNotificationChannel(lunarChannel)
         }
     }
 
@@ -272,6 +284,105 @@ object WeatherNotificationHelper {
             .build()
 
         manager.notify(3001, notification)
+    }
+
+    /**
+     * Tự động kiểm tra và gửi thông báo nếu hôm nay hoặc ngày mai là ngày lễ Âm lịch hoặc Rằm/Mùng Một.
+     * Cơ chế deduplication lưu `last_lunar_festival_notif_date` (yyyy-MM-dd) đảm bảo chỉ gửi tối đa 1 lần/ngày.
+     */
+    fun checkAndSendLunarFestivalNotification(context: Context, force: Boolean = false) {
+        val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("lunar_festival_notif_enabled", true) && !force) return
+
+        val today = java.time.LocalDate.now()
+        val todayStr = today.toString()
+        val lastSentDate = prefs.getString("last_lunar_festival_notif_date", "")
+
+        if (!force && lastSentDate == todayStr) {
+            // Hôm nay đã gửi thông báo sự kiện âm lịch rồi, tránh làm phiền
+            return
+        }
+
+        val event = VietnameseLunarCalendar.getApproachingFestivalEvent(today) ?: return
+
+        initChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            1004,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val (title, content) = event
+        val appLogo = getAppLogoBitmap(context)
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_LUNAR_ID)
+            .setSmallIcon(R.drawable.ic_stat_weather)
+            .apply {
+                if (appLogo != null) setLargeIcon(appLogo)
+            }
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("$content\n\n🗓️ Tra cứu lịch Âm, giờ hoàng đạo và 24 tiết khí trong ứng dụng Weather 24h.")
+            )
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        manager.notify(1004, notification)
+        prefs.edit().putString("last_lunar_festival_notif_date", todayStr).apply()
+    }
+
+    /**
+     * Bắn thông báo thử nghiệm Âm lịch & Lễ hội trực tiếp từ Cài đặt
+     */
+    fun sendTestLunarFestivalNotification(context: Context) {
+        initChannels(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager ?: return
+
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            9998,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val appLogo = getAppLogoBitmap(context)
+        val todayLunar = VietnameseLunarCalendar.getLunarDate(
+            java.time.LocalDate.now().dayOfMonth,
+            java.time.LocalDate.now().monthValue,
+            java.time.LocalDate.now().year
+        )
+
+        val testTitle = "🌕 [Thử nghiệm] Nhắc nhở Âm lịch & Sự kiện"
+        val testContent = "Hôm nay: ${todayLunar.formattedLunarFull} (${todayLunar.dayCanChi}) • ${todayLunar.solarTerm}"
+        val testExpanded = "$testContent\n\n✨ Tính năng thông báo ngày lễ truyền thống, ngày Rằm (15 ÂL) và Mùng Một của Weather 24h đang hoạt động hoàn hảo!"
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_LUNAR_ID)
+            .setSmallIcon(R.drawable.ic_stat_weather)
+            .apply {
+                if (appLogo != null) setLargeIcon(appLogo)
+            }
+            .setContentTitle(testTitle)
+            .setContentText(testContent)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(testExpanded))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        manager.notify(9998, notification)
     }
 
     private fun getAppLogoBitmap(context: Context) = try {

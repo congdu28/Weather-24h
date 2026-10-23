@@ -243,13 +243,6 @@ fun DailyForecastSection(
                     )
                 }
 
-                Text(
-                    text = "Nguồn: ${day.sourceName ?: "Chưa xác định"}",
-                    color = subtextColor,
-                    fontSize = 10.sp,
-                    modifier = Modifier.padding(start = 4.dp, bottom = 3.dp)
-                )
-
                 if (index < dailyList.size - 1) {
                     Divider(
                         color = if (isDark) Color.White.copy(alpha = 0.1f) else Color.Black.copy(alpha = 0.08f),
@@ -462,12 +455,16 @@ fun DayForecastDetailDialog(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
+                            // Tiêu đề & Huy hiệu Hoàng Đạo / Hắc Đạo
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f, fill = false)
+                                ) {
                                     Icon(
                                         imageVector = Icons.Default.NightsStay,
                                         contentDescription = null,
@@ -476,10 +473,11 @@ fun DayForecastDetailDialog(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "Âm lịch: ${lunar.formattedLunarMedium}",
-                                        color = contentColor,
-                                        fontSize = 13.5.sp,
-                                        fontWeight = FontWeight.Bold
+                                        text = "ÂM LỊCH VIỆT NAM",
+                                        color = contentColor.copy(alpha = 0.90f),
+                                        fontSize = 12.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
                                     )
                                 }
                                 Surface(
@@ -492,12 +490,22 @@ fun DayForecastDetailDialog(
                                         color = if (lunar.isAuspiciousDay) (if (isDark) Color(0xFF34D399) else Color(0xFF059669)) else (if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.SemiBold,
+                                        maxLines = 1,
                                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Text(
+                                text = "${lunar.formattedLunarFull} (${lunar.dayCanChi})",
+                                color = contentColor,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "Năm ${lunar.yearCanChi} • Tháng ${lunar.monthCanChi} • Tiết khí: ${lunar.solarTerm}",
                                 color = subtextColor,
@@ -514,11 +522,12 @@ fun DayForecastDetailDialog(
                                 )
                             }
 
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Giờ hoàng đạo: ${lunar.auspiciousHours.joinToString(", ")}",
                                 color = subtextColor,
-                                fontSize = 11.5.sp
+                                fontSize = 11.5.sp,
+                                lineHeight = 16.sp
                             )
                         }
                     }

@@ -636,6 +636,14 @@ class WeatherRepository(
         prefs.edit().putBoolean("vietnamese_lunar_calendar_enabled", enabled).apply()
     }
 
+    fun isLunarFestivalNotifEnabled(): Boolean {
+        return prefs.getBoolean("lunar_festival_notif_enabled", true)
+    }
+
+    fun setLunarFestivalNotifEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("lunar_festival_notif_enabled", enabled).apply()
+    }
+
     // ==========================================
     // CÀI ĐẶT MÔ HÌNH DỰ BÁO KHÍ TƯỢNG (FORECAST MODEL)
     // ==========================================

@@ -148,6 +148,21 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         repository.setLunarCalendarEnabled(enabled)
     }
 
+    private val _isLunarFestivalNotifEnabled = MutableStateFlow(repository.isLunarFestivalNotifEnabled())
+    val isLunarFestivalNotifEnabled: StateFlow<Boolean> = _isLunarFestivalNotifEnabled.asStateFlow()
+
+    fun setLunarFestivalNotifEnabled(enabled: Boolean) {
+        _isLunarFestivalNotifEnabled.value = enabled
+        repository.setLunarFestivalNotifEnabled(enabled)
+        if (enabled) {
+            WeatherNotificationHelper.checkAndSendLunarFestivalNotification(getApplication())
+        }
+    }
+
+    fun sendTestLunarFestivalNotification() {
+        WeatherNotificationHelper.sendTestLunarFestivalNotification(getApplication())
+    }
+
     // Cài đặt độ tối nền (0.0f đến 0.8f) & Ambient Glow
     private val _bgDimmingLevel = MutableStateFlow(repository.getBgDimmingLevel())
     val bgDimmingLevel: StateFlow<Float> = _bgDimmingLevel.asStateFlow()
@@ -432,6 +447,11 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                 // Cập nhật thông báo thời tiết trên status bar nếu đang bật định kỳ
                 if (_periodicNotifHours.value > 0) {
                     WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), weather)
+                }
+
+                // Kiểm tra và gửi thông báo lễ hội / Rằm / Mùng Một nếu có
+                if (_isLunarFestivalNotifEnabled.value) {
+                    WeatherNotificationHelper.checkAndSendLunarFestivalNotification(getApplication())
                 }
 
                 loadOutfitForWeather(weather)
