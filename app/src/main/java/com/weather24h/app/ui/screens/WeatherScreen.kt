@@ -116,6 +116,14 @@ fun WeatherScreen(
     var showSearchDialog by remember { mutableStateOf(false) }
 
     var showSettingsDialog by remember { mutableStateOf(false) }
+    var showHeroLunarDialog by remember { mutableStateOf(false) }
+    val openLunarAlmanacEvent by viewModel.openLunarAlmanacEvent.collectAsState()
+    LaunchedEffect(openLunarAlmanacEvent) {
+        if (openLunarAlmanacEvent) {
+            showHeroLunarDialog = true
+            viewModel.consumeOpenLunarAlmanacEvent()
+        }
+    }
     var lastBackPressTime by remember { mutableStateOf(0L) }
 
     // Xử lý chuẩn hóa nút trở về (Back): Nếu đang ở màn hình chính, nhấn 2 lần để thoát
@@ -463,7 +471,8 @@ fun WeatherScreen(
                                     onLocationClick = { showSearchDialog = true },
                                     isFavorite = isFav,
                                     onToggleFavorite = { viewModel.toggleFavoriteCity(weather.location) },
-                                    showLunarCalendar = isLunarCalendarEnabled
+                                    showLunarCalendar = isLunarCalendarEnabled,
+                                    onLunarClick = { showHeroLunarDialog = true }
                                 )
                             }
 
@@ -575,6 +584,16 @@ fun WeatherScreen(
                 onToggleFavorite = { city ->
                     viewModel.toggleFavoriteCity(city)
                 }
+            )
+        }
+
+        if (showHeroLunarDialog) {
+            val forecasts = (uiState as? WeatherUiState.Success)?.weather?.daily7Days ?: emptyList()
+            com.weather24h.app.ui.components.LunarAlmanacFullScreenDialog(
+                initialDate = java.time.LocalDate.now(),
+                initialTab = com.weather24h.app.ui.components.LunarDialogTab.DETAIL,
+                dailyForecasts = forecasts,
+                onDismiss = { showHeroLunarDialog = false }
             )
         }
 

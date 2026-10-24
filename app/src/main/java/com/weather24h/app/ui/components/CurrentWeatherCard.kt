@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
@@ -20,6 +21,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,9 +32,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.weather24h.app.data.model.WeatherData
+import com.weather24h.app.util.LunarAlmanac
+import java.time.LocalDate
 import kotlin.math.roundToInt
 
 /**
@@ -47,11 +52,11 @@ fun CurrentWeatherCard(
     isFavorite: Boolean = false,
     onToggleFavorite: () -> Unit = {},
     showLunarCalendar: Boolean = true,
+    onLunarClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val condition = weather.current.condition
 
-    // Bóng đổ nhẹ cho chữ để luôn tương phản rõ ràng trên nền mây trắng, nắng hay bầu trời đêm
     val heroTextShadow = Shadow(
         color = Color.Black.copy(alpha = 0.38f),
         offset = Offset(0f, 2f),
@@ -113,7 +118,6 @@ fun CurrentWeatherCard(
 
                 Spacer(modifier = Modifier.width(2.dp))
 
-                // Nút Đánh dấu yêu thích ⭐ (Hiệu ứng nảy lò xo mượt mà)
                 val starScale by animateFloatAsState(
                     targetValue = if (isFavorite) 1.22f else 1.0f,
                     animationSpec = spring(dampingRatio = 0.45f, stiffness = 500f),
@@ -134,7 +138,7 @@ fun CurrentWeatherCard(
                 }
             }
 
-            // Tên chi tiết phụ (tỉnh thành / quốc gia - tránh lặp lại tên thành phố chính)
+            // Tên chi tiết phụ
             val subText = weather.location.subLocationText.ifBlank {
                 if (weather.location.displayName != weather.location.name) weather.location.displayName else ""
             }
@@ -169,29 +173,60 @@ fun CurrentWeatherCard(
                 }
             }
 
-            // Nhãn Âm lịch Việt Nam chuẩn xác
+            // Khung Âm lịch Việt Nam cỡ lớn hơn, cho phép bấm vào xem chi tiết Lịch Vạn Niên
             if (showLunarCalendar) {
-                val todayLunar = com.weather24h.app.util.VietnameseLunarCalendar.getTodayLunar()
-                Spacer(modifier = Modifier.height(6.dp))
+                val todayAlmanac = remember { LunarAlmanac.getDayAlmanac(LocalDate.now()) }
+                val todayLunar = todayAlmanac.lunar
+                Spacer(modifier = Modifier.height(8.dp))
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.Black.copy(alpha = 0.22f),
-                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.22f))
+                    shape = RoundedCornerShape(16.dp),
+                    color = Color.Black.copy(alpha = 0.28f),
+                    border = BorderStroke(0.8.dp, Color(0xFFFFD166).copy(alpha = 0.45f)),
+                    modifier = Modifier
+                        .padding(horizontal = 20.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { onLunarClick() }
                 ) {
-                    Text(
-                        text = "🗓️ ${todayLunar.formattedLunarShort} (${todayLunar.dayCanChi}) • ${todayLunar.solarTerm}",
-                        color = Color.White.copy(alpha = 0.95f),
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        style = TextStyle(shadow = heroTextShadow),
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "🗓️ ${todayLunar.formattedLunarShort} (${todayLunar.dayCanChi}) • ${todayLunar.solarTerm}",
+                                color = Color.White,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                style = TextStyle(shadow = heroTextShadow),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(1.dp))
+                            Text(
+                                text = "${todayLunar.auspiciousDayType} • ${todayAlmanac.truc.fullName} • ${LunarAlmanac.starsText(todayAlmanac.level)}",
+                                color = Color(0xFFFFD166),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                style = TextStyle(shadow = heroTextShadow),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = "Xem chi tiết lịch âm",
+                            tint = Color(0xFFFFD166),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 2. Nhiệt độ cỡ lớn thanh thoát (86sp - Phong cách hiện đại hòa quyện nền)
+            // 2. Nhiệt độ cỡ lớn thanh thoát (86sp)
             Text(
                 text = "${weather.current.temperature.roundToInt()}°",
                 color = Color.White,
@@ -230,7 +265,7 @@ fun CurrentWeatherCard(
                 textAlign = TextAlign.Center
             )
 
-            // 4. Chip chất lượng không khí AQI bán trong suốt thanh lịch (như ảnh mẫu)
+            // 4. Chip chất lượng không khí AQI
             val aqi = weather.airQuality
             if (aqi != null) {
                 Spacer(modifier = Modifier.height(10.dp))

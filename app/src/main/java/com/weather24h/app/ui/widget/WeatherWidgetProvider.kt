@@ -228,6 +228,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
             // 4. Đồng thời cập nhật Widget Mini (1x1)
             MiniWeatherWidgetProvider.updateAllMiniWidgets(context, data)
+
+            // 5. Đồng thời cập nhật Widget Lịch Vạn Niên Tháng (4x3)
+            LunarMonthWidgetProvider.updateAllLunarMonthWidgets(context, data)
         }
 
         private fun updateWidget(

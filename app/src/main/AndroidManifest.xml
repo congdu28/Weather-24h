@@ -85,6 +85,26 @@
                 android:resource="@xml/mini_widget_info" />
         </receiver>
 
+        <!-- Home Screen Monthly Lunar-Solar Calendar Widget (4x3) -->
+        <receiver
+            android:name=".ui.widget.LunarMonthWidgetProvider"
+            android:label="Lịch Vạn Niên (Tháng)"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.weather24h.app.ACTION_LUNAR_WIDGET_PREV_MONTH" />
+                <action android:name="com.weather24h.app.ACTION_LUNAR_WIDGET_NEXT_MONTH" />
+                <action android:name="com.weather24h.app.ACTION_LUNAR_WIDGET_RESET_TODAY" />
+                <action android:name="android.intent.action.CONFIGURATION_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/lunar_month_widget_info" />
+        </receiver>
+
         <!-- FileProvider for installing in-app downloaded APK updates -->
         <provider
             android:name="androidx.core.content.FileProvider"

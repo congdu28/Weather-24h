@@ -699,6 +699,7 @@ object LunarAlmanac {
             val date = from.plusDays(i.toLong())
             val almanac = getDayAlmanac(date)
             if (almanac.verdictOf(activity) != ActivityVerdict.GOOD) continue
+            if (almanac.badDays.isNotEmpty() || almanac.score < 55) continue
             val personal = profile?.let { matchPersonalDay(it, almanac) }
             if (personal?.verdict == ActivityVerdict.BAD) continue
             val p = almanac.activityPoints[activity] ?: 0

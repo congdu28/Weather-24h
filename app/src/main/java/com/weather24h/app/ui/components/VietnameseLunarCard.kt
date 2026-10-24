@@ -493,6 +493,8 @@ private fun SmallPill(text: String, color: Color) {
             fontSize = 10.5.sp,
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp)
         )
     }
@@ -557,11 +559,23 @@ fun LunarAlmanacFullScreenDialog(
     initialDate: LocalDate,
     initialTab: LunarDialogTab = LunarDialogTab.DETAIL,
     dailyForecasts: List<DailyForecast> = emptyList(),
-    birthYear: Int = 0,
-    onBirthYearChange: (Int) -> Unit = {},
-    onSelectDate: (LocalDate) -> Unit,
+    birthYear: Int = -1,
+    onBirthYearChange: ((Int) -> Unit)? = null,
+    onSelectDate: (LocalDate) -> Unit = {},
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE) }
+    var internalBirthYear by remember {
+        mutableIntStateOf(if (birthYear >= 0) birthYear else prefs.getInt(PREF_BIRTH_YEAR, 0))
+    }
+    val effectiveBirthYear = if (birthYear >= 0) birthYear else internalBirthYear
+    val updateBirthYear: (Int) -> Unit = { newYear ->
+        internalBirthYear = newYear
+        prefs.edit().putInt(PREF_BIRTH_YEAR, newYear).apply()
+        onBirthYearChange?.invoke(newYear)
+    }
+
     val isDark = LocalIsDarkTheme.current
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
@@ -573,7 +587,9 @@ fun LunarAlmanacFullScreenDialog(
     var selectedDate by remember { mutableStateOf(initialDate) }
     var showBirthYearDialog by remember { mutableStateOf(false) }
 
-    val profile = remember(birthYear) { if (birthYear in 1900..2100) LunarAlmanac.getPersonalProfile(birthYear) else null }
+    val profile = remember(effectiveBirthYear) {
+        if (effectiveBirthYear in 1900..2100) LunarAlmanac.getPersonalProfile(effectiveBirthYear) else null
+    }
     val forecastMap = remember(dailyForecasts) { dailyForecasts.associateBy { it.dateString.take(10) } }
 
     Dialog(
@@ -760,9 +776,9 @@ fun LunarAlmanacFullScreenDialog(
 
     if (showBirthYearDialog) {
         BirthYearPickerDialog(
-            currentYear = birthYear,
+            currentYear = effectiveBirthYear,
             onSave = {
-                onBirthYearChange(it)
+                updateBirthYear(it)
                 showBirthYearDialog = false
             },
             onDismiss = { showBirthYearDialog = false }
@@ -1132,8 +1148,7 @@ private fun DayDetailTabContent(
                 almanac.hours.forEach { h ->
                     val isNow = isToday && h.containsHour(nowHour)
                     val ltpGood = h.lyThuanPhong.isGood
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 3.dp)
@@ -1145,33 +1160,36 @@ private fun DayDetailTabContent(
                                     else -> Color.Transparent
                                 }
                             )
-                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                            .padding(horizontal = 10.dp, vertical = 7.dp)
                     ) {
-                        Column(modifier = Modifier.width(88.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Text(
-                                text = "Giờ ${h.chi}${if (h.isBest) " ★" else ""}",
+                                text = "Giờ ${h.chi} (${h.range})${if (h.isBest) " ★" else ""}",
                                 color = contentColor,
                                 fontSize = 12.5.sp,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text(text = h.range, color = subtextColor, fontSize = 11.sp)
+                            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                SmallPill(
+                                    text = if (h.isHoangDao) "Hoàng đạo" else "Hắc đạo",
+                                    color = if (h.isHoangDao) Color(0xFF10B981) else Color(0xFF64748B)
+                                )
+                                SmallPill(
+                                    text = h.lyThuanPhong.name,
+                                    color = if (ltpGood) Color(0xFF38BDF8) else Color(0xFFF97316)
+                                )
+                            }
                         }
-                        SmallPill(
-                            text = if (h.isHoangDao) "Hoàng đạo" else "Hắc đạo",
-                            color = if (h.isHoangDao) Color(0xFF10B981) else Color(0xFF64748B)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        SmallPill(
-                            text = h.lyThuanPhong.name,
-                            color = if (ltpGood) Color(0xFF38BDF8) else Color(0xFFF97316)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.height(3.dp))
                         Text(
                             text = h.lyThuanPhong.description,
                             color = subtextColor,
                             fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            modifier = Modifier.weight(1f)
+                            lineHeight = 14.5.sp
                         )
                     }
                 }
@@ -1517,8 +1535,12 @@ private fun MonthCalendarTabContent(
                         text = "${selectedDate.dayOfMonth}/${selectedDate.monthValue}/${selectedDate.year} • ${selectedLunar.formattedLunarShort}",
                         color = contentColor,
                         fontSize = 14.5.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     SmallPill(
                         text = "${selectedAlmanac.level.label} ${LunarAlmanac.starsText(selectedAlmanac.level)}",
                         color = levelColor(selectedAlmanac.level, isDark)
@@ -1604,26 +1626,33 @@ private fun GoodDayFinderTabContent(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(10.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                    Text("Khoảng thời gian tìm:", color = subtextColor, fontSize = 12.sp)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf(14 to "2 tuần", 30 to "1 tháng", 60 to "2 tháng", 90 to "3 tháng").forEach { (d, label) ->
-                            val active = rangeDays == d
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = if (active) Color(0xFF38BDF8) else Color.Transparent,
-                                border = BorderStroke(0.5.dp, if (active) Color(0xFF38BDF8) else cardBorder),
-                                modifier = Modifier.clickable { rangeDays = d }
-                            ) {
-                                Text(
-                                    text = label,
-                                    color = if (active) Color.White else subtextColor,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
+                Spacer(modifier = Modifier.height(12.dp))
+                Text("Khoảng thời gian tìm kiếm:", color = contentColor, fontSize = 12.5.sp, fontWeight = FontWeight.SemiBold)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    listOf(14 to "2 tuần", 30 to "1 tháng", 60 to "2 tháng", 90 to "3 tháng").forEach { (d, label) ->
+                        val active = rangeDays == d
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (active) Color(0xFF38BDF8) else Color.Transparent,
+                            border = BorderStroke(0.5.dp, if (active) Color(0xFF38BDF8) else cardBorder),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { rangeDays = d }
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (active) Color.White else subtextColor,
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 7.dp, horizontal = 4.dp)
+                            )
                         }
                     }
                 }
@@ -1647,25 +1676,52 @@ private fun GoodDayFinderTabContent(
                 modifier = Modifier.fillMaxWidth().clickable { onSelectDate(a.date) }
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         Text(
                             text = "${formatWeekdayVi(a.date.dayOfWeek.value)}, ${a.date.dayOfMonth}/${a.date.monthValue}/${a.date.year} (${a.lunar.formattedLunarShort})",
                             color = contentColor,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
                         SmallPill("${a.level.label} ${LunarAlmanac.starsText(a.level)}", levelColor(a.level, isDark))
                     }
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        SmallPill("Ngày ${a.lunar.dayCanChi}", if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309))
+                        SmallPill("${a.truc.fullName} • Sao ${a.mansion.name}", if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7))
+                        SmallPill(
+                            text = a.lunar.auspiciousDayType,
+                            color = if (a.lunar.isAuspiciousDay) (if (isDark) Color(0xFF34D399) else Color(0xFF059669))
+                            else (if (isDark) Color(0xFF94A3B8) else Color(0xFF475569))
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Ngày ${a.lunar.dayCanChi} • ${a.truc.fullName} • Sao ${a.mansion.name} • ${a.lunar.auspiciousDayType}",
-                        color = subtextColor,
-                        fontSize = 12.sp
+                        text = "🧭 Hỷ Thần: ${a.hyThan.label} • Tài Thần: ${a.taiThan.label}",
+                        color = contentColor.copy(alpha = 0.90f),
+                        fontSize = 11.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+                    val bestHourStr = a.bestHours.take(4).joinToString(", ") { "${it.chi} (${it.range})" }
+                        .ifEmpty { a.lunar.auspiciousHours.take(3).joinToString(", ") }
                     Text(
-                        text = "🧭 Hỷ Thần: ${a.hyThan.label} • Tài Thần: ${a.taiThan.label} • Giờ đẹp: ${a.bestHours.take(3).joinToString(", ") { "${it.chi} (${it.range})" }}",
-                        color = contentColor.copy(alpha = 0.88f),
-                        fontSize = 11.5.sp
+                        text = "⏰ Giờ đẹp: $bestHourStr",
+                        color = subtextColor,
+                        fontSize = 11.5.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     if (f != null) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -1673,7 +1729,9 @@ private fun GoodDayFinderTabContent(
                             text = "🌦️ Dự báo: ${f.condition.description}, ${f.minTemp.roundToInt()}°–${f.maxTemp.roundToInt()}°C, mưa ${f.precipitationProbability}%",
                             color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
                             fontSize = 11.5.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

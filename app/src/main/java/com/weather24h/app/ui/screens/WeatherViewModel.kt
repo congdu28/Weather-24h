@@ -154,6 +154,17 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     private val _isLunarCalendarEnabled = MutableStateFlow(repository.isLunarCalendarEnabled())
     val isLunarCalendarEnabled: StateFlow<Boolean> = _isLunarCalendarEnabled.asStateFlow()
 
+    private val _openLunarAlmanacEvent = MutableStateFlow(false)
+    val openLunarAlmanacEvent: StateFlow<Boolean> = _openLunarAlmanacEvent.asStateFlow()
+
+    fun triggerOpenLunarAlmanac() {
+        _openLunarAlmanacEvent.value = true
+    }
+
+    fun consumeOpenLunarAlmanacEvent() {
+        _openLunarAlmanacEvent.value = false
+    }
+
     fun setLunarCalendarEnabled(enabled: Boolean) {
         _isLunarCalendarEnabled.value = enabled
         repository.setLunarCalendarEnabled(enabled)

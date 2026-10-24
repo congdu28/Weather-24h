@@ -99,6 +99,9 @@ class MainActivity : ComponentActivity() {
         if (intent?.getBooleanExtra(WeatherNotificationHelper.EXTRA_OPEN_UPDATE_DIALOG, false) == true) {
             viewModel.openUpdateDialogFromNotification()
         }
+        if (intent?.getBooleanExtra(com.weather24h.app.ui.widget.LunarMonthWidgetProvider.EXTRA_OPEN_LUNAR_ALMANAC, false) == true) {
+            viewModel.triggerOpenLunarAlmanac()
+        }
     }
 
     override fun onNewIntent(intent: android.content.Intent) {
@@ -111,6 +114,9 @@ class MainActivity : ComponentActivity() {
         val openUpdate = intent.getBooleanExtra(WeatherNotificationHelper.EXTRA_OPEN_UPDATE_DIALOG, false)
         if (openUpdate) {
             viewModel.openUpdateDialogFromNotification()
+        }
+        if (intent.getBooleanExtra(com.weather24h.app.ui.widget.LunarMonthWidgetProvider.EXTRA_OPEN_LUNAR_ALMANAC, false)) {
+            viewModel.triggerOpenLunarAlmanac()
         }
     }
 
