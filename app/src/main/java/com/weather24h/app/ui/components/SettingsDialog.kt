@@ -2226,7 +2226,20 @@ fun SettingsDialog(
                                         HorizontalDivider(color = chipBorder.copy(alpha = 0.5f), thickness = 0.8.dp)
                                         Spacer(modifier = Modifier.height(12.dp))
 
-                                        // C. Tự động làm mới Widget ngầm 1h/lần
+                                        // C. Tự động làm mới Widget ngầm (1h, 2h, 3h, 6h / lần)
+                                        val widgetPrefs = remember(context) {
+                                            context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+                                        }
+                                        var widgetRefreshHours by remember(isWidgetAutoRefresh) {
+                                            val savedH = if (widgetPrefs.contains("widget_auto_refresh_hours")) {
+                                                widgetPrefs.getInt("widget_auto_refresh_hours", 1)
+                                            } else {
+                                                if (isWidgetAutoRefresh) 1 else 0
+                                            }
+                                            mutableStateOf(savedH)
+                                        }
+                                        var showLunarWidgetEditor by remember { mutableStateOf(false) }
+
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -2234,14 +2247,14 @@ fun SettingsDialog(
                                         ) {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
-                                                    text = "TỰ ĐỘNG LÀM MỚI (1H/LẦN)",
+                                                    text = "CHU KỲ TỰ ĐỘNG CẬP NHẬT WIDGET",
                                                     color = contentColor,
                                                     fontSize = 12.sp,
                                                     fontWeight = FontWeight.Bold
                                                 )
                                                 Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
-                                                    text = "Tự động chạy ngầm đồng bộ thời tiết mới nhất lên Widget mỗi 1 giờ ngay cả khi app đang đóng.",
+                                                    text = "Tự động chạy ngầm đồng bộ thời tiết & lịch âm lên Widget theo chu kỳ 1h, 2h, 3h hoặc 6h/lần.",
                                                     color = subtextColor,
                                                     fontSize = 11.5.sp,
                                                     lineHeight = 16.sp
@@ -2249,12 +2262,120 @@ fun SettingsDialog(
                                             }
                                             Spacer(modifier = Modifier.width(8.dp))
                                             Switch(
-                                                checked = isWidgetAutoRefresh,
-                                                onCheckedChange = onSetWidgetAutoRefresh,
+                                                checked = widgetRefreshHours > 0,
+                                                onCheckedChange = { enabled ->
+                                                    val newH = if (enabled) 1 else 0
+                                                    widgetRefreshHours = newH
+                                                    widgetPrefs.edit()
+                                                        .putInt("widget_auto_refresh_hours", newH)
+                                                        .putBoolean("widget_auto_refresh_enabled", enabled)
+                                                        .apply()
+                                                    onSetWidgetAutoRefresh(enabled)
+                                                    com.weather24h.app.util.PeriodicWeatherWorker.schedule(context)
+                                                },
                                                 colors = SwitchDefaults.colors(
                                                     checkedThumbColor = Color.White,
                                                     checkedTrackColor = Color(0xFFF472B6)
                                                 )
+                                            )
+                                        }
+
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            listOf(
+                                                0 to "Tắt",
+                                                1 to "1h/lần",
+                                                2 to "2h/lần",
+                                                3 to "3h/lần",
+                                                6 to "6h/lần"
+                                            ).forEach { (h, label) ->
+                                                val isSel = widgetRefreshHours == h
+                                                Surface(
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    color = if (isSel) Color(0xFFF472B6).copy(alpha = 0.22f) else chipBg,
+                                                    border = BorderStroke(1.dp, if (isSel) Color(0xFFF472B6) else chipBorder),
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clickable {
+                                                            widgetRefreshHours = h
+                                                            widgetPrefs.edit()
+                                                                .putInt("widget_auto_refresh_hours", h)
+                                                                .putBoolean("widget_auto_refresh_enabled", h > 0)
+                                                                .apply()
+                                                            onSetWidgetAutoRefresh(h > 0)
+                                                            com.weather24h.app.util.PeriodicWeatherWorker.schedule(context)
+                                                            Toast.makeText(
+                                                                context,
+                                                                if (h > 0) "Tự động cập nhật Widget: ${h}h/lần" else "Đã tắt tự động cập nhật Widget",
+                                                                Toast.LENGTH_SHORT
+                                                            ).show()
+                                                        }
+                                                ) {
+                                                    Text(
+                                                        text = label,
+                                                        color = if (isSel) Color(0xFFF472B6) else contentColor.copy(alpha = 0.85f),
+                                                        fontSize = 11.sp,
+                                                        fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
+                                                        textAlign = TextAlign.Center,
+                                                        softWrap = false,
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = 7.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(12.dp))
+
+                                        // Tùy chỉnh hiển thị Widget Lịch Vạn Niên Tháng (4x3)
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = Color(0xFFFFB703).copy(alpha = 0.14f),
+                                            border = BorderStroke(1.dp, Color(0xFFFFB703).copy(alpha = 0.45f)),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable { showLunarWidgetEditor = true }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(12.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "🗓️",
+                                                    fontSize = 18.sp,
+                                                    modifier = Modifier.padding(end = 10.dp)
+                                                )
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = "Chỉnh sửa Widget Lịch Vạn Niên Tháng",
+                                                        color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
+                                                        fontSize = 12.5.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                    Text(
+                                                        text = "Tùy chỉnh cỡ chữ, bật/tắt hiển thị nhiệt độ, Can Chi, chấm Hoàng Đạo, khung Âm lịch & Giờ tốt.",
+                                                        color = subtextColor,
+                                                        fontSize = 11.sp,
+                                                        lineHeight = 15.sp
+                                                    )
+                                                }
+                                                Icon(
+                                                    imageVector = Icons.Default.ChevronRight,
+                                                    contentDescription = null,
+                                                    tint = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309)
+                                                )
+                                            }
+                                        }
+
+                                        if (showLunarWidgetEditor) {
+                                            LunarMonthWidgetConfigDialog(
+                                                onDismiss = { showLunarWidgetEditor = false }
                                             )
                                         }
 

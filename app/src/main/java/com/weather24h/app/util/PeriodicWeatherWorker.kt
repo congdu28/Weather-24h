@@ -71,6 +71,7 @@ class PeriodicWeatherWorker(
 
             val weather = repository.getWeatherData(targetCity)
             val finalWeather = weather.copy(location = targetCity)
+            repository.saveCachedWeather(finalWeather)
 
             // Luôn đồng bộ Widget màn hình chính với dữ liệu mới nhất
             WeatherWidgetProvider.updateAllWidgets(context, finalWeather)
@@ -117,17 +118,13 @@ class PeriodicWeatherWorker(
             )
 
             val notifHours = intervalHours ?: repository.getPeriodicNotifIntervalHours()
-            val isWidgetAuto = repository.isWidgetAutoRefreshEnabled()
+            val widgetHours = repository.getWidgetAutoRefreshHours()
 
             // Tự động làm mới:
-            // - 1h/lần nếu Widget bật tự làm mới
-            // - theo chu kỳ người dùng chọn nếu thông báo định kỳ bật
+            // - theo chu kỳ nhỏ nhất giữa Widget tự làm mới (1h, 2h, 3h, 6h) và Thông báo định kỳ
             // - 6h/lần nếu chỉ chạy nền kiểm tra bản cập nhật app và ngày lễ
-            val effectiveHours = when {
-                notifHours > 0 -> notifHours.toLong()
-                isWidgetAuto -> 1L
-                else -> 6L
-            }
+            val activeIntervals = listOf(notifHours, widgetHours).filter { it > 0 }
+            val effectiveHours = activeIntervals.minOrNull()?.toLong() ?: 6L
 
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)

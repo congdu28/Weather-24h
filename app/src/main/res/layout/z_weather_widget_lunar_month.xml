@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/lunar_widget_root"
+    android:id="@+id/z_lunar_widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="2dp">
 
     <!-- Canvas bitmap hiển thị toàn bộ Lịch Tháng Âm - Dương sắc nét -->
     <ImageView
-        android:id="@+id/lunar_widget_canvas"
+        android:id="@+id/z_lunar_widget_canvas"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="fitXY"
@@ -27,28 +27,28 @@
             android:orientation="horizontal">
 
             <FrameLayout
-                android:id="@+id/lunar_widget_btn_prev"
+                android:id="@+id/z_lunar_widget_btn_prev"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="22"
+                android:layout_weight="20"
                 android:clickable="true"
                 android:focusable="true"
                 android:contentDescription="Tháng trước" />
 
             <FrameLayout
-                android:id="@+id/lunar_widget_btn_today"
+                android:id="@+id/z_lunar_widget_btn_today"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="56"
+                android:layout_weight="60"
                 android:clickable="true"
                 android:focusable="true"
                 android:contentDescription="Về tháng hiện tại" />
 
             <FrameLayout
-                android:id="@+id/lunar_widget_btn_next"
+                android:id="@+id/z_lunar_widget_btn_next"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="22"
+                android:layout_weight="20"
                 android:clickable="true"
                 android:focusable="true"
                 android:contentDescription="Tháng sau" />
@@ -56,7 +56,7 @@
 
         <!-- Phần lưới lịch và thanh thông tin ngày âm bên dưới (chiếm ~84% chiều cao) -> Bấm mở chi tiết Lịch Vạn Niên -->
         <FrameLayout
-            android:id="@+id/lunar_widget_body"
+            android:id="@+id/z_lunar_widget_body"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="84"

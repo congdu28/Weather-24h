@@ -605,11 +605,32 @@ class WeatherRepository(
     }
 
     fun isWidgetAutoRefreshEnabled(): Boolean {
-        return prefs.getBoolean("widget_auto_refresh_enabled", true)
+        return getWidgetAutoRefreshHours() > 0
     }
 
     fun setWidgetAutoRefreshEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean("widget_auto_refresh_enabled", enabled).apply()
+        val currentHours = prefs.getInt("widget_auto_refresh_hours", 1)
+        val newHours = if (enabled) (if (currentHours > 0) currentHours else 1) else 0
+        prefs.edit()
+            .putBoolean("widget_auto_refresh_enabled", enabled)
+            .putInt("widget_auto_refresh_hours", newHours)
+            .apply()
+    }
+
+    fun getWidgetAutoRefreshHours(): Int {
+        if (!prefs.contains("widget_auto_refresh_hours")) {
+            val legacyEnabled = prefs.getBoolean("widget_auto_refresh_enabled", true)
+            return if (legacyEnabled) 1 else 0
+        }
+        return prefs.getInt("widget_auto_refresh_hours", 1).coerceIn(0, 12)
+    }
+
+    fun setWidgetAutoRefreshHours(hours: Int) {
+        val validHours = if (hours in listOf(0, 1, 2, 3, 6)) hours else 1
+        prefs.edit()
+            .putInt("widget_auto_refresh_hours", validHours)
+            .putBoolean("widget_auto_refresh_enabled", validHours > 0)
+            .apply()
     }
 
     fun getWidgetStyle(): WidgetStyle {

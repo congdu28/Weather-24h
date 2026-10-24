@@ -791,6 +791,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
                         WeatherNotificationHelper.showCurrentWeatherNotification(getApplication(), finalWeather)
                     }
 
+                    repository.saveCachedWeather(finalWeather)
+                    com.weather24h.app.ui.widget.WeatherWidgetProvider.updateAllWidgets(getApplication(), finalWeather)
+
                     loadOutfitForWeather(finalWeather)
                 } else if (!hasExistingData) {
                     _uiState.value = WeatherUiState.Error("Không thể tải thời tiết tại vị trí GPS này.")

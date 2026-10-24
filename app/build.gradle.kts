@@ -58,11 +58,11 @@ val encodedUpdateAcceptHeader = encodeSecretForBuildConfig(
 
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.59"
+    ?: "1.0.60"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 159
+    ?: 160
 
 android {
     namespace = "com.weather24h.app"

@@ -35,7 +35,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             refreshWidgetWeatherWithLocation(context, isSilent = false, pendingResult = pendingResult)
             return
         }
-        if (intent.action == Intent.ACTION_CONFIGURATION_CHANGED) {
+        if (intent.action == Intent.ACTION_CONFIGURATION_CHANGED ||
+            intent.action == Intent.ACTION_MY_PACKAGE_REPLACED
+        ) {
             updateAllWidgets(context)
             return
         }
@@ -176,6 +178,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
                     val fresh = repository.getWeatherData(targetCity)
                     val finalWeather = fresh.copy(location = targetCity)
+                    repository.saveCachedWeather(finalWeather)
 
                     withContext(Dispatchers.Main) {
                         updateAllWidgets(appContext, finalWeather)

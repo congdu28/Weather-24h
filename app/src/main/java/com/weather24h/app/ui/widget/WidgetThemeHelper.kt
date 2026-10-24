@@ -3,6 +3,7 @@ package com.weather24h.app.ui.widget
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import com.weather24h.app.data.model.WeatherData
 
 object WidgetThemeHelper {
 
@@ -91,5 +92,37 @@ object WidgetThemeHelper {
             }
         }
         return firstPart
+    }
+
+    /**
+     * Lấy tên Phường / Xã / Địa điểm ngắn gọn chính xác cho Widget.
+     * Nếu dữ liệu thời tiết đang lưu tên tạm ("Vị trí của bạn" / "Vị trí hiện tại"),
+     * tự động đọc tên địa điểm thực tế đã phân giải từ SharedPreferences ("last_active_city_name").
+     */
+    fun resolveWardLocationName(context: Context, weather: WeatherData?): String {
+        val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
+        val rawFromWeather = weather?.location?.name?.trim().orEmpty()
+        val isPlaceholder = rawFromWeather.isEmpty() ||
+            rawFromWeather.equals("Vị trí của bạn", ignoreCase = true) ||
+            rawFromWeather.equals("Vị trí hiện tại", ignoreCase = true) ||
+            rawFromWeather.equals("Vị trí", ignoreCase = true)
+
+        val effectiveRaw = if (!isPlaceholder) {
+            rawFromWeather
+        } else {
+            val savedActive = prefs.getString("last_active_city_name", null)?.trim().orEmpty()
+            val savedDefault = prefs.getString("default_city_name", null)?.trim().orEmpty()
+            when {
+                savedActive.isNotEmpty() &&
+                    !savedActive.equals("Vị trí của bạn", ignoreCase = true) &&
+                    !savedActive.equals("Vị trí hiện tại", ignoreCase = true) -> savedActive
+                savedDefault.isNotEmpty() -> savedDefault
+                else -> rawFromWeather
+            }
+        }
+
+        val wardOrFirstPart = effectiveRaw.substringBefore(",").substringBefore("-").trim()
+        if (wardOrFirstPart.isEmpty()) return "Vị trí"
+        return formatShortLocationName(wardOrFirstPart)
     }
 }

@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
 
         // Khởi tạo notification channels
         WeatherNotificationHelper.initChannels(this)
+        WeatherWidgetProvider.updateAllWidgets(this)
 
         setContent {
             val themeMode by viewModel.themeMode.collectAsState()

@@ -586,6 +586,7 @@ fun LunarAlmanacFullScreenDialog(
     var currentTab by remember { mutableStateOf(initialTab) }
     var selectedDate by remember { mutableStateOf(initialDate) }
     var showBirthYearDialog by remember { mutableStateOf(false) }
+    var showWidgetConfigDialog by remember { mutableStateOf(false) }
 
     val profile = remember(effectiveBirthYear) {
         if (effectiveBirthYear in 1900..2100) LunarAlmanac.getPersonalProfile(effectiveBirthYear) else null
@@ -643,30 +644,63 @@ fun LunarAlmanacFullScreenDialog(
                         }
                     }
 
-                    // Nút chọn năm sinh
-                    Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = Color(0xFFFFB703).copy(alpha = 0.16f),
-                        border = BorderStroke(0.5.dp, Color(0xFFFFB703).copy(alpha = 0.45f)),
-                        modifier = Modifier.clickable { showBirthYearDialog = true }
+                    // Nút chỉnh sửa Widget Lịch Tháng & Nút chọn năm sinh
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFF38BDF8).copy(alpha = 0.16f),
+                            border = BorderStroke(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.45f)),
+                            modifier = Modifier.clickable { showWidgetConfigDialog = true }
                         ) {
-                            Icon(
-                                Icons.Default.Person,
-                                null,
-                                tint = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = if (profile != null) "${profile.birthYear}" else "Năm sinh",
-                                color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Settings,
+                                    null,
+                                    tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                    modifier = Modifier.size(13.5.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Sửa Widget",
+                                    color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    softWrap = false
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Color(0xFFFFB703).copy(alpha = 0.16f),
+                            border = BorderStroke(0.5.dp, Color(0xFFFFB703).copy(alpha = 0.45f)),
+                            modifier = Modifier.clickable { showBirthYearDialog = true }
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Person,
+                                    null,
+                                    tint = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (profile != null) "${profile.birthYear}" else "Năm sinh",
+                                    color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
+                                    fontSize = 11.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    softWrap = false
+                                )
+                            }
                         }
                     }
                 }
@@ -782,6 +816,12 @@ fun LunarAlmanacFullScreenDialog(
                 showBirthYearDialog = false
             },
             onDismiss = { showBirthYearDialog = false }
+        )
+    }
+
+    if (showWidgetConfigDialog) {
+        LunarMonthWidgetConfigDialog(
+            onDismiss = { showWidgetConfigDialog = false }
         )
     }
 }
@@ -2031,6 +2071,247 @@ private fun BirthYearPickerDialog(
             }
         }
     )
+}
+
+@Composable
+fun LunarMonthWidgetConfigDialog(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val prefs = remember(context) { context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE) }
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
+
+    var config by remember {
+        mutableStateOf(com.weather24h.app.ui.widget.LunarMonthWidgetProvider.getConfig(context))
+    }
+    var autoRefreshHours by remember {
+        val hasHours = prefs.contains("widget_auto_refresh_hours")
+        val initial = if (hasHours) {
+            prefs.getInt("widget_auto_refresh_hours", 1)
+        } else {
+            if (prefs.getBoolean("widget_auto_refresh_enabled", true)) 1 else 0
+        }
+        mutableIntStateOf(initial)
+    }
+
+    val applyConfig: (com.weather24h.app.ui.widget.LunarMonthWidgetConfig) -> Unit = { newCfg ->
+        config = newCfg
+        com.weather24h.app.ui.widget.LunarMonthWidgetProvider.saveConfig(context, newCfg)
+    }
+
+    val applyRefreshInterval: (Int) -> Unit = { hours ->
+        autoRefreshHours = hours
+        prefs.edit()
+            .putInt("widget_auto_refresh_hours", hours)
+            .putBoolean("widget_auto_refresh_enabled", hours > 0)
+            .apply()
+        com.weather24h.app.util.PeriodicWeatherWorker.schedule(context)
+        com.weather24h.app.ui.widget.WeatherWidgetProvider.updateAllWidgets(context)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = null,
+                    tint = Color(0xFF38BDF8),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Chỉnh sửa Widget Lịch Tháng",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // 1. Chu kỳ tự động cập nhật Widget (1h, 2h, 3h, 6h / lần)
+                Text(
+                    text = "1. Chu kỳ tự động cập nhật Widget:",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    listOf(
+                        0 to "Tắt",
+                        1 to "1h",
+                        2 to "2h",
+                        3 to "3h",
+                        6 to "6h"
+                    ).forEach { (h, label) ->
+                        val sel = autoRefreshHours == h
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (sel) Color(0xFF38BDF8) else Color.Gray.copy(alpha = 0.14f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { applyRefreshInterval(h) }
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(vertical = 7.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (sel) Color.White else contentColor,
+                                    fontSize = 11.5.sp,
+                                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
+                                    softWrap = false
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 2. Cỡ chữ & số trên Widget Lịch Tháng
+                Text(
+                    text = "2. Cỡ chữ & số trên Widget Lịch Tháng:",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(
+                        0 to "Tiêu chuẩn",
+                        1 to "Lớn (Đề xuất)",
+                        2 to "Rất lớn"
+                    ).forEach { (lv, label) ->
+                        val sel = config.fontSizeLevel == lv
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (sel) Color(0xFFFFB703) else Color.Gray.copy(alpha = 0.14f),
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { applyConfig(config.copy(fontSizeLevel = lv)) }
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.padding(vertical = 7.dp, horizontal = 4.dp)
+                            ) {
+                                Text(
+                                    text = label,
+                                    color = if (sel) Color(0xFF0F172A) else contentColor,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Medium,
+                                    softWrap = false
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 3. Tích chọn thông tin hiển thị trên Widget Lịch Tháng
+                Text(
+                    text = "3. Tích chọn thông tin hiển thị trên Widget:",
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+
+                WidgetCheckOptionRow(
+                    label = "Nhiệt độ & tên Phường/Xã trên tiêu đề",
+                    checked = config.showWeatherAndLocation,
+                    onCheckedChange = { applyConfig(config.copy(showWeatherAndLocation = it)) }
+                )
+                WidgetCheckOptionRow(
+                    label = "Can Chi Năm & Tháng Âm lịch trên tiêu đề",
+                    checked = config.showHeaderCanChi,
+                    onCheckedChange = { applyConfig(config.copy(showHeaderCanChi = it)) }
+                )
+                WidgetCheckOptionRow(
+                    label = "Chấm xanh Ngày Hoàng Đạo trên ô lịch",
+                    checked = config.showHoangDaoDots,
+                    onCheckedChange = { applyConfig(config.copy(showHoangDaoDots = it)) }
+                )
+                WidgetCheckOptionRow(
+                    label = "Chấm đỏ Ngày Lễ / Tết trên ô lịch",
+                    checked = config.showHolidayDots,
+                    onCheckedChange = { applyConfig(config.copy(showHolidayDots = it)) }
+                )
+                WidgetCheckOptionRow(
+                    label = "Khung thông tin Âm lịch hôm nay (phía dưới)",
+                    checked = config.showFooterBox,
+                    onCheckedChange = { applyConfig(config.copy(showFooterBox = it)) }
+                )
+                if (config.showFooterBox) {
+                    WidgetCheckOptionRow(
+                        label = "Dòng Lễ/Rằm, Tiết khí & Hướng tốt",
+                        checked = config.showSolarTermAndDir,
+                        onCheckedChange = { applyConfig(config.copy(showSolarTermAndDir = it)) }
+                    )
+                    WidgetCheckOptionRow(
+                        label = "Dòng 6 Giờ Hoàng Đạo trong ngày",
+                        checked = config.showGoodHours,
+                        onCheckedChange = { applyConfig(config.copy(showGoodHours = it)) }
+                    )
+                }
+
+                Text(
+                    text = "💡 Mọi thay đổi được áp dụng tức thì lên Widget Lịch Tháng ngoài màn hình chính.",
+                    fontSize = 11.sp,
+                    color = subtextColor
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    com.weather24h.app.ui.widget.WeatherWidgetProvider.updateAllWidgets(context)
+                    onDismiss()
+                }
+            ) {
+                Text("Hoàn tất", fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+private fun WidgetCheckOptionRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    val contentColor = LocalContentTextColor.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 2.dp)
+    ) {
+        Checkbox(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.size(32.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            color = contentColor,
+            modifier = Modifier.weight(1f)
+        )
+    }
 }
 
 private fun formatWeekdayVi(dayOfWeek: Int): String = when (dayOfWeek) {
