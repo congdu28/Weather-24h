@@ -5,11 +5,9 @@
 # 1. Tối ưu hóa sâu & Gom gói chống dịch ngược (Anti-Decompilation)
 -repackageclasses 'o'
 -allowaccessmodification
--overloadaggressively
 -renamesourcefileattribute SourceFile
 
 # Chỉ giữ các thuộc tính bắt buộc cho Gson generic & Kotlin reflection cơ bản
-# (Đã loại bỏ SourceFile, LineNumberTable để ẩn toàn bộ tên file .kt gốc)
 -keepattributes *Annotation*
 -keepattributes Signature
 -keepattributes EnclosingMethod
@@ -31,8 +29,6 @@
 }
 
 # 2. Gson & Data Models
-# Chỉ giữ tên trường (<fields>) và hàm khởi tạo (<init>) của các model được serialize JSON vào SharedPreferences.
-# Toàn bộ các hàm logic nghiệp vụ (getCondition, detectAlerts, calculate...) sẽ được R8 làm rối tên (obfuscate).
 -keepclassmembers class * {
     @com.google.gson.annotations.SerializedName <fields>;
     @com.google.gson.annotations.Expose <fields>;
@@ -63,7 +59,7 @@
     public static ** valueOf(java.lang.String);
 }
 
-# 3. WorkManager Workers (Chỉ giữ hàm khởi tạo để hệ thống gọi, làm rối nội dung bên trong)
+# 3. WorkManager Workers
 -keep class com.weather24h.app.util.PeriodicWeatherWorker {
     public <init>(android.content.Context, androidx.work.WorkerParameters);
 }
@@ -72,7 +68,6 @@
 }
 
 # 4. Android Entry Points (Activity, AppWidgetProvider, FileProvider)
-# Chỉ giữ constructor mặc định; toàn bộ hàm nội bộ được R8 làm rối và inline
 -keep class com.weather24h.app.MainActivity {
     public <init>();
 }

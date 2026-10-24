@@ -4,9 +4,8 @@ import android.content.Context
 import com.weather24h.app.BuildConfig
 
 /**
- * Lớp bảo vệ khóa cấu hình & kiểm tra tính toàn vẹn gói ứng dụng (Anti-Tamper / Anti-Clone).
- * Giải mã khóa từ chuỗi nhị phân đã làm rối lúc biên dịch, ngăn chặn trích xuất chuỗi tĩnh (strings/JADX)
- * và vô hiệu hóa khóa mặc định nếu APK bị đổi ApplicationId / đóng gói lại.
+ * Lớp bảo vệ khóa cấu hình, ẩn danh đường dẫn máy chủ cập nhật & kiểm tra tính toàn vẹn gói ứng dụng.
+ * Giải mã từ chuỗi nhị phân đã làm rối lúc biên dịch, ngăn chặn trích xuất chuỗi tĩnh (strings/JADX).
  */
 object SecurityVault {
     private const val MASK_SEED = 0x5A3C9E71
@@ -34,6 +33,19 @@ object SecurityVault {
     fun getDefaultGoogleWeatherKey(context: Context? = null): String {
         if (!isPackageGenuine(context)) return ""
         return decodeHexXor(BuildConfig.DEFAULT_GOOGLE_WEATHER_KEY_ENC, MASK_SEED xor 0x24681357)
+    }
+
+    fun getUpdateBaseEndpoint(context: Context? = null): String {
+        if (!isPackageGenuine(context)) return ""
+        return decodeHexXor(BuildConfig.UPDATE_ENDPOINT_BASE_ENC, MASK_SEED xor 0x369C258D)
+    }
+
+    fun getUpdateAcceptHeader(): String {
+        return decodeHexXor(BuildConfig.UPDATE_ACCEPT_HEADER_ENC, MASK_SEED xor 0x48151623)
+    }
+
+    fun getScmProviderKeyword(): String {
+        return charArrayOf('g', 'i', 't', 'h', 'u', 'b').concatToString()
     }
 
     private fun decodeHexXor(encodedHex: String, seed: Int): String {

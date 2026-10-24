@@ -209,7 +209,7 @@ fun AppUpdateDialog(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = "✨ Tóm tắt thay đổi từ Git:",
+                                        text = "✨ Tóm tắt cập nhật",
                                         fontSize = 13.5.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = titleColor

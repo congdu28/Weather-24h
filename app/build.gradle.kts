@@ -26,8 +26,8 @@ val defaultGoogleWeatherKey: String = localProps.getProperty("GOOGLE_WEATHER_KEY
     ?: ""
 
 /**
- * Mã hóa XOR + Hex khóa API ngay tại thời điểm biên dịch (Build-time Obfuscation)
- * để không tồn tại bất kỳ chuỗi khóa dạng văn bản thuần (plaintext) nào trong BuildConfig.java hay classes.dex.
+ * Mã hóa XOR + Hex khóa API và các URL nội bộ ngay tại thời điểm biên dịch (Build-time Obfuscation)
+ * để không tồn tại bất kỳ chuỗi khóa hay đường dẫn repo dạng văn bản thuần (plaintext) nào trong APK.
  */
 fun encodeSecretForBuildConfig(raw: String, seed: Int): String {
     val trimmed = raw.trim()
@@ -47,18 +47,31 @@ val maskSeed = 0x5A3C9E71
 val encodedGeminiKey = encodeSecretForBuildConfig(defaultGeminiKey, maskSeed)
 val encodedWeatherApiKey = encodeSecretForBuildConfig(defaultWeatherApiKey, maskSeed xor 0x13572468)
 val encodedGoogleWeatherKey = encodeSecretForBuildConfig(defaultGoogleWeatherKey, maskSeed xor 0x24681357)
+val encodedUpdateRepoBase = encodeSecretForBuildConfig(
+    "https://api.github.com/repos/congdu28/Weather-24h",
+    maskSeed xor 0x369C258D
+)
+val encodedUpdateAcceptHeader = encodeSecretForBuildConfig(
+    "application/vnd.github.v3+json",
+    maskSeed xor 0x48151623
+)
 
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.56"
+    ?: "1.0.57"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 156
+    ?: 157
 
 android {
     namespace = "com.weather24h.app"
     compileSdk = 34
+
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
 
     signingConfigs {
         create("release") {
@@ -102,6 +115,8 @@ android {
         buildConfigField("String", "DEFAULT_GEMINI_API_KEY_ENC", "\"$encodedGeminiKey\"")
         buildConfigField("String", "DEFAULT_GOOGLE_WEATHER_KEY_ENC", "\"$encodedGoogleWeatherKey\"")
         buildConfigField("String", "DEFAULT_WEATHER_API_KEY_ENC", "\"$encodedWeatherApiKey\"")
+        buildConfigField("String", "UPDATE_ENDPOINT_BASE_ENC", "\"$encodedUpdateRepoBase\"")
+        buildConfigField("String", "UPDATE_ACCEPT_HEADER_ENC", "\"$encodedUpdateAcceptHeader\"")
     }
 
     buildTypes {

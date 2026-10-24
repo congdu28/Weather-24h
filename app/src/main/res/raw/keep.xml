@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@layout/a_widget_reinflate_v57,@layout/weather_widget,@layout/weather_widget_compact,@layout/weather_widget_forecast,@layout/weather_widget_mini" />

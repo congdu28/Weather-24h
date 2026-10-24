@@ -491,21 +491,21 @@ fun WeatherScreen(
                                 }
                             }
 
-                            // 5. AI Smart Stylist Card (được đưa xuống dưới Radar & Âm lịch)
+                            // 5. 7-Day Forecast Section (Đưa lên trên khối AI Stylist)
+                            item(key = "daily_forecast_section", contentType = "daily") {
+                                DailyForecastSection(
+                                    dailyList = weather.daily7Days,
+                                    showLunarCalendar = isLunarCalendarEnabled
+                                )
+                            }
+
+                            // 6. AI Smart Stylist Card
                             item(key = "outfit_stylist_card", contentType = "stylist") {
                                 OutfitStylistCard(
                                     outfit = state.outfit,
                                     isLoading = state.isOutfitLoading,
                                     onRefresh = { viewModel.refreshOutfit() },
                                     onConfigureApiKey = { showSettingsDialog = true }
-                                )
-                            }
-
-                            // 6. 7-Day Forecast Section (Đưa lên trên khối Chất lượng không khí)
-                            item(key = "daily_forecast_section", contentType = "daily") {
-                                DailyForecastSection(
-                                    dailyList = weather.daily7Days,
-                                    showLunarCalendar = isLunarCalendarEnabled
                                 )
                             }
 

@@ -116,17 +116,12 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextColor(R.id.compact_widget_temp, colorPrimary)
                 views.setTextColor(R.id.compact_widget_city, colorPrimary)
                 views.setTextColor(R.id.compact_widget_desc, colorAccent)
+                views.setViewVisibility(R.id.compact_widget_sub, View.GONE)
 
-                views.setTextColor(R.id.compact_2x2_city, colorPrimary)
-                views.setTextColor(R.id.compact_2x2_temp, colorPrimary)
-                views.setTextColor(R.id.compact_2x2_range, colorAccent)
-
-                // Nút bấm Làm mới trực tiếp trên cả 2 chế độ 2x1 và 2x2
+                // Nút bấm Làm mới trực tiếp
                 val btnRefreshBgRes = if (isDark) R.drawable.widget_refresh_btn_bg_dark else R.drawable.widget_refresh_btn_bg_light
                 views.setInt(R.id.compact_widget_btn_refresh, "setBackgroundResource", btnRefreshBgRes)
                 views.setInt(R.id.compact_widget_btn_refresh, "setColorFilter", colorAccent)
-                views.setInt(R.id.compact_2x2_btn_refresh, "setBackgroundResource", btnRefreshBgRes)
-                views.setInt(R.id.compact_2x2_btn_refresh, "setColorFilter", colorAccent)
 
                 val refreshIntent = Intent(context, WeatherWidgetProvider::class.java).apply {
                     action = WeatherWidgetProvider.ACTION_REFRESH_WIDGET
@@ -138,7 +133,6 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 views.setOnClickPendingIntent(R.id.compact_widget_btn_refresh, refreshPendingIntent)
-                views.setOnClickPendingIntent(R.id.compact_2x2_btn_refresh, refreshPendingIntent)
 
                 val intent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -152,7 +146,7 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 )
                 views.setOnClickPendingIntent(R.id.compact_widget_root, pendingIntent)
 
-                // Đọc kích thước thực tế từ Launcher để chọn bố cục 2x1 hoặc 2x2 chuẩn xác
+                // Căn chỉnh cỡ chữ & khoảng đệm linh hoạt cho 2x1 và 2x2
                 val options = appWidgetManager.getAppWidgetOptions(widgetId)
                 val minWidth = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 150
                 val minHeight = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) ?: 65
@@ -162,59 +156,34 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                 val isNarrow = minWidth < 165
 
                 val padH = ((if (is2x2Mode) 14 else if (isNarrow) 10 else 13) * density).toInt()
-                val padV = ((if (is2x2Mode) 12 else 7) * density).toInt()
+                val padV = ((if (is2x2Mode) 12 else 8) * density).toInt()
                 views.setViewPadding(R.id.compact_widget_content, padH, padV, padH, padV)
 
-                views.setViewVisibility(R.id.compact_layout_2x1, if (is2x2Mode) View.GONE else View.VISIBLE)
-                views.setViewVisibility(R.id.compact_layout_2x2, if (is2x2Mode) View.VISIBLE else View.GONE)
-
-                // Trong chế độ 2x1: điều chỉnh cỡ chữ & nút refresh theo bề ngang
                 views.setViewVisibility(
                     R.id.compact_widget_btn_refresh,
                     if (minWidth < 135) View.GONE else View.VISIBLE
                 )
-                views.setTextViewTextSize(
-                    R.id.compact_widget_icon,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    if (isNarrow) 21f else 25f
-                )
-                views.setTextViewTextSize(
-                    R.id.compact_widget_temp,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    if (isNarrow) 23f else 28f
-                )
-                views.setTextViewTextSize(
-                    R.id.compact_widget_city,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    if (isNarrow) 13f else 15f
-                )
-                views.setTextViewTextSize(
-                    R.id.compact_widget_desc,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    if (isNarrow) 10.5f else 11.5f
-                )
 
-                // Trong chế độ 2x2: điều chỉnh cỡ chữ thoáng đẹp
-                views.setTextViewTextSize(
-                    R.id.compact_2x2_city,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    if (isNarrow) 14.5f else 16f
-                )
-                views.setTextViewTextSize(
-                    R.id.compact_2x2_icon,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    if (isNarrow) 28f else 34f
-                )
-                views.setTextViewTextSize(
-                    R.id.compact_2x2_temp,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    if (isNarrow) 34f else 42f
-                )
-                views.setTextViewTextSize(
-                    R.id.compact_2x2_range,
-                    TypedValue.COMPLEX_UNIT_SP,
-                    if (isNarrow) 11.5f else 13f
-                )
+                when {
+                    is2x2Mode -> {
+                        views.setTextViewTextSize(R.id.compact_widget_icon, TypedValue.COMPLEX_UNIT_SP, if (isNarrow) 26f else 30f)
+                        views.setTextViewTextSize(R.id.compact_widget_temp, TypedValue.COMPLEX_UNIT_SP, if (isNarrow) 30f else 34f)
+                        views.setTextViewTextSize(R.id.compact_widget_city, TypedValue.COMPLEX_UNIT_SP, if (isNarrow) 15f else 16.5f)
+                        views.setTextViewTextSize(R.id.compact_widget_desc, TypedValue.COMPLEX_UNIT_SP, if (isNarrow) 12f else 13f)
+                    }
+                    isNarrow -> {
+                        views.setTextViewTextSize(R.id.compact_widget_icon, TypedValue.COMPLEX_UNIT_SP, 21f)
+                        views.setTextViewTextSize(R.id.compact_widget_temp, TypedValue.COMPLEX_UNIT_SP, 23.5f)
+                        views.setTextViewTextSize(R.id.compact_widget_city, TypedValue.COMPLEX_UNIT_SP, 13f)
+                        views.setTextViewTextSize(R.id.compact_widget_desc, TypedValue.COMPLEX_UNIT_SP, 10.5f)
+                    }
+                    else -> {
+                        views.setTextViewTextSize(R.id.compact_widget_icon, TypedValue.COMPLEX_UNIT_SP, 25f)
+                        views.setTextViewTextSize(R.id.compact_widget_temp, TypedValue.COMPLEX_UNIT_SP, 28f)
+                        views.setTextViewTextSize(R.id.compact_widget_city, TypedValue.COMPLEX_UNIT_SP, 14.5f)
+                        views.setTextViewTextSize(R.id.compact_widget_desc, TypedValue.COMPLEX_UNIT_SP, 11.5f)
+                    }
+                }
 
                 if (weather != null) {
                     val condition = weather.current.condition
@@ -224,33 +193,18 @@ class CompactWeatherWidgetProvider : AppWidgetProvider() {
                     val minT = weather.minTemp24h.roundToInt()
                     val shortCity = WidgetThemeHelper.formatShortLocationName(weather.location.name)
 
-                    // Đổ dữ liệu bố cục 2x1
                     views.setTextViewText(R.id.compact_widget_icon, emoji)
                     views.setTextViewText(R.id.compact_widget_temp, curT)
                     views.setTextViewText(R.id.compact_widget_city, shortCity)
                     views.setTextViewText(
                         R.id.compact_widget_desc,
-                        if (isNarrow) "$maxT° / $minT°" else "Cao $maxT° • Thấp $minT°"
-                    )
-
-                    // Đổ dữ liệu bố cục 2x2
-                    views.setTextViewText(R.id.compact_2x2_city, shortCity)
-                    views.setTextViewText(R.id.compact_2x2_icon, emoji)
-                    views.setTextViewText(R.id.compact_2x2_temp, curT)
-                    views.setTextViewText(
-                        R.id.compact_2x2_range,
-                        "Cao $maxT°  •  Thấp $minT°"
+                        if (isNarrow && !is2x2Mode) "$maxT° / $minT°" else "Cao $maxT° • Thấp $minT°"
                     )
                 } else {
                     views.setTextViewText(R.id.compact_widget_icon, "☀️")
                     views.setTextViewText(R.id.compact_widget_temp, "--°")
                     views.setTextViewText(R.id.compact_widget_city, "Weather 24h")
                     views.setTextViewText(R.id.compact_widget_desc, "--° / --°")
-
-                    views.setTextViewText(R.id.compact_2x2_city, "Weather 24h")
-                    views.setTextViewText(R.id.compact_2x2_icon, "☀️")
-                    views.setTextViewText(R.id.compact_2x2_temp, "--°")
-                    views.setTextViewText(R.id.compact_2x2_range, "Chạm để cập nhật")
                 }
 
                 appWidgetManager.updateAppWidget(widgetId, views)

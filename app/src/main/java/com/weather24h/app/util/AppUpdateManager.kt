@@ -27,9 +27,6 @@ class AppUpdateManager(private val context: Context) {
         .build()
 
     companion object {
-        const val GITHUB_LATEST_RELEASE_API =
-            "https://api.github.com/repos/congdu28/Weather-24h/releases/latest"
-
         /**
          * So sánh 2 chuỗi phiên bản dạng "1.0.40" vs "1.0.41" hoặc "v1.0.40"
          * Trả về true nếu latest > current
@@ -52,8 +49,8 @@ class AppUpdateManager(private val context: Context) {
         }
 
         /**
-         * Lọc sạch toàn bộ đường dẫn git, repo, markdown links, commit SHA khỏi mô tả bản cập nhật,
-         * chỉ giữ lại các nội dung tính năng/thay đổi thân thiện với người dùng để bảo mật repo.
+         * Lọc sạch toàn bộ đường dẫn máy chủ, markdown links, mã hash khỏi mô tả bản cập nhật,
+         * chỉ giữ lại các nội dung tính năng/thay đổi thân thiện với người dùng.
          */
         fun sanitizeReleaseNotes(rawBody: String?): String {
             if (rawBody.isNullOrBlank()) {
@@ -62,12 +59,12 @@ class AppUpdateManager(private val context: Context) {
 
             val lines = rawBody.lines()
             val cleanedLines = mutableListOf<String>()
+            val scmKeyword = SecurityVault.getScmProviderKeyword()
 
             for (line in lines) {
                 val trimmed = line.trim()
                 if (trimmed.isBlank()) continue
 
-                // Bỏ qua các tiêu đề markdown hoặc các dòng chỉ chứa link changelog thuần túy
                 if (trimmed.startsWith("##") ||
                     trimmed.startsWith("http://") ||
                     trimmed.startsWith("https://") ||
@@ -77,22 +74,14 @@ class AppUpdateManager(private val context: Context) {
                     continue
                 }
 
-                // Loại bỏ các cú pháp URL http/https trong dòng
                 var clean = trimmed.replace(Regex("""https?://\S+"""), "").trim()
-
-                // Loại bỏ cú pháp Markdown link [Text](url) -> Text
                 clean = clean.replace(Regex("""\[(.*?)\]\(.*?\)"""), "$1").trim()
-
-                // Loại bỏ phần đuôi " by @user ..." hoặc " in #..." hoặc " in ..." nếu có
                 clean = clean.replace(Regex("""\s+by\s+@[a-zA-Z0-9_\-]+.*$"""), "").trim()
                 clean = clean.replace(Regex("""\s+in\s+#[0-9]+.*$"""), "").trim()
                 clean = clean.replace(Regex("""\s+in\s*$"""), "").trim()
-
-                // Loại bỏ markdown in đậm / in nghiêng
                 clean = clean.replace("**", "").replace("__", "").trim()
 
-                // Bỏ qua nếu dòng sau khi lọc chỉ còn từ khóa git/github hoặc quá ngắn
-                if (clean.contains("github", ignoreCase = true) ||
+                if (clean.contains(scmKeyword, ignoreCase = true) ||
                     clean.contains("compare/", ignoreCase = true) ||
                     clean.contains("commit/", ignoreCase = true) ||
                     clean.contains("pull/", ignoreCase = true)
@@ -100,25 +89,21 @@ class AppUpdateManager(private val context: Context) {
                     continue
                 }
 
-                // Loại bỏ tiền tố bullet cũ nếu có để xử lý nội dung chính
                 if (clean.startsWith("* ") || clean.startsWith("- ") || clean.startsWith("• ")) {
                     clean = clean.substring(2).trim()
                 } else if (clean.startsWith("•")) {
                     clean = clean.removePrefix("•").trim()
                 }
 
-                // Loại bỏ tiền tố commit kỹ thuật: feat(scope):, fix:, chore:, perf:, [fix], etc.
                 clean = clean.replace(
                     Regex("""^(?:\[(?:feat|fix|perf|refactor|chore|style|test|build|ci)\]|(?:feat|fix|perf|refactor|chore|style|test|build|ci)(?:\([a-zA-Z0-9_\- ]+\))?:)\s*""", RegexOption.IGNORE_CASE),
                     ""
                 ).trim()
 
-                // Viết hoa chữ cái đầu tiên cho chuẩn mực ứng dụng thương mại
                 if (clean.isNotEmpty() && clean[0].isLowerCase()) {
                     clean = clean.replaceFirstChar { it.uppercaseChar() }
                 }
 
-                // Chuẩn hóa dấu đầu dòng
                 if (clean.isNotEmpty()) {
                     clean = "• $clean"
                 }
@@ -145,15 +130,20 @@ class AppUpdateManager(private val context: Context) {
     }
 
     /**
-     * Kiểm tra phiên bản mới nhất từ backend GitHub Release ngầm
+     * Kiểm tra phiên bản mới nhất ngầm qua kênh bảo mật
      */
     suspend fun checkForUpdates(
         currentVersion: String = BuildConfig.VERSION_NAME
     ): Result<AppUpdateInfo> = withContext(Dispatchers.IO) {
         try {
+            val baseEndpoint = SecurityVault.getUpdateBaseEndpoint(context)
+            if (baseEndpoint.isBlank()) {
+                return@withContext Result.failure(Exception("Không thể kết nối máy chủ cập nhật"))
+            }
+            val latestUrl = "$baseEndpoint/releases/latest"
             val request = Request.Builder()
-                .url(GITHUB_LATEST_RELEASE_API)
-                .header("Accept", "application/vnd.github.v3+json")
+                .url(latestUrl)
+                .header("Accept", SecurityVault.getUpdateAcceptHeader())
                 .header("User-Agent", "Weather24h-Android/${BuildConfig.VERSION_NAME}")
                 .build()
 
@@ -174,20 +164,18 @@ class AppUpdateManager(private val context: Context) {
             val releaseTitle = rawTitle.replace(Regex("""https?://\S+"""), "").trim().ifBlank { "Bản cập nhật v$latestVersion" }
             var releaseNotes = sanitizeReleaseNotes(jsonObject.get("body")?.asString)
 
-            // Nếu releaseNotes rỗng hoặc chỉ có câu fallback chung chung, tự động lấy thông tin từ commits thật của Git
             if (isFallbackReleaseNotes(releaseNotes) && rawTag.isNotBlank()) {
-                val compareNotes = fetchCompareReleaseNotes(currentVersion, rawTag)
+                val compareNotes = fetchCompareReleaseNotes(baseEndpoint, currentVersion, rawTag)
                 if (!compareNotes.isNullOrBlank() && !isFallbackReleaseNotes(compareNotes)) {
                     releaseNotes = compareNotes
                 } else {
-                    val commitNotes = fetchCommitReleaseNotes(rawTag)
+                    val commitNotes = fetchCommitReleaseNotes(baseEndpoint, rawTag)
                     if (!commitNotes.isNullOrBlank() && !isFallbackReleaseNotes(commitNotes)) {
                         releaseNotes = commitNotes
                     }
                 }
             }
 
-            // Tìm asset APK trong danh sách assets
             var apkUrl = ""
             var apkSize = 0L
 
@@ -292,7 +280,6 @@ class AppUpdateManager(private val context: Context) {
                 return Result.failure(Exception("Tệp cài đặt APK không tồn tại hoặc bị hỏng"))
             }
 
-            // Kiểm tra quyền cài đặt từ nguồn ngoài trên Android 8.0+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 if (!context.packageManager.canRequestPackageInstalls()) {
                     val permissionIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
@@ -325,18 +312,14 @@ class AppUpdateManager(private val context: Context) {
         }
     }
 
-    /**
-     * Lấy danh sách commit messages thực tế giữa phiên bản hiện tại và phiên bản mới nhất
-     * từ GitHub Compare API: /compare/v{currentVersion}...v{latestVersion}
-     */
-    private fun fetchCompareReleaseNotes(currentVersion: String, latestTag: String): String? {
+    private fun fetchCompareReleaseNotes(baseEndpoint: String, currentVersion: String, latestTag: String): String? {
         return try {
             val cleanCurrent = currentVersion.trim().removePrefix("v").removePrefix("V")
             val cleanLatest = latestTag.trim().removePrefix("v").removePrefix("V")
-            val compareUrl = "https://api.github.com/repos/congdu28/Weather-24h/compare/v${cleanCurrent}...v${cleanLatest}"
+            val compareUrl = "$baseEndpoint/compare/v${cleanCurrent}...v${cleanLatest}"
             val request = Request.Builder()
                 .url(compareUrl)
-                .header("Accept", "application/vnd.github.v3+json")
+                .header("Accept", SecurityVault.getUpdateAcceptHeader())
                 .header("User-Agent", "Weather24h-Android/${BuildConfig.VERSION_NAME}")
                 .build()
 
@@ -367,16 +350,12 @@ class AppUpdateManager(private val context: Context) {
         }
     }
 
-    /**
-     * Fallback đọc commit message trực tiếp từ tag của phiên bản mới nhất
-     * khi release body không chứa nội dung mô tả chi tiết.
-     */
-    private fun fetchCommitReleaseNotes(rawTag: String): String? {
+    private fun fetchCommitReleaseNotes(baseEndpoint: String, rawTag: String): String? {
         return try {
-            val commitUrl = "https://api.github.com/repos/congdu28/Weather-24h/commits/$rawTag"
+            val commitUrl = "$baseEndpoint/commits/$rawTag"
             val request = Request.Builder()
                 .url(commitUrl)
-                .header("Accept", "application/vnd.github.v3+json")
+                .header("Accept", SecurityVault.getUpdateAcceptHeader())
                 .header("User-Agent", "Weather24h-Android/${BuildConfig.VERSION_NAME}")
                 .build()
 
