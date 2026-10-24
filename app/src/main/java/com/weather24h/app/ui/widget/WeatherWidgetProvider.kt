@@ -108,7 +108,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     }
 
                     val compactViews = RemoteViews(appContext.packageName, R.layout.weather_widget_compact)
-                    compactViews.setTextViewText(R.id.compact_widget_desc, "Đang lấy vị trí mới...")
+                    compactViews.setTextViewText(R.id.compact_widget_desc, "Đang tải...")
+                    compactViews.setTextViewText(R.id.compact_2x2_range, "Đang tải...")
                     val compactComp = ComponentName(appContext, CompactWeatherWidgetProvider::class.java)
                     val compactIds = appWidgetManager.getAppWidgetIds(compactComp)
                     if (compactIds.isNotEmpty()) {

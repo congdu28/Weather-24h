@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.TypedValue
-import android.view.View
 import android.widget.RemoteViews
 import com.google.gson.Gson
 import com.weather24h.app.MainActivity
@@ -109,13 +108,11 @@ class MiniWeatherWidgetProvider : AppWidgetProvider() {
                 }
 
                 val colorPrimary = if (isDark || widgetStyle != WidgetStyle.FROSTED_GLASS) 0xFFFFFFFF.toInt() else 0xFF0F172A.toInt()
-                val colorSecondary = if (isDark || widgetStyle != WidgetStyle.FROSTED_GLASS) 0xFFCBD5E1.toInt() else 0xFF475569.toInt()
                 val colorAccent = if (isDark || widgetStyle != WidgetStyle.FROSTED_GLASS) 0xFF38BDF8.toInt() else 0xFF0284C7.toInt()
 
                 views.setTextColor(R.id.mini_widget_temp, colorPrimary)
                 views.setTextColor(R.id.mini_widget_city, colorPrimary)
                 views.setTextColor(R.id.mini_widget_desc, colorAccent)
-                views.setTextColor(R.id.mini_widget_sub, colorSecondary)
 
                 val intent = Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
@@ -129,53 +126,44 @@ class MiniWeatherWidgetProvider : AppWidgetProvider() {
                 )
                 views.setOnClickPendingIntent(R.id.mini_widget_root, pendingIntent)
 
-                // Responsive theo kích thước thực tế của ô Widget (1x1, 2x1, 2x2)
+                // Tự động co giãn cỡ chữ theo kích thước thực tế (1x1, 2x1, 2x2)
                 val options = appWidgetManager.getAppWidgetOptions(widgetId)
                 val minWidth = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 70
                 val minHeight = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT) ?: 70
                 val density = context.resources.displayMetrics.density
 
-                val is2x2 = minWidth >= 125 && minHeight >= 110
-                val isWide2x1 = minWidth >= 125 && minHeight < 110
-                val isUltraCompact1x1 = minHeight < 64 || minWidth < 62
+                val is2x2 = minWidth >= 125 && minHeight >= 105
+                val isWide2x1 = minWidth >= 125 && minHeight < 105
+                val isCompact1x1 = minHeight < 62 || minWidth < 62
 
-                val padH = ((if (is2x2) 10 else if (isWide2x1) 8 else 5) * density).toInt()
-                val padV = ((if (is2x2) 8 else if (isUltraCompact1x1) 3 else 5) * density).toInt()
+                val padH = ((if (is2x2) 12 else if (isWide2x1) 10 else 5) * density).toInt()
+                val padV = ((if (is2x2) 10 else if (isCompact1x1) 4 else 6) * density).toInt()
                 views.setViewPadding(R.id.mini_widget_content, padH, padV, padH, padV)
 
                 when {
                     is2x2 -> {
+                        views.setTextViewTextSize(R.id.mini_widget_city, TypedValue.COMPLEX_UNIT_SP, 15f)
                         views.setTextViewTextSize(R.id.mini_widget_icon, TypedValue.COMPLEX_UNIT_SP, 28f)
-                        views.setTextViewTextSize(R.id.mini_widget_temp, TypedValue.COMPLEX_UNIT_SP, 26f)
-                        views.setTextViewTextSize(R.id.mini_widget_city, TypedValue.COMPLEX_UNIT_SP, 13.5f)
-                        views.setTextViewTextSize(R.id.mini_widget_desc, TypedValue.COMPLEX_UNIT_SP, 10.5f)
-                        views.setTextViewTextSize(R.id.mini_widget_sub, TypedValue.COMPLEX_UNIT_SP, 9.5f)
-                        views.setViewVisibility(R.id.mini_widget_desc, View.VISIBLE)
-                        views.setViewVisibility(R.id.mini_widget_sub, View.VISIBLE)
+                        views.setTextViewTextSize(R.id.mini_widget_temp, TypedValue.COMPLEX_UNIT_SP, 34f)
+                        views.setTextViewTextSize(R.id.mini_widget_desc, TypedValue.COMPLEX_UNIT_SP, 12.5f)
                     }
                     isWide2x1 -> {
-                        views.setTextViewTextSize(R.id.mini_widget_icon, TypedValue.COMPLEX_UNIT_SP, 20f)
-                        views.setTextViewTextSize(R.id.mini_widget_temp, TypedValue.COMPLEX_UNIT_SP, 19.5f)
-                        views.setTextViewTextSize(R.id.mini_widget_city, TypedValue.COMPLEX_UNIT_SP, 11.5f)
-                        views.setTextViewTextSize(R.id.mini_widget_desc, TypedValue.COMPLEX_UNIT_SP, 9.5f)
-                        views.setViewVisibility(R.id.mini_widget_desc, View.VISIBLE)
-                        views.setViewVisibility(R.id.mini_widget_sub, View.GONE)
+                        views.setTextViewTextSize(R.id.mini_widget_city, TypedValue.COMPLEX_UNIT_SP, 13f)
+                        views.setTextViewTextSize(R.id.mini_widget_icon, TypedValue.COMPLEX_UNIT_SP, 21f)
+                        views.setTextViewTextSize(R.id.mini_widget_temp, TypedValue.COMPLEX_UNIT_SP, 25f)
+                        views.setTextViewTextSize(R.id.mini_widget_desc, TypedValue.COMPLEX_UNIT_SP, 11f)
                     }
-                    isUltraCompact1x1 -> {
-                        views.setTextViewTextSize(R.id.mini_widget_icon, TypedValue.COMPLEX_UNIT_SP, 16.5f)
-                        views.setTextViewTextSize(R.id.mini_widget_temp, TypedValue.COMPLEX_UNIT_SP, 16f)
-                        views.setTextViewTextSize(R.id.mini_widget_city, TypedValue.COMPLEX_UNIT_SP, 9.5f)
-                        views.setTextViewTextSize(R.id.mini_widget_desc, TypedValue.COMPLEX_UNIT_SP, 8f)
-                        views.setViewVisibility(R.id.mini_widget_desc, if (minHeight < 54) View.GONE else View.VISIBLE)
-                        views.setViewVisibility(R.id.mini_widget_sub, View.GONE)
+                    isCompact1x1 -> {
+                        views.setTextViewTextSize(R.id.mini_widget_city, TypedValue.COMPLEX_UNIT_SP, 10f)
+                        views.setTextViewTextSize(R.id.mini_widget_icon, TypedValue.COMPLEX_UNIT_SP, 15.5f)
+                        views.setTextViewTextSize(R.id.mini_widget_temp, TypedValue.COMPLEX_UNIT_SP, 19f)
+                        views.setTextViewTextSize(R.id.mini_widget_desc, TypedValue.COMPLEX_UNIT_SP, 9f)
                     }
                     else -> {
-                        views.setTextViewTextSize(R.id.mini_widget_icon, TypedValue.COMPLEX_UNIT_SP, 19.5f)
-                        views.setTextViewTextSize(R.id.mini_widget_temp, TypedValue.COMPLEX_UNIT_SP, 18f)
-                        views.setTextViewTextSize(R.id.mini_widget_city, TypedValue.COMPLEX_UNIT_SP, 10.5f)
-                        views.setTextViewTextSize(R.id.mini_widget_desc, TypedValue.COMPLEX_UNIT_SP, 8.8f)
-                        views.setViewVisibility(R.id.mini_widget_desc, View.VISIBLE)
-                        views.setViewVisibility(R.id.mini_widget_sub, View.GONE)
+                        views.setTextViewTextSize(R.id.mini_widget_city, TypedValue.COMPLEX_UNIT_SP, 11f)
+                        views.setTextViewTextSize(R.id.mini_widget_icon, TypedValue.COMPLEX_UNIT_SP, 18f)
+                        views.setTextViewTextSize(R.id.mini_widget_temp, TypedValue.COMPLEX_UNIT_SP, 22f)
+                        views.setTextViewTextSize(R.id.mini_widget_desc, TypedValue.COMPLEX_UNIT_SP, 10f)
                     }
                 }
 
@@ -184,26 +172,23 @@ class MiniWeatherWidgetProvider : AppWidgetProvider() {
                     val emoji = getWeatherEmoji(condition, weather.current.isDay)
                     val maxT = weather.maxTemp24h.roundToInt()
                     val minT = weather.minTemp24h.roundToInt()
+                    val shortCity = WidgetThemeHelper.formatShortLocationName(weather.location.name)
 
+                    views.setTextViewText(R.id.mini_widget_city, shortCity)
                     views.setTextViewText(R.id.mini_widget_icon, emoji)
                     views.setTextViewText(R.id.mini_widget_temp, "${weather.current.temperature.roundToInt()}°")
-                    views.setTextViewText(R.id.mini_widget_city, weather.location.name)
 
-                    val descText = when {
-                        is2x2 || isWide2x1 -> "${condition.description} • $maxT°/$minT°"
-                        else -> "$maxT° / $minT°"
+                    val rangeText = if (is2x2 || isWide2x1) {
+                        "Cao $maxT° • Thấp $minT°"
+                    } else {
+                        "$maxT° / $minT°"
                     }
-                    views.setTextViewText(R.id.mini_widget_desc, descText)
-                    views.setTextViewText(
-                        R.id.mini_widget_sub,
-                        "Cảm giác ${weather.current.feelsLike.roundToInt()}° • 💧${weather.current.humidity}%"
-                    )
+                    views.setTextViewText(R.id.mini_widget_desc, rangeText)
                 } else {
+                    views.setTextViewText(R.id.mini_widget_city, "Weather")
                     views.setTextViewText(R.id.mini_widget_icon, "☀️")
                     views.setTextViewText(R.id.mini_widget_temp, "--°")
-                    views.setTextViewText(R.id.mini_widget_city, "Weather")
-                    views.setTextViewText(R.id.mini_widget_desc, "24h")
-                    views.setTextViewText(R.id.mini_widget_sub, "Chạm để cập nhật")
+                    views.setTextViewText(R.id.mini_widget_desc, "--° / --°")
                 }
 
                 appWidgetManager.updateAppWidget(widgetId, views)

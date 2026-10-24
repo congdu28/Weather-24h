@@ -12,13 +12,11 @@
         android:scaleType="fitXY"
         android:src="@drawable/widget_bg_dark" />
 
-    <!-- Foreground Content Layer (hỗ trợ linh hoạt cả 2x1 và 2x2) -->
-    <LinearLayout
+    <!-- Foreground Content Layer: Hỗ trợ 2 bố cục tinh gọn cho 2x1 (ngang) và 2x2 (vuông) -->
+    <FrameLayout
         android:id="@+id/compact_widget_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:gravity="center_vertical"
-        android:orientation="vertical"
         android:paddingLeft="12dp"
         android:paddingRight="12dp"
         android:paddingStart="12dp"
@@ -26,15 +24,14 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp">
 
-        <!-- Main Row (Luôn hiển thị cho cả 2x1 và 2x2) -->
+        <!-- 1. BỐ CỤC NGANG 2x1: [Icon + Nhiệt độ hiện tại] | [Địa điểm rút gọn + Cao/Thấp] | [Refresh] -->
         <LinearLayout
-            android:id="@+id/compact_main_row"
+            android:id="@+id/compact_layout_2x1"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <!-- Left: Weather Icon & Temp -->
             <TextView
                 android:id="@+id/compact_widget_icon"
                 android:layout_width="wrap_content"
@@ -48,19 +45,19 @@
                 android:id="@+id/compact_widget_temp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="9dp"
                 android:includeFontPadding="false"
                 android:singleLine="true"
                 android:text="28°"
                 android:textColor="#FFFFFF"
-                android:textSize="25sp"
+                android:textSize="27sp"
                 android:textStyle="bold" />
 
-            <!-- Center: City & Details -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:gravity="center_vertical"
                 android:orientation="vertical">
 
                 <TextView
@@ -73,314 +70,131 @@
                     android:singleLine="true"
                     android:text="Hà Nội"
                     android:textColor="#FFFFFF"
-                    android:textSize="13.5sp"
+                    android:textSize="14sp"
                     android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/compact_widget_desc"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
+                    android:layout_marginTop="2dp"
                     android:ellipsize="end"
                     android:includeFontPadding="false"
                     android:maxLines="1"
                     android:singleLine="true"
-                    android:text="Trời nắng • Cảm giác 30°"
-                    android:textColor="#CBD5E1"
-                    android:textSize="10sp" />
-
-                <TextView
-                    android:id="@+id/compact_widget_sub"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="1dp"
-                    android:ellipsize="end"
-                    android:includeFontPadding="false"
-                    android:maxLines="1"
-                    android:singleLine="true"
-                    android:text="C:32° T:24° • 16/9 ÂL"
+                    android:text="Cao 32° • Thấp 24°"
                     android:textColor="#38BDF8"
-                    android:textSize="9.5sp"
+                    android:textSize="11sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Refresh Button -->
             <ImageView
                 android:id="@+id/compact_widget_btn_refresh"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
-                android:layout_marginStart="5dp"
+                android:layout_marginStart="6dp"
                 android:background="@drawable/widget_refresh_btn_bg_dark"
                 android:contentDescription="Làm mới thời tiết"
                 android:padding="4.5dp"
                 android:src="@drawable/ic_refresh" />
-
         </LinearLayout>
 
-        <!-- Extra Section cho kích thước 2x2 (Tự động bật khi chiều cao >= 108dp) -->
+        <!-- 2. BỐ CỤC VUÔNG 2x2: Sang trọng, thoáng đãng, tập trung vào Địa điểm, Nhiệt độ hiện tại & Cao/Thấp -->
         <LinearLayout
-            android:id="@+id/compact_2x2_extra_container"
+            android:id="@+id/compact_layout_2x2"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="7dp"
+            android:layout_height="match_parent"
+            android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- 4 Khung giờ tiếp theo -->
+            <!-- Hàng trên: Địa điểm rút gọn & nút làm mới -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:baselineAligned="false"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <!-- Hour 1 -->
-                <LinearLayout
-                    android:id="@+id/compact_h1_container"
+                <TextView
+                    android:id="@+id/compact_2x2_city"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="2dp"
                     android:layout_weight="1"
-                    android:background="@drawable/widget_hour_chip_dark"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingTop="3.5dp"
-                    android:paddingBottom="3.5dp"
-                    android:paddingStart="1dp"
-                    android:paddingEnd="1dp">
+                    android:ellipsize="end"
+                    android:includeFontPadding="false"
+                    android:maxLines="1"
+                    android:singleLine="true"
+                    android:text="Hà Nội"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15.5sp"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/compact_h1_time"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="14:00"
-                        android:textColor="#94A3B8"
-                        android:textSize="8.5sp" />
-
-                    <TextView
-                        android:id="@+id/compact_h1_icon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:includeFontPadding="false"
-                        android:text="☀️"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/compact_h1_temp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="30°"
-                        android:textColor="#FFFFFF"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/compact_h1_rain"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="—"
-                        android:textColor="#38BDF8"
-                        android:textSize="8sp" />
-                </LinearLayout>
-
-                <!-- Hour 2 -->
-                <LinearLayout
-                    android:id="@+id/compact_h2_container"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="1dp"
-                    android:layout_marginEnd="2dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/widget_hour_chip_dark"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingTop="3.5dp"
-                    android:paddingBottom="3.5dp"
-                    android:paddingStart="1dp"
-                    android:paddingEnd="1dp">
-
-                    <TextView
-                        android:id="@+id/compact_h2_time"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="15:00"
-                        android:textColor="#94A3B8"
-                        android:textSize="8.5sp" />
-
-                    <TextView
-                        android:id="@+id/compact_h2_icon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:includeFontPadding="false"
-                        android:text="🌤️"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/compact_h2_temp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="29°"
-                        android:textColor="#FFFFFF"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/compact_h2_rain"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="—"
-                        android:textColor="#38BDF8"
-                        android:textSize="8sp" />
-                </LinearLayout>
-
-                <!-- Hour 3 -->
-                <LinearLayout
-                    android:id="@+id/compact_h3_container"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="1dp"
-                    android:layout_marginEnd="2dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/widget_hour_chip_dark"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingTop="3.5dp"
-                    android:paddingBottom="3.5dp"
-                    android:paddingStart="1dp"
-                    android:paddingEnd="1dp">
-
-                    <TextView
-                        android:id="@+id/compact_h3_time"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="16:00"
-                        android:textColor="#94A3B8"
-                        android:textSize="8.5sp" />
-
-                    <TextView
-                        android:id="@+id/compact_h3_icon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:includeFontPadding="false"
-                        android:text="⛅"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/compact_h3_temp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="28°"
-                        android:textColor="#FFFFFF"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/compact_h3_rain"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="—"
-                        android:textColor="#38BDF8"
-                        android:textSize="8sp" />
-                </LinearLayout>
-
-                <!-- Hour 4 -->
-                <LinearLayout
-                    android:id="@+id/compact_h4_container"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="1dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/widget_hour_chip_dark"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingTop="3.5dp"
-                    android:paddingBottom="3.5dp"
-                    android:paddingStart="1dp"
-                    android:paddingEnd="1dp">
-
-                    <TextView
-                        android:id="@+id/compact_h4_time"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="17:00"
-                        android:textColor="#94A3B8"
-                        android:textSize="8.5sp" />
-
-                    <TextView
-                        android:id="@+id/compact_h4_icon"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:includeFontPadding="false"
-                        android:text="🌙"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/compact_h4_temp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="1dp"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="27°"
-                        android:textColor="#FFFFFF"
-                        android:textSize="10.5sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/compact_h4_rain"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:includeFontPadding="false"
-                        android:singleLine="true"
-                        android:text="—"
-                        android:textColor="#38BDF8"
-                        android:textSize="8sp" />
-                </LinearLayout>
+                <ImageView
+                    android:id="@+id/compact_2x2_btn_refresh"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="4dp"
+                    android:background="@drawable/widget_refresh_btn_bg_dark"
+                    android:contentDescription="Làm mới thời tiết"
+                    android:padding="4.5dp"
+                    android:src="@drawable/ic_refresh" />
             </LinearLayout>
 
-            <!-- Footer chỉ số phụ trong chế độ 2x2 -->
-            <TextView
-                android:id="@+id/compact_2x2_footer"
+            <FrameLayout
                 android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Giữa: Icon + Nhiệt độ hiện tại cỡ lớn -->
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/compact_2x2_icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:includeFontPadding="false"
+                    android:text="☀️"
+                    android:textSize="32sp" />
+
+                <TextView
+                    android:id="@+id/compact_2x2_temp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:includeFontPadding="false"
+                    android:singleLine="true"
+                    android:text="28°"
+                    android:textColor="#FFFFFF"
+                    android:textSize="40sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Hàng dưới: Nhiệt độ Cao nhất / Thấp nhất ngày -->
+            <TextView
+                android:id="@+id/compact_2x2_range"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:gravity="center"
                 android:includeFontPadding="false"
                 android:maxLines="1"
                 android:singleLine="true"
-                android:text="💧 70% • 💨 12 km/h • ☀️ UV 5.0"
-                android:textColor="#CBD5E1"
-                android:textSize="9sp" />
+                android:text="Cao 32°  •  Thấp 24°"
+                android:textColor="#38BDF8"
+                android:textSize="12.5sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
-    </LinearLayout>
+    </FrameLayout>
 
 </FrameLayout>

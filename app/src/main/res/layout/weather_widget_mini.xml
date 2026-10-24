@@ -12,7 +12,7 @@
         android:scaleType="fitXY"
         android:src="@drawable/widget_bg_dark" />
 
-    <!-- Foreground Content Layer -->
+    <!-- Foreground Content Layer: Bố cục 3 tầng cân đối (Địa điểm rút gọn -> Icon + Nhiệt độ hiện tại -> Cao/Thấp) -->
     <LinearLayout
         android:id="@+id/mini_widget_content"
         android:layout_width="match_parent"
@@ -26,67 +26,65 @@
         android:paddingTop="5dp"
         android:paddingBottom="5dp">
 
-        <TextView
-            android:id="@+id/mini_widget_icon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:includeFontPadding="false"
-            android:text="☀️"
-            android:textSize="20sp" />
-
-        <TextView
-            android:id="@+id/mini_widget_temp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
-            android:includeFontPadding="false"
-            android:singleLine="true"
-            android:text="28°"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
+        <!-- Tầng 1: Địa điểm rút gọn -->
         <TextView
             android:id="@+id/mini_widget_city"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
             android:ellipsize="end"
+            android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:singleLine="true"
             android:text="Hà Nội"
             android:textColor="#FFFFFF"
-            android:textSize="10.5sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
 
+        <!-- Tầng 2: Icon + Nhiệt độ hiện tại nổi bật -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/mini_widget_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="3dp"
+                android:includeFontPadding="false"
+                android:text="☀️"
+                android:textSize="18sp" />
+
+            <TextView
+                android:id="@+id/mini_widget_temp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:singleLine="true"
+                android:text="28°"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Tầng 3: Nhiệt độ Cao nhất / Thấp nhất ngày -->
         <TextView
             android:id="@+id/mini_widget_desc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="1dp"
             android:ellipsize="end"
+            android:gravity="center"
             android:includeFontPadding="false"
             android:maxLines="1"
             android:singleLine="true"
             android:text="32° / 24°"
             android:textColor="#38BDF8"
-            android:textSize="9sp"
+            android:textSize="10sp"
             android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/mini_widget_sub"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:ellipsize="end"
-            android:includeFontPadding="false"
-            android:maxLines="1"
-            android:singleLine="true"
-            android:text="Cảm giác 30° • 💧70%"
-            android:textColor="#CBD5E1"
-            android:textSize="9.5sp"
-            android:visibility="gone" />
 
     </LinearLayout>
 
