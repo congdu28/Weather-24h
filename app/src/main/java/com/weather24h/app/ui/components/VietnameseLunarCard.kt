@@ -1,5 +1,6 @@
 package com.weather24h.app.ui.components
 
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -7,77 +8,91 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.NightsStay
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.WbSunny
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.weather24h.app.data.model.DailyForecast
+import com.weather24h.app.data.model.WeatherType
 import com.weather24h.app.ui.theme.LocalCardBorder
 import com.weather24h.app.ui.theme.LocalCardGlassBg
 import com.weather24h.app.ui.theme.LocalContentTextColor
 import com.weather24h.app.ui.theme.LocalIsDarkTheme
 import com.weather24h.app.ui.theme.LocalSubtextColor
-import com.weather24h.app.util.LunarDate
-import com.weather24h.app.util.VietnameseLunarCalendar
+import com.weather24h.app.util.*
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
+import kotlin.math.cos
+import kotlin.math.roundToInt
+import kotlin.math.sin
+
+private const val PREF_FILE = "weather24h_prefs"
+private const val PREF_BIRTH_YEAR = "lunar_user_birth_year"
+
+enum class LunarDialogTab(val label: String, val icon: ImageVector) {
+    DETAIL("Chi tiết", Icons.Default.AutoAwesome),
+    MONTH("Lịch tháng", Icons.Default.CalendarMonth),
+    GOOD_DAYS("Tìm ngày tốt", Icons.Default.EventAvailable),
+    EVENTS("Ngày lễ", Icons.Default.Celebration),
+    CONVERT("Đổi ngày", Icons.Default.SwapHoriz)
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun VietnameseLunarCard(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dailyForecasts: List<DailyForecast> = emptyList()
 ) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE) }
+    var birthYear by remember { mutableIntStateOf(prefs.getInt(PREF_BIRTH_YEAR, 0)) }
+    val profile = remember(birthYear) { if (birthYear in 1900..2100) LunarAlmanac.getPersonalProfile(birthYear) else null }
+
     val isDark = LocalIsDarkTheme.current
     val contentColor = LocalContentTextColor.current
     val subtextColor = LocalSubtextColor.current
 
-    // Quản lý ngày đang xem (mặc định hôm nay, có thể bấm trước/sau để tra cứu)
     var selectedLocalDate by remember { mutableStateOf(LocalDate.now()) }
-    var isExpanded by remember { mutableStateOf(false) }
-    var showFullMonthDialog by remember { mutableStateOf(false) }
+    var activeDialogTab by remember { mutableStateOf<LunarDialogTab?>(null) }
 
-    val lunar: LunarDate = remember(selectedLocalDate) {
-        VietnameseLunarCalendar.getLunarDate(
-            selectedLocalDate.dayOfMonth,
-            selectedLocalDate.monthValue,
-            selectedLocalDate.year
-        )
-    }
+    val almanac = remember(selectedLocalDate) { LunarAlmanac.getDayAlmanac(selectedLocalDate) }
+    val lunar = almanac.lunar
+    val personalMatch = remember(profile, almanac) { profile?.let { LunarAlmanac.matchPersonalDay(it, almanac) } }
 
-    val isToday = remember(selectedLocalDate) {
-        selectedLocalDate == LocalDate.now()
-    }
-
-    val (moonEventText, moonEventDays) = remember(lunar.day) {
-        VietnameseLunarCalendar.getNextMoonEventCountdown(lunar.day)
+    val isToday = remember(selectedLocalDate) { selectedLocalDate == LocalDate.now() }
+    val (moonEventText, moonEventDays) = remember(lunar.day, lunar.monthLength) {
+        VietnameseLunarCalendar.getNextMoonEventCountdown(lunar)
     }
 
     Box(
@@ -89,7 +104,7 @@ fun VietnameseLunarCard(
             .padding(18.dp)
     ) {
         Column {
-            // 1. Tiêu đề khối & Nút chuyển ngày
+            // 1. Header & Chuyển ngày
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -103,11 +118,7 @@ fun VietnameseLunarCard(
                         modifier = Modifier
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFFFFB703), Color(0xFFFB8500))
-                                )
-                            ),
+                            .background(Brush.linearGradient(listOf(Color(0xFFFFB703), Color(0xFFFB8500)))),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -120,7 +131,7 @@ fun VietnameseLunarCard(
                     Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = "ÂM LỊCH & TIẾT KHÍ",
+                            text = "LỊCH VẠN NIÊN & TIẾT KHÍ",
                             color = contentColor.copy(alpha = 0.90f),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
@@ -128,7 +139,7 @@ fun VietnameseLunarCard(
                             maxLines = 1
                         )
                         Text(
-                            text = "Việt Nam (GMT+7)",
+                            text = "Dương lịch: ${formatWeekdayVi(selectedLocalDate.dayOfWeek.value)}, ${selectedLocalDate.dayOfMonth}/${selectedLocalDate.monthValue}/${selectedLocalDate.year}",
                             color = subtextColor,
                             fontSize = 11.sp,
                             maxLines = 1
@@ -136,25 +147,13 @@ fun VietnameseLunarCard(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(6.dp))
-
-                // Cụm nút chuyển ngày (Trước / Hôm nay / Sau)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = { selectedLocalDate = selectedLocalDate.minusDays(1) },
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ChevronLeft,
-                            contentDescription = "Ngày trước",
-                            tint = contentColor.copy(alpha = 0.8f),
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Icon(Icons.Default.ChevronLeft, "Ngày trước", tint = contentColor.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
                     }
-
                     if (!isToday) {
                         Surface(
                             shape = RoundedCornerShape(10.dp),
@@ -167,36 +166,29 @@ fun VietnameseLunarCard(
                                 color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
                                 modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
                             )
                         }
                     }
-
                     IconButton(
                         onClick = { selectedLocalDate = selectedLocalDate.plusDays(1) },
                         modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = "Ngày sau",
-                            tint = contentColor.copy(alpha = 0.8f),
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Icon(Icons.Default.ChevronRight, "Ngày sau", tint = contentColor.copy(alpha = 0.8f), modifier = Modifier.size(20.dp))
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // 2. Banner sự kiện lễ hội hoặc đếm ngược ngày Rằm / Mùng Một
+            // 2. Banner lễ hội hoặc đếm ngược Rằm / Mùng Một
             val festival = lunar.festival
             if (festival != null) {
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = Color(0xFFEF4444).copy(alpha = 0.15f),
                     border = BorderStroke(0.5.dp, Color(0xFFEF4444).copy(alpha = 0.35f)),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clickable { activeDialogTab = LunarDialogTab.EVENTS }
                 ) {
                     Text(
                         text = festival,
@@ -213,7 +205,7 @@ fun VietnameseLunarCard(
                     shape = RoundedCornerShape(14.dp),
                     color = Color(0xFFFFB703).copy(alpha = 0.12f),
                     border = BorderStroke(0.5.dp, Color(0xFFFFB703).copy(alpha = 0.30f)),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clickable { activeDialogTab = LunarDialogTab.EVENTS }
                 ) {
                     Text(
                         text = "🌕 Còn $moonEventDays $moonEventText",
@@ -227,12 +219,15 @@ fun VietnameseLunarCard(
                 Spacer(modifier = Modifier.height(10.dp))
             }
 
-            // 3. Khối trung tâm hiển thị ngày Âm lịch & Can Chi
+            // 3. Khối trung tâm (Bấm vào mở ngay màn hình chi tiết toàn màn hình)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { activeDialogTab = LunarDialogTab.DETAIL }
+                    .padding(vertical = 2.dp)
             ) {
-                // Số ngày Âm lịch nổi bật
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
@@ -248,134 +243,163 @@ fun VietnameseLunarCard(
                         lineHeight = 38.sp
                     )
                     Text(
-                        text = "Tháng ${lunar.month}${if (lunar.isLeapMonth) " (N)" else ""}",
+                        text = "Tháng ${lunar.month}${if (lunar.isLeapMonth) " (N)" else ""}${if (lunar.isFullMonth) " Đ" else " T"}",
                         color = subtextColor,
-                        fontSize = 11.5.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = LunarAlmanac.starsText(almanac.level),
+                        color = levelColor(almanac.level, isDark),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(14.dp))
 
-                // Chi tiết Can Chi & Trực
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Ngày ${lunar.dayCanChi}",
-                        color = contentColor,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "Ngày ${lunar.dayCanChi}",
+                            color = contentColor,
+                            fontSize = 15.5.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "• ${almanac.napAm}",
+                            color = subtextColor,
+                            fontSize = 11.5.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Tháng ${lunar.monthCanChi} • Năm ${lunar.yearCanChi}",
                         color = subtextColor,
-                        fontSize = 12.5.sp
+                        fontSize = 12.sp
                     )
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // Pill Hoàng đạo / Hắc đạo & Tiết khí
                     FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        val pillBg = if (lunar.isAuspiciousDay) Color(0xFF10B981).copy(alpha = 0.16f) else Color(0xFF64748B).copy(alpha = 0.16f)
-                        val pillColor = if (lunar.isAuspiciousDay) {
-                            if (isDark) Color(0xFF34D399) else Color(0xFF059669)
-                        } else {
-                            if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = pillBg,
-                            border = BorderStroke(0.5.dp, pillColor.copy(alpha = 0.35f))
-                        ) {
-                            Text(
-                                text = lunar.auspiciousDayType,
-                                color = pillColor,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                            )
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = Color(0xFF38BDF8).copy(alpha = 0.12f),
-                            border = BorderStroke(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.30f))
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.WbSunny,
-                                    contentDescription = null,
-                                    tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                    modifier = Modifier.size(11.dp)
-                                )
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(
-                                    text = lunar.solarTerm,
-                                    color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    maxLines = 1
-                                )
+                        SmallPill(
+                            text = lunar.auspiciousDayType,
+                            color = if (lunar.isAuspiciousDay) (if (isDark) Color(0xFF34D399) else Color(0xFF059669))
+                            else (if (isDark) Color(0xFF94A3B8) else Color(0xFF475569))
+                        )
+                        SmallPill(
+                            text = "${almanac.truc.fullName} • Sao ${almanac.mansion.name}",
+                            color = if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309)
+                        )
+                        SmallPill(
+                            text = "☀️ ${lunar.solarTerm}",
+                            color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
+                        )
+                        personalMatch?.let { pm ->
+                            val c = when (pm.verdict) {
+                                ActivityVerdict.GOOD -> if (isDark) Color(0xFF34D399) else Color(0xFF059669)
+                                ActivityVerdict.BAD -> if (isDark) Color(0xFFF87171) else Color(0xFFDC2626)
+                                ActivityVerdict.NEUTRAL -> subtextColor
                             }
+                            SmallPill(text = "${pm.label} (${profile?.canChi})", color = c)
                         }
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // 4. Giờ Hoàng Đạo trong ngày
+            // 4. Tóm tắt nhanh: Nên làm / Kiêng / Hướng tốt
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(if (isDark) Color.White.copy(alpha = 0.04f) else Color.Black.copy(alpha = 0.03f))
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
+                    .clickable { activeDialogTab = LunarDialogTab.DETAIL }
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                val goodShort = almanac.goodActivities.take(4).joinToString(", ") { it.label }
+                    .ifEmpty { almanac.truc.goodText }
+                val badShort = (almanac.badDays.map { "Phạm ${it.name}" } + almanac.badActivities.take(3).map { it.label })
+                    .joinToString(", ").ifEmpty { almanac.truc.badText }
+
+                Text(
+                    text = "✅ Nên: $goodShort",
+                    color = if (isDark) Color(0xFF6EE7B7) else Color(0xFF047857),
+                    fontSize = 11.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "❌ Kỵ: $badShort",
+                    color = if (isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C),
+                    fontSize = 11.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "🧭 Hỷ Thần: ${almanac.hyThan.label} • Tài Thần: ${almanac.taiThan.label} • Kỵ tuổi: ${VietnameseLunarCalendar.CHI[almanac.clashChi]}",
+                    color = contentColor.copy(alpha = 0.85f),
+                    fontSize = 11.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 5. Giờ Hoàng Đạo
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (isDark) Color.White.copy(alpha = 0.04f) else Color.Black.copy(alpha = 0.03f))
+                    .padding(horizontal = 12.dp, vertical = 9.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = null,
                         tint = if (isDark) Color(0xFFFFB703) else Color(0xFFD97706),
-                        modifier = Modifier.size(15.dp)
+                        modifier = Modifier.size(14.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Giờ Hoàng Đạo:",
+                        text = "Giờ Hoàng Đạo (★ = hợp cả Lý Thuần Phong):",
                         color = contentColor.copy(alpha = 0.90f),
-                        fontSize = 12.sp,
+                        fontSize = 11.5.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-
                 Spacer(modifier = Modifier.height(6.dp))
-
+                val nowHour = remember { LocalTime.now().hour }
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    lunar.auspiciousHours.forEach { hour ->
+                    almanac.hours.filter { it.isHoangDao }.forEach { h ->
+                        val isNow = isToday && h.containsHour(nowHour)
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = if (isDark) Color.White.copy(alpha = 0.07f) else Color.Black.copy(alpha = 0.05f),
-                            border = BorderStroke(0.5.dp, LocalCardBorder.current)
+                            color = if (isNow) Color(0xFFFFB703).copy(alpha = 0.25f)
+                            else if (isDark) Color.White.copy(alpha = 0.07f) else Color.Black.copy(alpha = 0.05f),
+                            border = BorderStroke(
+                                if (isNow) 1.dp else 0.5.dp,
+                                if (isNow) Color(0xFFFFB703) else LocalCardBorder.current
+                            )
                         ) {
                             Text(
-                                text = hour,
-                                color = contentColor.copy(alpha = 0.85f),
+                                text = "${h.chi} (${h.range})${if (h.isBest) " ★" else ""}",
+                                color = contentColor.copy(alpha = 0.88f),
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium,
+                                fontWeight = if (h.isBest || isNow) FontWeight.SemiBold else FontWeight.Medium,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                             )
                         }
@@ -385,22 +409,11 @@ fun VietnameseLunarCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            // 5. Nút xem lịch tháng đầy đủ (Nổi bật, đẹp mắt, 1 dòng gọn gàng)
-            val btnGradient = if (isDark) {
-                Brush.horizontalGradient(
-                    listOf(
-                        Color(0xFFFFB703).copy(alpha = 0.22f),
-                        Color(0xFFFB8500).copy(alpha = 0.32f)
-                    )
-                )
-            } else {
-                Brush.horizontalGradient(
-                    listOf(
-                        Color(0xFFFFB703).copy(alpha = 0.28f),
-                        Color(0xFFF59E0B).copy(alpha = 0.38f)
-                    )
-                )
-            }
+            // 6. Các nút truy cập nhanh Toàn màn hình
+            val btnGradient = Brush.horizontalGradient(
+                if (isDark) listOf(Color(0xFFFFB703).copy(alpha = 0.24f), Color(0xFFFB8500).copy(alpha = 0.34f))
+                else listOf(Color(0xFFFFB703).copy(alpha = 0.28f), Color(0xFFF59E0B).copy(alpha = 0.38f))
+            )
             val btnBorderColor = if (isDark) Color(0xFFFFB703).copy(alpha = 0.55f) else Color(0xFFD97706).copy(alpha = 0.50f)
             val btnContentColor = if (isDark) Color(0xFFFFD166) else Color(0xFF92400E)
 
@@ -410,7 +423,7 @@ fun VietnameseLunarCard(
                     .clip(RoundedCornerShape(14.dp))
                     .background(btnGradient)
                     .border(1.dp, btnBorderColor, RoundedCornerShape(14.dp))
-                    .clickable { showFullMonthDialog = true }
+                    .clickable { activeDialogTab = LunarDialogTab.DETAIL }
                     .padding(vertical = 10.dp, horizontal = 14.dp)
             ) {
                 Row(
@@ -418,121 +431,134 @@ fun VietnameseLunarCard(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CalendarMonth,
-                        contentDescription = null,
-                        tint = btnContentColor,
-                        modifier = Modifier.size(18.dp)
-                    )
+                    Icon(Icons.Default.AutoAwesome, null, tint = btnContentColor, modifier = Modifier.size(17.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Xem lịch tháng đầy đủ",
+                        text = "Xem chi tiết ngày & Lịch Vạn Niên",
                         color = btnContentColor,
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.3.sp,
-                        maxLines = 1
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            // 6. Nút mở rộng xem thêm thông tin chi tiết (Dương lịch tương ứng, chu kỳ trăng)
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable { isExpanded = !isExpanded }
-                    .padding(vertical = 4.dp)
-            ) {
-                Text(
-                    text = if (isExpanded) "Thu gọn chi tiết" else "Xem đối chiếu Dương lịch & Tiết khí",
-                    color = subtextColor,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = subtextColor,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+            Spacer(modifier = Modifier.height(8.dp))
 
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                ) {
-                    HorizontalDivider(
-                        color = LocalCardBorder.current,
-                        thickness = 0.5.dp,
-                        modifier = Modifier.padding(vertical = 6.dp)
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-                    ) {
-                        Text(text = "Dương lịch tương ứng:", color = subtextColor, fontSize = 12.sp)
-                        Text(
-                            text = "${selectedLocalDate.dayOfMonth}/${selectedLocalDate.monthValue}/${selectedLocalDate.year}",
-                            color = contentColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-                    ) {
-                        Text(text = "Âm lịch đầy đủ:", color = subtextColor, fontSize = 12.sp)
-                        Text(
-                            text = lunar.formattedLunarFull,
-                            color = contentColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Row(
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
-                    ) {
-                        Text(text = "Tiết khí mặt trời:", color = subtextColor, fontSize = 12.sp)
-                        Text(
-                            text = lunar.solarTerm,
-                            color = contentColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                QuickActionChip(Modifier.weight(1f), Icons.Default.CalendarMonth, "Lịch tháng") {
+                    activeDialogTab = LunarDialogTab.MONTH
+                }
+                QuickActionChip(Modifier.weight(1f), Icons.Default.EventAvailable, "Ngày tốt") {
+                    activeDialogTab = LunarDialogTab.GOOD_DAYS
+                }
+                QuickActionChip(Modifier.weight(1f), Icons.Default.Celebration, "Ngày lễ") {
+                    activeDialogTab = LunarDialogTab.EVENTS
+                }
+                QuickActionChip(Modifier.weight(1f), Icons.Default.SwapHoriz, "Đổi ngày") {
+                    activeDialogTab = LunarDialogTab.CONVERT
                 }
             }
         }
     }
 
-    if (showFullMonthDialog) {
-        FullMonthLunarCalendarDialog(
+    if (activeDialogTab != null) {
+        LunarAlmanacFullScreenDialog(
             initialDate = selectedLocalDate,
+            initialTab = activeDialogTab!!,
+            dailyForecasts = dailyForecasts,
+            birthYear = birthYear,
+            onBirthYearChange = { newYear ->
+                birthYear = newYear
+                prefs.edit().putInt(PREF_BIRTH_YEAR, newYear).apply()
+            },
             onSelectDate = { selectedLocalDate = it },
-            onDismiss = { showFullMonthDialog = false }
+            onDismiss = { activeDialogTab = null }
         )
     }
 }
 
-/**
- * Hộp thoại Lịch tháng đối chiếu Âm - Dương đầy đủ
- */
+@Composable
+private fun SmallPill(text: String, color: Color) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = color.copy(alpha = 0.14f),
+        border = BorderStroke(0.5.dp, color.copy(alpha = 0.35f))
+    ) {
+        Text(
+            text = text,
+            color = color,
+            fontSize = 10.5.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp)
+        )
+    }
+}
+
+@Composable
+private fun QuickActionChip(
+    modifier: Modifier = Modifier,
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    Surface(
+        shape = RoundedCornerShape(11.dp),
+        color = if (isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.04f),
+        border = BorderStroke(0.5.dp, LocalCardBorder.current),
+        modifier = modifier.clip(RoundedCornerShape(11.dp)).clickable { onClick() }
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(vertical = 7.dp, horizontal = 4.dp)
+        ) {
+            Icon(icon, null, tint = contentColor.copy(alpha = 0.85f), modifier = Modifier.size(13.dp))
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(label, color = contentColor.copy(alpha = 0.9f), fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+        }
+    }
+}
+
+// ==========================================================================================
+//  HỘP THOẠI TOÀN MÀN HÌNH – LỊCH VẠN NIÊN (5 TAB)
+// ==========================================================================================
+
 @Composable
 fun FullMonthLunarCalendarDialog(
     initialDate: LocalDate,
+    onSelectDate: (LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE) }
+    var birthYear by remember { mutableIntStateOf(prefs.getInt(PREF_BIRTH_YEAR, 0)) }
+    LunarAlmanacFullScreenDialog(
+        initialDate = initialDate,
+        initialTab = LunarDialogTab.MONTH,
+        dailyForecasts = emptyList(),
+        birthYear = birthYear,
+        onBirthYearChange = {
+            birthYear = it
+            prefs.edit().putInt(PREF_BIRTH_YEAR, it).apply()
+        },
+        onSelectDate = onSelectDate,
+        onDismiss = onDismiss
+    )
+}
+
+@Composable
+fun LunarAlmanacFullScreenDialog(
+    initialDate: LocalDate,
+    initialTab: LunarDialogTab = LunarDialogTab.DETAIL,
+    dailyForecasts: List<DailyForecast> = emptyList(),
+    birthYear: Int = 0,
+    onBirthYearChange: (Int) -> Unit = {},
     onSelectDate: (LocalDate) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -541,37 +567,22 @@ fun FullMonthLunarCalendarDialog(
     val subtextColor = LocalSubtextColor.current
     val dialogBg = if (isDark) Color(0xFF0B132B) else Color(0xFFF8FAFC)
     val cardBg = if (isDark) Color(0xFF131A2A) else Color.White
-    val cardBorder = if (isDark) LocalCardBorder.current else Color(0x150F172A)
+    val cardBorder = if (isDark) LocalCardBorder.current else Color(0x180F172A)
 
-    var currentYearMonth by remember { mutableStateOf(YearMonth.of(initialDate.year, initialDate.monthValue)) }
+    var currentTab by remember { mutableStateOf(initialTab) }
     var selectedDate by remember { mutableStateOf(initialDate) }
+    var showBirthYearDialog by remember { mutableStateOf(false) }
 
-    val daysInMonth = remember(currentYearMonth) {
-        VietnameseLunarCalendar.getMonthDays(currentYearMonth.year, currentYearMonth.monthValue)
-    }
-
-    val selectedLunar = remember(selectedDate) {
-        VietnameseLunarCalendar.getLunarDate(selectedDate.dayOfMonth, selectedDate.monthValue, selectedDate.year)
-    }
-
-    // Thứ của ngày đầu tháng: 1 (T2) .. 7 (CN)
-    val firstDayOfWeek = remember(currentYearMonth) {
-        LocalDate.of(currentYearMonth.year, currentYearMonth.monthValue, 1).dayOfWeek.value
-    }
-    val emptySlotsBefore = firstDayOfWeek - 1
+    val profile = remember(birthYear) { if (birthYear in 1900..2100) LunarAlmanac.getPersonalProfile(birthYear) else null }
+    val forecastMap = remember(dailyForecasts) { dailyForecasts.associateBy { it.dateString.take(10) } }
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        BackHandler(enabled = true) {
-            onDismiss()
-        }
+        BackHandler(enabled = true) { onDismiss() }
 
-        Surface(
-            color = dialogBg,
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Surface(color = dialogBg, modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -579,18 +590,13 @@ fun FullMonthLunarCalendarDialog(
                     .navigationBarsPadding()
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                // Top App Bar
+                // Top Bar
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 10.dp)
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f, fill = false)
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -599,401 +605,1023 @@ fun FullMonthLunarCalendarDialog(
                                 .clickable { onDismiss() },
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Đóng",
-                                tint = contentColor,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Icon(Icons.Default.ArrowBack, "Đóng", tint = contentColor, modifier = Modifier.size(20.dp))
                         }
-
-                        Spacer(modifier = Modifier.width(12.dp))
-
+                        Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "LỊCH THÁNG ÂM - DƯƠNG",
+                                text = "LỊCH VẠN NIÊN VIỆT NAM",
                                 color = contentColor,
-                                fontSize = 16.sp,
+                                fontSize = 15.5.sp,
                                 fontWeight = FontWeight.Bold,
-                                letterSpacing = 0.5.sp,
                                 maxLines = 1
                             )
                             Text(
-                                text = "Đối chiếu lịch Việt Nam (GMT+7)",
+                                text = profile?.let { "Tuổi ${it.canChi} (${it.birthYear}) • ${it.napAm}" }
+                                    ?: "Bấm nút Năm sinh để xem xung hợp theo tuổi",
                                 color = subtextColor,
-                                fontSize = 11.5.sp,
-                                maxLines = 1
+                                fontSize = 11.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Đóng",
-                            tint = subtextColor,
-                            modifier = Modifier.size(22.dp)
-                        )
+                    // Nút chọn năm sinh
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFFFB703).copy(alpha = 0.16f),
+                        border = BorderStroke(0.5.dp, Color(0xFFFFB703).copy(alpha = 0.45f)),
+                        modifier = Modifier.clickable { showBirthYearDialog = true }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                null,
+                                tint = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (profile != null) "${profile.birthYear}" else "Năm sinh",
+                                color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
 
-                // Month Navigator Card
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = cardBg,
-                    border = BorderStroke(0.5.dp, cardBorder),
-                    modifier = Modifier.fillMaxWidth()
+                // Thanh chuyển 5 Tab
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(bottom = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        IconButton(
-                            onClick = {
-                                currentYearMonth = currentYearMonth.minusMonths(1)
-                            },
-                            modifier = Modifier.size(36.dp)
+                    LunarDialogTab.values().forEach { tab ->
+                        val active = currentTab == tab
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (active) Color(0xFF38BDF8) else cardBg,
+                            border = BorderStroke(0.5.dp, if (active) Color(0xFF38BDF8) else cardBorder),
+                            modifier = Modifier.clickable { currentTab = tab }
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ChevronLeft,
-                                contentDescription = "Tháng trước",
-                                tint = contentColor,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Tháng ${currentYearMonth.monthValue} / ${currentYearMonth.year}",
-                                color = contentColor,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = Color(0xFF38BDF8).copy(alpha = 0.15f),
-                                border = BorderStroke(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.35f)),
-                                modifier = Modifier.clickable {
-                                    val now = LocalDate.now()
-                                    currentYearMonth = YearMonth.of(now.year, now.monthValue)
-                                    selectedDate = now
-                                }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp)
                             ) {
+                                Icon(
+                                    tab.icon,
+                                    null,
+                                    tint = if (active) Color.White else subtextColor,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = "Hiện tại",
-                                    color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    text = tab.label,
+                                    color = if (active) Color.White else contentColor,
+                                    fontSize = 12.sp,
+                                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
                                 )
                             }
                         }
+                    }
+                }
 
-                        IconButton(
-                            onClick = {
-                                currentYearMonth = currentYearMonth.plusMonths(1)
+                // Nội dung từng Tab
+                Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    when (currentTab) {
+                        LunarDialogTab.DETAIL -> DayDetailTabContent(
+                            selectedDate = selectedDate,
+                            onDateChange = {
+                                selectedDate = it
+                                onSelectDate(it)
                             },
-                            modifier = Modifier.size(36.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ChevronRight,
-                                contentDescription = "Tháng sau",
-                                tint = contentColor,
-                                modifier = Modifier.size(22.dp)
+                            profile = profile,
+                            forecastMap = forecastMap,
+                            cardBg = cardBg,
+                            cardBorder = cardBorder,
+                            onOpenGoodDays = { currentTab = LunarDialogTab.GOOD_DAYS }
+                        )
+                        LunarDialogTab.MONTH -> MonthCalendarTabContent(
+                            selectedDate = selectedDate,
+                            onSelectDate = {
+                                selectedDate = it
+                                onSelectDate(it)
+                            },
+                            onOpenDetail = {
+                                selectedDate = it
+                                onSelectDate(it)
+                                currentTab = LunarDialogTab.DETAIL
+                            },
+                            cardBg = cardBg,
+                            cardBorder = cardBorder
+                        )
+                        LunarDialogTab.GOOD_DAYS -> GoodDayFinderTabContent(
+                            profile = profile,
+                            forecastMap = forecastMap,
+                            cardBg = cardBg,
+                            cardBorder = cardBorder,
+                            onSelectDate = {
+                                selectedDate = it
+                                onSelectDate(it)
+                                currentTab = LunarDialogTab.DETAIL
+                            }
+                        )
+                        LunarDialogTab.EVENTS -> UpcomingEventsTabContent(
+                            cardBg = cardBg,
+                            cardBorder = cardBorder,
+                            onSelectDate = {
+                                selectedDate = it
+                                onSelectDate(it)
+                                currentTab = LunarDialogTab.DETAIL
+                            }
+                        )
+                        LunarDialogTab.CONVERT -> DateConverterTabContent(
+                            initialDate = selectedDate,
+                            cardBg = cardBg,
+                            cardBorder = cardBorder,
+                            onOpenDetail = {
+                                selectedDate = it
+                                onSelectDate(it)
+                                currentTab = LunarDialogTab.DETAIL
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showBirthYearDialog) {
+        BirthYearPickerDialog(
+            currentYear = birthYear,
+            onSave = {
+                onBirthYearChange(it)
+                showBirthYearDialog = false
+            },
+            onDismiss = { showBirthYearDialog = false }
+        )
+    }
+}
+
+// ==========================================================================================
+//  TAB 1: CHI TIẾT NGÀY TOÀN MÀN HÌNH
+// ==========================================================================================
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DayDetailTabContent(
+    selectedDate: LocalDate,
+    onDateChange: (LocalDate) -> Unit,
+    profile: PersonalProfile?,
+    forecastMap: Map<String, DailyForecast>,
+    cardBg: Color,
+    cardBorder: Color,
+    onOpenGoodDays: () -> Unit
+) {
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
+
+    val almanac = remember(selectedDate) { LunarAlmanac.getDayAlmanac(selectedDate) }
+    val lunar = almanac.lunar
+    val personalMatch = remember(profile, almanac) { profile?.let { LunarAlmanac.matchPersonalDay(it, almanac) } }
+    val forecast = forecastMap[selectedDate.toString()]
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // 1. Thanh điều hướng ngày & Tổng quan Âm - Dương
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = cardBg,
+            border = BorderStroke(0.5.dp, cardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    IconButton(onClick = { onDateChange(selectedDate.minusDays(1)) }) {
+                        Icon(Icons.Default.ChevronLeft, "Hôm trước", tint = contentColor)
+                    }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "${formatWeekdayVi(selectedDate.dayOfWeek.value)}, ${selectedDate.dayOfMonth}/${selectedDate.monthValue}/${selectedDate.year}",
+                            color = contentColor,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (selectedDate != LocalDate.now()) {
+                            Text(
+                                text = "Chạm để về Hôm nay",
+                                color = Color(0xFF38BDF8),
+                                fontSize = 11.sp,
+                                modifier = Modifier.clickable { onDateChange(LocalDate.now()) }
                             )
+                        } else {
+                            Text(text = "Hôm nay", color = Color(0xFFFFB703), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
                         }
+                    }
+                    IconButton(onClick = { onDateChange(selectedDate.plusDays(1)) }) {
+                        Icon(Icons.Default.ChevronRight, "Hôm sau", tint = contentColor)
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Scrollable content: Calendar Grid + Selected Day Details
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Weekday headers & Calendar Grid Card
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = cardBg,
-                        border = BorderStroke(0.5.dp, cardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(10.dp)
-                        ) {
-                            // 7 Weekdays Header (T2 .. CN)
-                            val dayTitles = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceAround
-                            ) {
-                                dayTitles.forEachIndexed { i, title ->
-                                    val isWeekend = i >= 5
-                                    Text(
-                                        text = title,
-                                        color = if (isWeekend) (if (isDark) Color(0xFFF87171) else Color(0xFFDC2626)) else subtextColor,
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-
-                            HorizontalDivider(
-                                color = cardBorder,
-                                thickness = 0.5.dp,
-                                modifier = Modifier.padding(vertical = 4.dp)
+                    // Tờ lịch Âm lớn
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(Color(0xFFFFB703).copy(alpha = 0.22f), Color(0xFFFB8500).copy(alpha = 0.10f))
+                                )
                             )
+                            .border(1.dp, Color(0xFFFFB703).copy(alpha = 0.45f), RoundedCornerShape(18.dp))
+                            .padding(horizontal = 18.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = "ÂM LỊCH",
+                            color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${lunar.day}",
+                            color = contentColor,
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            text = "${lunar.monthName} (${if (lunar.isFullMonth) "Đủ" else "Thiếu"})",
+                            color = subtextColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
 
-                            // Calendar Days Rows (chunked by 7)
-                            val totalSlots = emptySlotsBefore + daysInMonth.size
-                            val rowsCount = (totalSlots + 6) / 7
+                    Spacer(modifier = Modifier.width(14.dp))
 
-                            for (r in 0 until rowsCount) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 3.dp),
-                                    horizontalArrangement = Arrangement.SpaceAround
-                                ) {
-                                    for (c in 0..6) {
-                                        val slotIndex = r * 7 + c
-                                        val dayIndex = slotIndex - emptySlotsBefore
-                                        if (dayIndex in daysInMonth.indices) {
-                                            val dayInfo = daysInMonth[dayIndex]
-                                            val itemDate = LocalDate.of(currentYearMonth.year, currentYearMonth.monthValue, dayInfo.solarDay)
-                                            val isSelected = itemDate == selectedDate
-                                            val isTodayItem = dayInfo.isToday
-                                            val lDay = dayInfo.lunarDate.day
-                                            val isMoon15 = lDay == 15
-                                            val isMoon1 = lDay == 1
-                                            val isFest = dayInfo.lunarDate.festival != null
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(
+                            text = "Năm ${lunar.yearCanChi} (${LunarAlmanac.napAm((lunar.year + 6) % 10, (lunar.year + 8) % 12)})",
+                            color = subtextColor,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = "Tháng ${lunar.monthCanChi}",
+                            color = subtextColor,
+                            fontSize = 12.sp
+                        )
+                        Text(
+                            text = "Ngày ${lunar.dayCanChi}",
+                            color = contentColor,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Nạp âm: ${almanac.napAmElement.emoji} ${almanac.napAm}",
+                            color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Tiết khí: ☀️ ${lunar.solarTerm}",
+                            color = subtextColor,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
 
-                                            Box(
-                                                modifier = Modifier
-                                                    .weight(1f)
-                                                    .aspectRatio(0.95f)
-                                                    .padding(2.dp)
-                                                    .clip(RoundedCornerShape(10.dp))
-                                                    .background(
-                                                        when {
-                                                            isSelected -> Color(0xFF38BDF8).copy(alpha = 0.22f)
-                                                            isTodayItem -> Color(0xFFFFB703).copy(alpha = 0.16f)
-                                                            else -> Color.Transparent
-                                                        }
-                                                    )
-                                                    .border(
-                                                        width = when {
-                                                            isSelected -> 1.5.dp
-                                                            isTodayItem -> 1.dp
-                                                            else -> 0.dp
-                                                        },
-                                                        color = when {
-                                                            isSelected -> Color(0xFF38BDF8)
-                                                            isTodayItem -> Color(0xFFFFB703)
-                                                            else -> Color.Transparent
-                                                        },
-                                                        shape = RoundedCornerShape(10.dp)
-                                                    )
-                                                    .clickable {
-                                                        selectedDate = itemDate
-                                                    },
-                                                contentAlignment = Alignment.Center
-                                            ) {
-                                                Column(
-                                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                                    verticalArrangement = Arrangement.Center
-                                                ) {
-                                                    // Solar day
-                                                    Text(
-                                                        text = "${dayInfo.solarDay}",
-                                                        color = if (isTodayItem) Color(0xFFFFB703) else contentColor,
-                                                        fontSize = 13.5.sp,
-                                                        fontWeight = if (isSelected || isTodayItem) FontWeight.Bold else FontWeight.Medium
-                                                    )
+                Spacer(modifier = Modifier.height(12.dp))
 
-                                                    // Lunar day
-                                                    val lunarDisplay = when {
-                                                        isMoon1 -> "1/${dayInfo.lunarDate.month}"
-                                                        isMoon15 -> "15"
-                                                        else -> "$lDay"
-                                                    }
-                                                    Text(
-                                                        text = lunarDisplay,
-                                                        color = when {
-                                                            isMoon15 -> if (isDark) Color(0xFFFFD166) else Color(0xFFB45309)
-                                                            isMoon1 -> if (isDark) Color(0xFFFCA5A5) else Color(0xFFDC2626)
-                                                            isFest -> if (isDark) Color(0xFFF87171) else Color(0xFFEF4444)
-                                                            else -> subtextColor.copy(alpha = 0.85f)
-                                                        },
-                                                        fontSize = 10.sp,
-                                                        fontWeight = if (isMoon1 || isMoon15 || isFest) FontWeight.Bold else FontWeight.Normal
-                                                    )
+                // Đánh giá tổng quan (Điểm + Sao + Tóm tắt)
+                val lvlColor = levelColor(almanac.level, isDark)
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = lvlColor.copy(alpha = 0.12f),
+                    border = BorderStroke(0.5.dp, lvlColor.copy(alpha = 0.35f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Đánh giá ngày: ${almanac.level.label} (${almanac.score}/100)",
+                                color = lvlColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = LunarAlmanac.starsText(almanac.level),
+                                color = lvlColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = almanac.summary,
+                            color = contentColor.copy(alpha = 0.9f),
+                            fontSize = 12.sp,
+                            lineHeight = 17.sp
+                        )
+                    }
+                }
 
-                                                    // Dots for auspicious or festival
-                                                    Row(
-                                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                                        modifier = Modifier.padding(top = 1.dp)
-                                                    ) {
-                                                        if (dayInfo.lunarDate.isAuspiciousDay) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(3.5.dp)
-                                                                    .clip(CircleShape)
-                                                                    .background(Color(0xFF10B981))
-                                                            )
-                                                        }
-                                                        if (isFest) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(3.5.dp)
-                                                                    .clip(CircleShape)
-                                                                    .background(Color(0xFFEF4444))
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        } else {
-                                            // Empty cell
-                                            Spacer(modifier = Modifier.weight(1f))
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Chú thích nhỏ
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFF10B981)))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Hoàng đạo", color = subtextColor, fontSize = 10.sp)
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(Color(0xFFEF4444)))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Lễ hội", color = subtextColor, fontSize = 10.sp)
-                                }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("15", color = Color(0xFFFFB703), fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Rằm 🌕", color = subtextColor, fontSize = 10.sp)
-                                }
+                // Các sự kiện / ngày lễ trong ngày
+                if (lunar.events.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    lunar.events.forEach { ev ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        ) {
+                            Text(text = ev.displayName, color = if (isDark) Color(0xFFFCA5A5) else Color(0xFFDC2626), fontSize = 12.5.sp, fontWeight = FontWeight.Bold)
+                            if (ev.description.isNotBlank()) {
+                                Text(text = " — ${ev.description}", color = subtextColor, fontSize = 11.5.sp)
                             }
                         }
                     }
+                }
 
-                    // Selected Day Detail Card
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = cardBg,
-                        border = BorderStroke(0.5.dp, cardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            // Header: Solar Day & Auspicious pill
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = "Dương lịch: ${selectedDate.dayOfMonth}/${selectedDate.monthValue}/${selectedDate.year}",
-                                    color = contentColor,
-                                    fontSize = 14.5.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                // Thời tiết dự báo của ngày (nếu nằm trong 7 ngày tới)
+                if (forecast != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    WeatherPairingBanner(forecast = forecast, almanac = almanac, isDark = isDark)
+                }
+            }
+        }
 
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (selectedLunar.isAuspiciousDay) Color(0xFF10B981).copy(alpha = 0.16f) else Color(0xFF64748B).copy(alpha = 0.16f),
-                                    border = BorderStroke(0.5.dp, (if (selectedLunar.isAuspiciousDay) Color(0xFF10B981) else Color(0xFF64748B)).copy(alpha = 0.35f))
-                                ) {
-                                    Text(
-                                        text = selectedLunar.auspiciousDayType,
-                                        color = if (selectedLunar.isAuspiciousDay) (if (isDark) Color(0xFF34D399) else Color(0xFF059669)) else (if (isDark) Color(0xFF94A3B8) else Color(0xFF475569)),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        maxLines = 1,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                    )
+        // 2. Nên làm / Không nên làm
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = cardBg,
+            border = BorderStroke(0.5.dp, cardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                SectionHeader(Icons.Default.CheckCircle, "VIỆC NÊN LÀM & KIÊNG KỴ TRONG NGÀY", Color(0xFF10B981))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "✅ Việc nên làm",
+                    color = if (isDark) Color(0xFF34D399) else Color(0xFF059669),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                if (almanac.goodActivities.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        almanac.goodActivities.forEach { act ->
+                            SmallPill("${act.emoji} ${act.label}", if (isDark) Color(0xFF34D399) else Color(0xFF059669))
+                        }
+                    }
+                } else {
+                    Text("Hôm nay ít cát tinh, chỉ nên làm các việc thường nhật, cúng lễ cầu an.", color = subtextColor, fontSize = 12.sp)
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "❌ Việc nên tránh / kiêng kỵ",
+                    color = if (isDark) Color(0xFFF87171) else Color(0xFFDC2626),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                if (almanac.badActivities.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        almanac.badActivities.forEach { act ->
+                            SmallPill("${act.emoji} ${act.label}", if (isDark) Color(0xFFF87171) else Color(0xFFDC2626))
+                        }
+                    }
+                } else {
+                    Text("Không kỵ việc lớn nào đáng kể.", color = subtextColor, fontSize = 12.sp)
+                }
+
+                // Cát tinh & Ngày kỵ
+                if (almanac.goodStars.isNotEmpty() || almanac.badDays.isNotEmpty()) {
+                    HorizontalDivider(color = cardBorder, modifier = Modifier.padding(vertical = 10.dp))
+                    almanac.goodStars.forEach { s ->
+                        Text("🌟 Cát tinh ${s.name}: ${s.description}", color = contentColor, fontSize = 12.sp, modifier = Modifier.padding(vertical = 2.dp))
+                    }
+                    almanac.badDays.forEach { s ->
+                        Text("⚠️ Ngày kỵ ${s.name}: ${s.description}", color = if (isDark) Color(0xFFFCA5A5) else Color(0xFFB91C1C), fontSize = 12.sp, modifier = Modifier.padding(vertical = 2.dp))
+                    }
+                }
+            }
+        }
+
+        // 3. Thập nhị Trực & Nhị thập bát tú
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = cardBg,
+            border = BorderStroke(0.5.dp, cardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionHeader(Icons.Default.Stars, "THẬP NHỊ TRỰC & NHỊ THẬP BÁT TÚ", Color(0xFFFFB703))
+
+                Text(
+                    text = "📌 ${almanac.truc.fullName} • ${lunar.auspiciousDayType}",
+                    color = contentColor,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text("• Nên: ${almanac.truc.goodText}", color = subtextColor, fontSize = 12.sp)
+                Text("• Kỵ: ${almanac.truc.badText}", color = subtextColor, fontSize = 12.sp)
+
+                HorizontalDivider(color = cardBorder, modifier = Modifier.padding(vertical = 4.dp))
+
+                Text(
+                    text = "✨ Sao ${almanac.mansion.name} (${almanac.mansion.fullName}) — ${if (almanac.mansion.isGood) "Cát tinh (Sao tốt)" else "Hung tinh (Sao xấu)"}",
+                    color = contentColor,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text("• Tốt cho: ${almanac.mansion.goodText}", color = subtextColor, fontSize = 12.sp)
+                Text("• Kiêng: ${almanac.mansion.badText}", color = subtextColor, fontSize = 12.sp)
+            }
+        }
+
+        // 4. La bàn hướng xuất hành
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = cardBg,
+            border = BorderStroke(0.5.dp, cardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                SectionHeader(Icons.Default.Explore, "HƯỚNG XUẤT HÀNH TỐT TRONG NGÀY", Color(0xFF38BDF8))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    AuspiciousCompass(
+                        hyThan = almanac.hyThan,
+                        taiThan = almanac.taiThan,
+                        hacThan = almanac.hacThan,
+                        isDark = isDark,
+                        modifier = Modifier.size(135.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        DirectionLegendRow(
+                            color = Color(0xFFEC4899),
+                            title = "Hỷ Thần (cầu may mắn, cưới hỏi, hỷ sự)",
+                            direction = almanac.hyThan.label
+                        )
+                        DirectionLegendRow(
+                            color = Color(0xFFFFB703),
+                            title = "Tài Thần (cầu tài lộc, kinh doanh, ký kết)",
+                            direction = almanac.taiThan.label
+                        )
+                        DirectionLegendRow(
+                            color = Color(0xFF94A3B8),
+                            title = "Hạc Thần (hung thần nên tránh)",
+                            direction = almanac.hacThan?.label ?: "Trên trời (không kỵ hướng nào)"
+                        )
+                    }
+                }
+            }
+        }
+
+        // 5. 12 Canh giờ trong ngày (Hoàng đạo & Lý Thuần Phong)
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = cardBg,
+            border = BorderStroke(0.5.dp, cardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                SectionHeader(Icons.Default.Schedule, "CHI TIẾT 12 CANH GIỜ & GIỜ XUẤT HÀNH", Color(0xFFFFB703))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Giờ có dấu ★ vừa là Giờ Hoàng Đạo vừa đạt cát thời Lý Thuần Phong (${almanac.bestHours.joinToString(", ") { "${it.chi} ${it.range}" }}).",
+                    color = subtextColor,
+                    fontSize = 11.5.sp
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                val isToday = selectedDate == LocalDate.now()
+                val nowHour = remember { LocalTime.now().hour }
+
+                almanac.hours.forEach { h ->
+                    val isNow = isToday && h.containsHour(nowHour)
+                    val ltpGood = h.lyThuanPhong.isGood
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 3.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                when {
+                                    isNow -> Color(0xFFFFB703).copy(alpha = 0.16f)
+                                    h.isBest -> Color(0xFF10B981).copy(alpha = 0.08f)
+                                    else -> Color.Transparent
                                 }
-                            }
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = "Âm lịch: ${selectedLunar.formattedLunarFull} (${selectedLunar.dayCanChi})",
-                                color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold
                             )
-
-                            Spacer(modifier = Modifier.height(4.dp))
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Column(modifier = Modifier.width(88.dp)) {
                             Text(
-                                text = "Năm ${selectedLunar.yearCanChi} • Tháng ${selectedLunar.monthCanChi} • Tiết khí: ${selectedLunar.solarTerm}",
-                                color = subtextColor,
-                                fontSize = 12.sp
+                                text = "Giờ ${h.chi}${if (h.isBest) " ★" else ""}",
+                                color = contentColor,
+                                fontSize = 12.5.sp,
+                                fontWeight = FontWeight.Bold
                             )
+                            Text(text = h.range, color = subtextColor, fontSize = 11.sp)
+                        }
+                        SmallPill(
+                            text = if (h.isHoangDao) "Hoàng đạo" else "Hắc đạo",
+                            color = if (h.isHoangDao) Color(0xFF10B981) else Color(0xFF64748B)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        SmallPill(
+                            text = h.lyThuanPhong.name,
+                            color = if (ltpGood) Color(0xFF38BDF8) else Color(0xFFF97316)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = h.lyThuanPhong.description,
+                            color = subtextColor,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
 
-                            if (selectedLunar.festival != null) {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Text(
-                                    text = "✨ ${selectedLunar.festival}",
-                                    color = if (isDark) Color(0xFFFCA5A5) else Color(0xFFDC2626),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold
-                                )
+        // 6. Tuổi xung khắc & Cá nhân hoá
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = cardBg,
+            border = BorderStroke(0.5.dp, cardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                SectionHeader(Icons.Default.Groups, "TUỔI HỢP – XUNG VỚI NGÀY ${lunar.dayCanChi.uppercase()}", Color(0xFFF59E0B))
+                Text(
+                    text = "• Tuổi hợp (Tam hợp / Lục hợp): ${almanac.harmonyChi.joinToString(", ") { VietnameseLunarCalendar.CHI[it] }}",
+                    color = if (isDark) Color(0xFF34D399) else Color(0xFF059669),
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "• Lục xung: Tuổi ${VietnameseLunarCalendar.CHI[almanac.clashChi]} • Tương hại: Tuổi ${VietnameseLunarCalendar.CHI[almanac.harmChi]}",
+                    color = if (isDark) Color(0xFFF87171) else Color(0xFFDC2626),
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (almanac.punishChi.isNotEmpty()) {
+                    Text(
+                        text = "• Tương hình: Tuổi ${almanac.punishChi.joinToString(", ") { VietnameseLunarCalendar.CHI[it] }}",
+                        color = subtextColor,
+                        fontSize = 12.sp
+                    )
+                }
+
+                if (profile != null && personalMatch != null) {
+                    HorizontalDivider(color = cardBorder, modifier = Modifier.padding(vertical = 6.dp))
+                    Text(
+                        text = "👤 Đối chiếu tuổi của bạn: ${profile.canChi} (${profile.birthYear}) — Mệnh ${profile.napAm}",
+                        color = contentColor,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    personalMatch.notes.forEach { n ->
+                        Text("• $n", color = subtextColor, fontSize = 12.sp)
+                    }
+                    Text("• Màu hợp mệnh: ${profile.luckyColors}", color = subtextColor, fontSize = 11.5.sp)
+                }
+            }
+        }
+
+        // Gợi ý mở Tìm ngày tốt
+        Button(
+            onClick = onOpenGoodDays,
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8), contentColor = Color.White),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.EventAvailable, null, modifier = Modifier.size(18.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Tìm ngày tốt cho Cưới hỏi, Khai trương, Xuất hành...", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+
+        Text(
+            text = "Lưu ý: Thông tin ngày tốt xấu, trực, tú và hướng xuất hành được tổng hợp theo sách lịch vạn niên truyền thống, mang tính chất tham khảo văn hóa.",
+            color = subtextColor.copy(alpha = 0.7f),
+            fontSize = 11.sp,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun WeatherPairingBanner(forecast: DailyForecast, almanac: DayAlmanac, isDark: Boolean) {
+    val cond = forecast.condition
+    val rainProb = forecast.precipitationProbability
+    val niceWeather = (cond.type == WeatherType.CLEAR || cond.type == WeatherType.PARTLY_CLOUDY || cond.type == WeatherType.CLOUDY) && rainProb < 45
+    val advice = when {
+        almanac.level.stars >= 4 && niceWeather -> "Ngày tốt + thời tiết đẹp, rất thuận lợi cho việc ngoài trời & xuất hành!"
+        almanac.level.stars >= 4 && !niceWeather -> "Ngày tốt về lịch âm nhưng khả năng mưa ${rainProb}%, nên chuẩn bị phương án che chắn."
+        almanac.level.stars <= 2 && niceWeather -> "Trời đẹp nhưng ngày lịch âm kém thuận, chỉ nên dạo chơi hoặc làm việc nhẹ."
+        else -> "Kết hợp xem thêm dự báo mưa (${rainProb}%) khi lên kế hoạch trong ngày."
+    }
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFF38BDF8).copy(alpha = 0.12f),
+        border = BorderStroke(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            Text(
+                text = "🌦️ Thời tiết dự báo: ${cond.description} • ${forecast.minTemp.roundToInt()}°–${forecast.maxTemp.roundToInt()}°C (Mưa ${rainProb}%)",
+                color = if (isDark) Color(0xFF7DD3FC) else Color(0xFF0369A1),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(text = advice, color = LocalContentTextColor.current.copy(alpha = 0.88f), fontSize = 11.5.sp)
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(icon: ImageVector, title: String, tint: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = tint, modifier = Modifier.size(17.dp))
+        Spacer(modifier = Modifier.width(7.dp))
+        Text(title, color = LocalContentTextColor.current, fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.4.sp)
+    }
+}
+
+@Composable
+private fun DirectionLegendRow(color: Color, title: String, direction: String) {
+    Column {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(9.dp).clip(CircleShape).background(color))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(direction, color = LocalContentTextColor.current, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        }
+        Text(title, color = LocalSubtextColor.current, fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun AuspiciousCompass(
+    hyThan: CompassDirection,
+    taiThan: CompassDirection,
+    hacThan: CompassDirection?,
+    isDark: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val ringColor = if (isDark) Color.White.copy(alpha = 0.18f) else Color.Black.copy(alpha = 0.15f)
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val c = Offset(size.width / 2f, size.height / 2f)
+            val r = size.minDimension / 2f - 10.dp.toPx()
+
+            drawCircle(color = ringColor, radius = r, center = c, style = Stroke(width = 1.5.dp.toPx()))
+            drawCircle(color = ringColor.copy(alpha = 0.08f), radius = r * 0.65f, center = c, style = Stroke(width = 1.dp.toPx()))
+
+            // Vạch 8 hướng
+            for (i in 0 until 8) {
+                val rad = Math.toRadians((i * 45 - 90).toDouble())
+                val p1 = Offset((c.x + (r - 5.dp.toPx()) * cos(rad)).toFloat(), (c.y + (r - 5.dp.toPx()) * sin(rad)).toFloat())
+                val p2 = Offset((c.x + r * cos(rad)).toFloat(), (c.y + r * sin(rad)).toFloat())
+                drawLine(ringColor, p1, p2, strokeWidth = 1.5.dp.toPx())
+            }
+
+            fun drawPointer(dir: CompassDirection, color: Color, lengthFactor: Float) {
+                val rad = Math.toRadians((dir.angle - 90f).toDouble())
+                val end = Offset((c.x + r * lengthFactor * cos(rad)).toFloat(), (c.y + r * lengthFactor * sin(rad)).toFloat())
+                drawLine(color, c, end, strokeWidth = 3.dp.toPx(), cap = StrokeCap.Round)
+                drawCircle(color, radius = 5.dp.toPx(), center = end)
+            }
+
+            hacThan?.let { drawPointer(it, Color(0xFF94A3B8), 0.65f) }
+            drawPointer(taiThan, Color(0xFFFFB703), 0.82f)
+            drawPointer(hyThan, Color(0xFFEC4899), 0.74f)
+            drawCircle(color = if (isDark) Color.White else Color.Black, radius = 3.5.dp.toPx(), center = c)
+        }
+        // Nhãn B - N - Đ - T
+        val labelColor = LocalSubtextColor.current
+        Text("B", color = Color(0xFFEF4444), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopCenter))
+        Text("N", color = labelColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.BottomCenter))
+        Text("Đ", color = labelColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterEnd))
+        Text("T", color = labelColor, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterStart))
+    }
+}
+
+// ==========================================================================================
+//  TAB 2: LỊCH THÁNG ÂM - DƯƠNG
+// ==========================================================================================
+
+@Composable
+private fun MonthCalendarTabContent(
+    selectedDate: LocalDate,
+    onSelectDate: (LocalDate) -> Unit,
+    onOpenDetail: (LocalDate) -> Unit,
+    cardBg: Color,
+    cardBorder: Color
+) {
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
+
+    var currentYearMonth by remember { mutableStateOf(YearMonth.of(selectedDate.year, selectedDate.monthValue)) }
+    val daysInMonth = remember(currentYearMonth) {
+        VietnameseLunarCalendar.getMonthDays(currentYearMonth.year, currentYearMonth.monthValue)
+    }
+    val selectedAlmanac = remember(selectedDate) { LunarAlmanac.getDayAlmanac(selectedDate) }
+    val selectedLunar = selectedAlmanac.lunar
+    val emptySlotsBefore = remember(currentYearMonth) {
+        LocalDate.of(currentYearMonth.year, currentYearMonth.monthValue, 1).dayOfWeek.value - 1
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Bộ chuyển tháng
+        Surface(shape = RoundedCornerShape(18.dp), color = cardBg, border = BorderStroke(0.5.dp, cardBorder), modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(onClick = { currentYearMonth = currentYearMonth.minusMonths(1) }) {
+                    Icon(Icons.Default.ChevronLeft, "Tháng trước", tint = contentColor)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "Tháng ${currentYearMonth.monthValue} / ${currentYearMonth.year}",
+                        color = contentColor,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color(0xFF38BDF8).copy(alpha = 0.15f),
+                        border = BorderStroke(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.35f)),
+                        modifier = Modifier.clickable {
+                            val now = LocalDate.now()
+                            currentYearMonth = YearMonth.of(now.year, now.monthValue)
+                            onSelectDate(now)
+                        }
+                    ) {
+                        Text(
+                            text = "Hiện tại",
+                            color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
+                IconButton(onClick = { currentYearMonth = currentYearMonth.plusMonths(1) }) {
+                    Icon(Icons.Default.ChevronRight, "Tháng sau", tint = contentColor)
+                }
+            }
+        }
+
+        // Lưới lịch tháng
+        Surface(shape = RoundedCornerShape(20.dp), color = cardBg, border = BorderStroke(0.5.dp, cardBorder), modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth().padding(10.dp)) {
+                val dayTitles = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                    dayTitles.forEachIndexed { i, title ->
+                        Text(
+                            text = title,
+                            color = if (i >= 5) (if (isDark) Color(0xFFF87171) else Color(0xFFDC2626)) else subtextColor,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                HorizontalDivider(color = cardBorder, thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
+
+                val totalSlots = emptySlotsBefore + daysInMonth.size
+                val rowsCount = (totalSlots + 6) / 7
+                for (r in 0 until rowsCount) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                        for (c in 0..6) {
+                            val dayIndex = r * 7 + c - emptySlotsBefore
+                            if (dayIndex in daysInMonth.indices) {
+                                val dayInfo = daysInMonth[dayIndex]
+                                val itemDate = LocalDate.of(currentYearMonth.year, currentYearMonth.monthValue, dayInfo.solarDay)
+                                val isSelected = itemDate == selectedDate
+                                val isTodayItem = dayInfo.isToday
+                                val lDay = dayInfo.lunarDate.day
+                                val isFest = dayInfo.lunarDate.festival != null
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .aspectRatio(0.95f)
+                                        .padding(2.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(
+                                            when {
+                                                isSelected -> Color(0xFF38BDF8).copy(alpha = 0.22f)
+                                                isTodayItem -> Color(0xFFFFB703).copy(alpha = 0.16f)
+                                                else -> Color.Transparent
+                                            }
+                                        )
+                                        .border(
+                                            width = if (isSelected) 1.5.dp else if (isTodayItem) 1.dp else 0.dp,
+                                            color = if (isSelected) Color(0xFF38BDF8) else if (isTodayItem) Color(0xFFFFB703) else Color.Transparent,
+                                            shape = RoundedCornerShape(10.dp)
+                                        )
+                                        .clickable { onSelectDate(itemDate) },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "${dayInfo.solarDay}",
+                                            color = if (isTodayItem) Color(0xFFFFB703) else contentColor,
+                                            fontSize = 13.5.sp,
+                                            fontWeight = if (isSelected || isTodayItem) FontWeight.Bold else FontWeight.Medium
+                                        )
+                                        Text(
+                                            text = if (lDay == 1) "1/${dayInfo.lunarDate.month}" else "$lDay",
+                                            color = when {
+                                                lDay == 15 -> if (isDark) Color(0xFFFFD166) else Color(0xFFB45309)
+                                                lDay == 1 || isFest -> if (isDark) Color(0xFFFCA5A5) else Color(0xFFDC2626)
+                                                else -> subtextColor.copy(alpha = 0.85f)
+                                            },
+                                            fontSize = 10.sp,
+                                            fontWeight = if (lDay == 1 || lDay == 15 || isFest) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                            if (dayInfo.lunarDate.isAuspiciousDay) {
+                                                Box(modifier = Modifier.size(3.5.dp).clip(CircleShape).background(Color(0xFF10B981)))
+                                            }
+                                            if (isFest) {
+                                                Box(modifier = Modifier.size(3.5.dp).clip(CircleShape).background(Color(0xFFEF4444)))
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
                             }
+                        }
+                    }
+                }
+            }
+        }
 
-                            Spacer(modifier = Modifier.height(8.dp))
+        // Tóm tắt ngày đang chọn + nút mở chi tiết
+        Surface(shape = RoundedCornerShape(20.dp), color = cardBg, border = BorderStroke(0.5.dp, cardBorder), modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${selectedDate.dayOfMonth}/${selectedDate.monthValue}/${selectedDate.year} • ${selectedLunar.formattedLunarShort}",
+                        color = contentColor,
+                        fontSize = 14.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    SmallPill(
+                        text = "${selectedAlmanac.level.label} ${LunarAlmanac.starsText(selectedAlmanac.level)}",
+                        color = levelColor(selectedAlmanac.level, isDark)
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = "${selectedLunar.fullCanChi} • ${selectedAlmanac.truc.fullName} • Sao ${selectedAlmanac.mansion.name}",
+                    color = subtextColor,
+                    fontSize = 12.sp
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = selectedAlmanac.summary, color = contentColor.copy(alpha = 0.9f), fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(10.dp))
+                Button(
+                    onClick = { onOpenDetail(selectedDate) },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8), contentColor = Color.White),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Xem chi tiết đầy đủ ngày này", fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+// ==========================================================================================
+//  TAB 3: TÌM NGÀY TỐT THEO VIỆC + KẾT HỢP THỜI TIẾT
+// ==========================================================================================
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun GoodDayFinderTabContent(
+    profile: PersonalProfile?,
+    forecastMap: Map<String, DailyForecast>,
+    cardBg: Color,
+    cardBorder: Color,
+    onSelectDate: (LocalDate) -> Unit
+) {
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
+
+    var selectedActivity by remember { mutableStateOf(AlmanacActivity.TRAVEL) }
+    var rangeDays by remember { mutableIntStateOf(30) }
+
+    val results = remember(selectedActivity, rangeDays, profile) {
+        LunarAlmanac.findGoodDays(
+            activity = selectedActivity,
+            from = LocalDate.now(),
+            days = rangeDays,
+            profile = profile
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Surface(shape = RoundedCornerShape(18.dp), color = cardBg, border = BorderStroke(0.5.dp, cardBorder), modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text("Chọn công việc cần xem ngày:", color = contentColor, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    AlmanacActivity.values().forEach { act ->
+                        val active = act == selectedActivity
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (active) Color(0xFFFFB703).copy(alpha = 0.25f) else Color.Transparent,
+                            border = BorderStroke(if (active) 1.dp else 0.5.dp, if (active) Color(0xFFFFB703) else cardBorder),
+                            modifier = Modifier.clickable { selectedActivity = act }
+                        ) {
                             Text(
-                                text = "Giờ hoàng đạo: ${selectedLunar.auspiciousHours.joinToString(", ")}",
-                                color = subtextColor,
+                                text = "${act.emoji} ${act.label}",
+                                color = if (active) (if (isDark) Color(0xFFFFD166) else Color(0xFFB45309)) else contentColor,
                                 fontSize = 11.5.sp,
-                                lineHeight = 16.sp
+                                fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                             )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            // Button to select this day for main screen
-                            Button(
-                                onClick = {
-                                    onSelectDate(selectedDate)
-                                    onDismiss()
-                                },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF38BDF8),
-                                    contentColor = Color.White
-                                ),
-                                modifier = Modifier.fillMaxWidth()
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                    Text("Khoảng thời gian tìm:", color = subtextColor, fontSize = 12.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(14 to "2 tuần", 30 to "1 tháng", 60 to "2 tháng", 90 to "3 tháng").forEach { (d, label) ->
+                            val active = rangeDays == d
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (active) Color(0xFF38BDF8) else Color.Transparent,
+                                border = BorderStroke(0.5.dp, if (active) Color(0xFF38BDF8) else cardBorder),
+                                modifier = Modifier.clickable { rangeDays = d }
                             ) {
                                 Text(
-                                    text = "Xem ngày này trên màn hình chính",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    text = label,
+                                    color = if (active) Color.White else subtextColor,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
                         }
@@ -1001,5 +1629,366 @@ fun FullMonthLunarCalendarDialog(
                 }
             }
         }
+
+        Text(
+            text = "Tìm thấy ${results.size} ngày tốt cho \"${selectedActivity.label}\"${if (profile != null) " (đã lọc ngày xung tuổi ${profile.canChi})" else ""}:",
+            color = subtextColor,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
+
+        results.forEach { item ->
+            val a = item.almanac
+            val f = forecastMap[a.date.toString()]
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = cardBg,
+                border = BorderStroke(0.5.dp, cardBorder),
+                modifier = Modifier.fillMaxWidth().clickable { onSelectDate(a.date) }
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = "${formatWeekdayVi(a.date.dayOfWeek.value)}, ${a.date.dayOfMonth}/${a.date.monthValue}/${a.date.year} (${a.lunar.formattedLunarShort})",
+                            color = contentColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        SmallPill("${a.level.label} ${LunarAlmanac.starsText(a.level)}", levelColor(a.level, isDark))
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Ngày ${a.lunar.dayCanChi} • ${a.truc.fullName} • Sao ${a.mansion.name} • ${a.lunar.auspiciousDayType}",
+                        color = subtextColor,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = "🧭 Hỷ Thần: ${a.hyThan.label} • Tài Thần: ${a.taiThan.label} • Giờ đẹp: ${a.bestHours.take(3).joinToString(", ") { "${it.chi} (${it.range})" }}",
+                        color = contentColor.copy(alpha = 0.88f),
+                        fontSize = 11.5.sp
+                    )
+                    if (f != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "🌦️ Dự báo: ${f.condition.description}, ${f.minTemp.roundToInt()}°–${f.maxTemp.roundToInt()}°C, mưa ${f.precipitationProbability}%",
+                            color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+        }
     }
+}
+
+// ==========================================================================================
+//  TAB 4: DANH SÁCH NGÀY LỄ & SỰ KIỆN SẮP TỚI
+// ==========================================================================================
+
+@Composable
+private fun UpcomingEventsTabContent(
+    cardBg: Color,
+    cardBorder: Color,
+    onSelectDate: (LocalDate) -> Unit
+) {
+    val isDark = LocalIsDarkTheme.current
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
+
+    var showMoonPhases by remember { mutableStateOf(false) }
+    val events = remember(showMoonPhases) {
+        VietnameseLunarCalendar.getUpcomingEvents(
+            from = LocalDate.now(),
+            days = 365,
+            includeMoonPhases = showMoonPhases,
+            includeMinor = true
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp)
+        ) {
+            Text("Sự kiện & lễ Tết trong 12 tháng tới (${events.size}):", color = subtextColor, fontSize = 12.sp)
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = if (showMoonPhases) Color(0xFFFFB703).copy(alpha = 0.2f) else Color.Transparent,
+                border = BorderStroke(0.5.dp, if (showMoonPhases) Color(0xFFFFB703) else cardBorder),
+                modifier = Modifier.clickable { showMoonPhases = !showMoonPhases }
+            ) {
+                Text(
+                    text = if (showMoonPhases) "Ẩn Rằm/Mùng 1" else "+ Hiện Rằm/Mùng 1",
+                    color = if (showMoonPhases) Color(0xFFFFB703) else subtextColor,
+                    fontSize = 11.sp,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+
+        events.forEach { item ->
+            Surface(
+                shape = RoundedCornerShape(15.dp),
+                color = cardBg,
+                border = BorderStroke(0.5.dp, cardBorder),
+                modifier = Modifier.fillMaxWidth().clickable { onSelectDate(item.date) }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.padding(13.dp)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = item.event.displayName,
+                            color = contentColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${formatWeekdayVi(item.date.dayOfWeek.value)}, ${item.date.dayOfMonth}/${item.date.monthValue}/${item.date.year} • ${item.lunar.formattedLunarShort} (${item.lunar.dayCanChi})",
+                            color = subtextColor,
+                            fontSize = 11.5.sp
+                        )
+                        if (item.event.description.isNotBlank()) {
+                            Text(text = item.event.description, color = subtextColor.copy(alpha = 0.85f), fontSize = 11.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    SmallPill(
+                        text = when (item.daysLeft) {
+                            0L -> "Hôm nay"
+                            1L -> "Ngày mai"
+                            else -> "Còn ${item.daysLeft} ngày"
+                        },
+                        color = if (item.daysLeft <= 7) Color(0xFFEF4444) else if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ==========================================================================================
+//  TAB 5: ĐỔI NGÀY DƯƠNG ↔ ÂM HAI CHIỀU
+// ==========================================================================================
+
+@Composable
+private fun DateConverterTabContent(
+    initialDate: LocalDate,
+    cardBg: Color,
+    cardBorder: Color,
+    onOpenDetail: (LocalDate) -> Unit
+) {
+    val contentColor = LocalContentTextColor.current
+    val subtextColor = LocalSubtextColor.current
+
+    var solarToLunarMode by remember { mutableStateOf(true) }
+    var dInput by remember { mutableStateOf(initialDate.dayOfMonth.toString()) }
+    var mInput by remember { mutableStateOf(initialDate.monthValue.toString()) }
+    var yInput by remember { mutableStateOf(initialDate.year.toString()) }
+    var isLeapInput by remember { mutableStateOf(false) }
+
+    val resolvedSolarDate: LocalDate? = remember(solarToLunarMode, dInput, mInput, yInput, isLeapInput) {
+        val d = dInput.toIntOrNull() ?: return@remember null
+        val m = mInput.toIntOrNull() ?: return@remember null
+        val y = yInput.toIntOrNull() ?: return@remember null
+        if (y !in 1900..2100) return@remember null
+        try {
+            if (solarToLunarMode) LocalDate.of(y, m, d)
+            else VietnameseLunarCalendar.convertLunarToSolar(d, m, y, isLeapInput)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Surface(shape = RoundedCornerShape(18.dp), color = cardBg, border = BorderStroke(0.5.dp, cardBorder), modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    listOf(true to "Dương lịch → Âm lịch", false to "Âm lịch → Dương lịch").forEach { (mode, label) ->
+                        val active = solarToLunarMode == mode
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = if (active) Color(0xFF38BDF8) else Color.Transparent,
+                            border = BorderStroke(0.5.dp, if (active) Color(0xFF38BDF8) else cardBorder),
+                            modifier = Modifier.weight(1f).clickable { solarToLunarMode = mode }
+                        ) {
+                            Text(
+                                text = label,
+                                color = if (active) Color.White else contentColor,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = dInput,
+                        onValueChange = { if (it.length <= 2) dInput = it.filter(Char::isDigit) },
+                        label = { Text("Ngày") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = mInput,
+                        onValueChange = { if (it.length <= 2) mInput = it.filter(Char::isDigit) },
+                        label = { Text("Tháng") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = yInput,
+                        onValueChange = { if (it.length <= 4) yInput = it.filter(Char::isDigit) },
+                        label = { Text("Năm (1900-2100)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1.3f)
+                    )
+                }
+
+                if (!solarToLunarMode) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+                        Checkbox(checked = isLeapInput, onCheckedChange = { isLeapInput = it })
+                        Text("Tháng nhuận Âm lịch", color = contentColor, fontSize = 12.5.sp)
+                    }
+                }
+            }
+        }
+
+        if (resolvedSolarDate != null) {
+            val almanac = remember(resolvedSolarDate) { LunarAlmanac.getDayAlmanac(resolvedSolarDate) }
+            val lunar = almanac.lunar
+            Surface(shape = RoundedCornerShape(18.dp), color = cardBg, border = BorderStroke(0.5.dp, cardBorder), modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("KẾT QUẢ QUY ĐỔI", color = Color(0xFFFFB703), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "☀️ Dương lịch: ${formatWeekdayVi(resolvedSolarDate.dayOfWeek.value)}, ngày ${resolvedSolarDate.dayOfMonth}/${resolvedSolarDate.monthValue}/${resolvedSolarDate.year}",
+                        color = contentColor,
+                        fontSize = 14.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "🌙 Âm lịch: ${lunar.formattedLunarFull} (tháng ${if (lunar.isFullMonth) "Đủ 30 ngày" else "Thiếu 29 ngày"})",
+                        color = contentColor,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(text = "${lunar.fullCanChi} • Nạp âm: ${almanac.napAm}", color = subtextColor, fontSize = 12.sp)
+                    Text(text = "${almanac.truc.fullName} • Sao ${almanac.mansion.name} • Tiết ${lunar.solarTerm}", color = subtextColor, fontSize = 12.sp)
+                    Text(text = almanac.summary, color = contentColor.copy(alpha = 0.9f), fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Button(
+                        onClick = { onOpenDetail(resolvedSolarDate) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF38BDF8), contentColor = Color.White),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Mở chi tiết ngày này", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        } else {
+            Surface(shape = RoundedCornerShape(16.dp), color = cardBg, border = BorderStroke(0.5.dp, cardBorder), modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Ngày vừa nhập không hợp lệ hoặc tháng Âm lịch không có ngày 30 / không nhuận trong năm đó.",
+                    color = Color(0xFFF87171),
+                    fontSize = 12.5.sp,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+    }
+}
+
+// ==========================================================================================
+//  HỘP THOẠI NHẬP NĂM SINH
+// ==========================================================================================
+
+@Composable
+private fun BirthYearPickerDialog(
+    currentYear: Int,
+    onSave: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var text by remember { mutableStateOf(if (currentYear in 1900..2100) currentYear.toString() else "1995") }
+    val year = text.toIntOrNull()
+    val preview = remember(year) { if (year != null && year in 1900..2100) LunarAlmanac.getPersonalProfile(year) else null }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Cá nhân hoá theo năm sinh Âm lịch", fontSize = 16.sp, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Nhập năm sinh để tự động cảnh báo ngày xung tuổi và lọc khi tìm ngày tốt:", fontSize = 12.5.sp)
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { if (it.length <= 4) text = it.filter(Char::isDigit) },
+                    label = { Text("Năm sinh (VD: 1996)") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (preview != null) {
+                    Text(
+                        text = "Tuổi: ${preview.canChi} (con ${preview.zodiacAnimal})\nMệnh: ${preview.element.emoji} ${preview.napAm}\nMàu hợp: ${preview.luckyColors}",
+                        fontSize = 12.sp,
+                        color = Color(0xFF10B981),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = preview != null,
+                onClick = { if (year != null) onSave(year) }
+            ) { Text("Lưu") }
+        },
+        dismissButton = {
+            Row {
+                if (currentYear > 0) {
+                    TextButton(onClick = { onSave(0) }) { Text("Xóa", color = Color(0xFFEF4444)) }
+                }
+                TextButton(onClick = onDismiss) { Text("Đóng") }
+            }
+        }
+    )
+}
+
+private fun formatWeekdayVi(dayOfWeek: Int): String = when (dayOfWeek) {
+    1 -> "Thứ Hai"
+    2 -> "Thứ Ba"
+    3 -> "Thứ Tư"
+    4 -> "Thứ Năm"
+    5 -> "Thứ Sáu"
+    6 -> "Thứ Bảy"
+    else -> "Chủ Nhật"
+}
+
+private fun levelColor(level: DayLevel, isDark: Boolean): Color = when (level) {
+    DayLevel.EXCELLENT -> if (isDark) Color(0xFF34D399) else Color(0xFF059669)
+    DayLevel.GOOD -> if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7)
+    DayLevel.NORMAL -> if (isDark) Color(0xFFFBBF24) else Color(0xFFB45309)
+    DayLevel.BAD -> if (isDark) Color(0xFFFB923C) else Color(0xFFEA580C)
+    DayLevel.VERY_BAD -> if (isDark) Color(0xFFF87171) else Color(0xFFDC2626)
 }

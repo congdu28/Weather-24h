@@ -487,7 +487,7 @@ fun WeatherScreen(
                             // 4. Khối Âm lịch Việt Nam & Tiết khí chuẩn xác (được đưa lên sau Radar)
                             if (isLunarCalendarEnabled) {
                                 item(key = "vietnamese_lunar_card", contentType = "lunar") {
-                                    VietnameseLunarCard()
+                                    VietnameseLunarCard(dailyForecasts = weather.daily7Days)
                                 }
                             }
 
