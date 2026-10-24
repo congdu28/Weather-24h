@@ -187,8 +187,16 @@ class GoogleWeatherApiService {
             }
         }
 
-        // Lấy 24 giờ tới cho trang chủ
-        val first24h = allHourly.take(24)
+        // Lấy 24 giờ tới cho trang chủ (tính từ giờ hiện tại)
+        val nowHour = LocalDateTime.now().withMinute(0).withSecond(0).withNano(0)
+        val futureHourly = allHourly.filter {
+            try {
+                !LocalDateTime.parse(it.timeString).isBefore(nowHour)
+            } catch (_: Exception) {
+                true
+            }
+        }.ifEmpty { allHourly }
+        val first24h = futureHourly.take(24)
 
         // --- Daily 7 Days Forecast ---
         val dailyList = mutableListOf<DailyForecast>()
@@ -215,6 +223,7 @@ class GoogleWeatherApiService {
                 val dProbObj = dayPart?.getAsJsonObject("precipitation")?.getAsJsonObject("probability")
                 val dProb = dProbObj?.get("percent")?.asInt ?: dProbObj?.get("percentage")?.asInt ?: -1
                 val dUv = dayPart?.get("uvIndex")?.asDouble ?: 5.0
+                val dPrecipSum = dayPart?.getAsJsonObject("precipitation")?.getAsJsonObject("qpf")?.get("quantity")?.takeUnless { it.isJsonNull }?.asDouble
 
                 // Parse sunrise / sunset
                 val sunObj = item.getAsJsonObject("sunEvents")
@@ -235,7 +244,9 @@ class GoogleWeatherApiService {
                         sunrise = sunriseStr,
                         sunset = sunsetStr,
                         uvIndexMax = dUv,
-                        hourly24h = dayHourly
+                        hourly24h = dayHourly,
+                        sourceName = "Google Weather",
+                        precipitationSum = dPrecipSum
                     )
                 )
             }

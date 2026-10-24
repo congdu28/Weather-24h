@@ -24,8 +24,12 @@ object SevereWeatherDetector {
         val daily = weather.daily7Days.firstOrNull()
 
         // 1. CẢNH BÁO DÔNG SÉT / MƯA DÔNG NGUY HIỂM (WMO 95, 96, 99)
-        val thunderHour = hourly.take(8).firstOrNull { it.weatherCode in listOf(95, 96, 99) }
-        val isCurrentThunder = current.condition.type == WeatherType.THUNDERSTORM
+        // Tránh báo động giả khi lượng mưa dự báo = 0.0mm và xác suất mưa thấp
+        val thunderHour = hourly.take(8).firstOrNull {
+            it.weatherCode in listOf(95, 96, 99) &&
+                (it.precipitationMm == null || it.precipitationMm >= 0.3 || it.precipitationProbability >= 45)
+        }
+        val isCurrentThunder = current.condition.type == WeatherType.THUNDERSTORM && current.precipitation > 0.05
         if (isCurrentThunder || thunderHour != null) {
             val timeText = if (isCurrentThunder) "Đang diễn ra" else "Khoảng ${thunderHour?.hourLabel ?: "sắp tới"}"
             alerts.add(
@@ -46,10 +50,13 @@ object SevereWeatherDetector {
         }
 
         // 2. CẢNH BÁO MƯA TO / MƯA XỐI XẢ
+        // Chỉ cảnh báo mưa lớn khi lượng mưa thực sự lớn (>= 5.0mm) hoặc có mã mưa to kèm lượng mưa >= 2.5mm (hoặc nguồn không cung cấp mm)
         val heavyRainHour = hourly.take(8).firstOrNull {
-            (it.precipitationMm ?: 0.0) >= 5.0 || it.weatherCode in listOf(65, 82)
+            (it.precipitationMm ?: 0.0) >= 5.0 ||
+                (it.weatherCode in listOf(65, 82) && (it.precipitationMm == null || it.precipitationMm >= 2.5))
         }
-        val isCurrentHeavyRain = current.precipitation >= 5.0 || current.weatherCode in listOf(65, 82)
+        val isCurrentHeavyRain = current.precipitation >= 5.0 ||
+            (current.weatherCode in listOf(65, 82) && current.precipitation >= 2.5)
         if ((isCurrentHeavyRain || heavyRainHour != null) && alerts.none { it.id == "alert_thunder" }) {
             val timeText = if (isCurrentHeavyRain) "Theo dữ liệu hiện tại" else "Dự báo khoảng ${heavyRainHour?.hourLabel ?: "sắp tới"}"
             alerts.add(
@@ -69,8 +76,10 @@ object SevereWeatherDetector {
             )
         }
 
-        // Xác suất cao cho biết khả năng xảy ra mưa, không nói lên cường độ hay diện tích mưa.
-        val likelyRainHour = hourly.take(8).firstOrNull { it.precipitationProbability >= 70 }
+        // Xác suất cao cho biết khả năng xảy ra mưa (chỉ báo khi lượng mưa dự báo thực tế >= 0.2mm hoặc không có dữ liệu mm)
+        val likelyRainHour = hourly.take(8).firstOrNull {
+            it.precipitationProbability >= 70 && (it.precipitationMm == null || it.precipitationMm >= 0.2)
+        }
         if (likelyRainHour != null && alerts.none { it.id in listOf("alert_thunder", "alert_heavy_rain") }) {
             alerts.add(
                 SevereWeatherAlert(
@@ -141,7 +150,7 @@ object SevereWeatherDetector {
             )
         }
 
-        // 6. CẢNH BÁO RÉT ĐẬM / RÉT HẠI (Min temp <= 13°C)
+        // 5. CẢNH BÁO RÉT ĐẬM / RÉT HẠI (Min temp <= 13°C)
         val minTemp = weather.minTemp24h
         if (minTemp <= 13.0 && minTemp > 0.0) {
             alerts.add(

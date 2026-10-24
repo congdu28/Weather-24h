@@ -1,10 +1,12 @@
 package com.weather24h.app.data.remote
 
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.weather24h.app.data.model.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -80,42 +82,55 @@ class WeatherApiService {
         if (trimmed.isEmpty()) return@withContext CityLocation.POPULAR_CITIES
 
         val normQuery = CityLocation.normalizeVietnamese(trimmed)
-        val localMatches = CityLocation.VIETNAM_MAJOR_CITIES.filter { city ->
-            val normName = CityLocation.normalizeVietnamese(city.name)
-            val normAdmin = city.admin1?.let { CityLocation.normalizeVietnamese(it) } ?: ""
-            normName.contains(normQuery) || normAdmin.contains(normQuery) ||
-            (normQuery == "hcm" && normName.contains("ho chi minh")) ||
-            (normQuery == "tphcm" && normName.contains("ho chi minh")) ||
-            (normQuery == "sg" && normName.contains("ho chi minh")) ||
-            (normQuery == "saigon" && normName.contains("ho chi minh")) ||
-            (normQuery == "hn" && normName.contains("ha noi")) ||
-            (normQuery == "dn" && normName.contains("da nang")) ||
-            (normQuery == "hp" && normName.contains("hai phong")) ||
-            (normQuery == "dl" && normName.contains("da lat"))
+        // Nếu người dùng nhập "xã Hoằng Thanh", "huyện Hoằng Hóa"..., chỉ lấy kết quả tỉnh/TP lớn khi thực sự khớp tên
+        val isSpecificCommuneQuery = normQuery.startsWith("xa ") ||
+                normQuery.startsWith("phuong ") ||
+                normQuery.startsWith("thi tran ") ||
+                normQuery.startsWith("huyen ") ||
+                normQuery.startsWith("quan ") ||
+                normQuery.startsWith("thon ")
+
+        val localMatches = if (isSpecificCommuneQuery) {
+            emptyList()
+        } else {
+            CityLocation.VIETNAM_MAJOR_CITIES.filter { city ->
+                val normName = CityLocation.normalizeVietnamese(city.name)
+                val normAdmin = city.admin1?.let { CityLocation.normalizeVietnamese(it) } ?: ""
+                normName.contains(normQuery) || normAdmin.contains(normQuery) ||
+                (normQuery == "hcm" && normName.contains("ho chi minh")) ||
+                (normQuery == "tphcm" && normName.contains("ho chi minh")) ||
+                (normQuery == "sg" && normName.contains("ho chi minh")) ||
+                (normQuery == "saigon" && normName.contains("ho chi minh")) ||
+                (normQuery == "hn" && normName.contains("ha noi")) ||
+                (normQuery == "dn" && normName.contains("da nang")) ||
+                (normQuery == "hp" && normName.contains("hai phong")) ||
+                (normQuery == "dl" && normName.contains("da lat"))
+            }
         }
 
-        try {
-            val encoded = URLEncoder.encode(trimmed, "UTF-8")
-            val url = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=10&language=vi&format=json"
-            val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string() ?: return@withContext localMatches
+        // Chạy song song Open-Meteo Geocoding và OpenStreetMap Nominatim (hỗ trợ cấp xã/phường/huyện chi tiết tại Việt Nam)
+        val openMeteoDeferred = async {
+            try {
+                val cleanedForOpenMeteo = trimmed.replace(
+                    Regex("^(phường|xã|thị trấn|quận|huyện|thị xã)\\s+", RegexOption.IGNORE_CASE),
+                    ""
+                ).trim().ifBlank { trimmed }
+                val encoded = URLEncoder.encode(cleanedForOpenMeteo, "UTF-8")
+                val url = "https://geocoding-api.open-meteo.com/v1/search?name=$encoded&count=10&language=vi&format=json"
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string() ?: return@async emptyList()
 
-            val json = gson.fromJson(responseBody, JsonObject::class.java)
-            val results = json.getAsJsonArray("results") ?: return@withContext localMatches
+                val json = gson.fromJson(responseBody, JsonObject::class.java)
+                val results = json.getAsJsonArray("results") ?: return@async emptyList()
 
-            val apiList = mutableListOf<CityLocation>()
-            for (elem in results) {
-                val obj = elem.asJsonObject
-                val name = obj.get("name")?.asString ?: ""
-                val lat = obj.get("latitude").asDouble
-                val lon = obj.get("longitude").asDouble
-                val isDuplicate = localMatches.any {
-                    it.name.equals(name, ignoreCase = true) ||
-                    (kotlin.math.abs(it.latitude - lat) < 0.05 && kotlin.math.abs(it.longitude - lon) < 0.05)
-                }
-                if (!isDuplicate) {
-                    apiList.add(
+                val list = mutableListOf<CityLocation>()
+                for (elem in results) {
+                    val obj = elem.asJsonObject
+                    val name = obj.get("name")?.asString ?: continue
+                    val lat = obj.get("latitude")?.asDouble ?: continue
+                    val lon = obj.get("longitude")?.asDouble ?: continue
+                    list.add(
                         CityLocation(
                             name = name,
                             country = obj.get("country")?.asString ?: "",
@@ -125,13 +140,96 @@ class WeatherApiService {
                         )
                     )
                 }
+                list
+            } catch (_: Exception) {
+                emptyList()
             }
-            localMatches + apiList
-        } catch (_: Exception) {
-            localMatches.ifEmpty {
-                CityLocation.POPULAR_CITIES.filter {
-                    CityLocation.normalizeVietnamese(it.name).contains(normQuery)
+        }
+
+        val nominatimDeferred = async {
+            try {
+                val encoded = URLEncoder.encode(trimmed, "UTF-8")
+                val osmUrl = "https://nominatim.openstreetmap.org/search?q=$encoded&format=json&addressdetails=1&limit=6&accept-language=vi"
+                val osmRequest = Request.Builder()
+                    .url(osmUrl)
+                    .header("User-Agent", "Weather24h-App/1.0 (Android; vi-VN)")
+                    .build()
+                val osmResponse = client.newCall(osmRequest).execute()
+                val osmBody = osmResponse.body?.string() ?: return@async emptyList()
+                val arr = gson.fromJson(osmBody, JsonArray::class.java) ?: return@async emptyList()
+
+                val list = mutableListOf<CityLocation>()
+                for (elem in arr) {
+                    if (!elem.isJsonObject) continue
+                    val obj = elem.asJsonObject
+                    val lat = obj.get("lat")?.asString?.toDoubleOrNull() ?: continue
+                    val lon = obj.get("lon")?.asString?.toDoubleOrNull() ?: continue
+                    val addr = obj.getAsJsonObject("address")
+                    val rawName = obj.get("name")?.asString?.trim()
+                        ?: obj.get("display_name")?.asString?.substringBefore(",")?.trim()
+                        ?: continue
+
+                    val ward = addr?.get("suburb")?.asString
+                        ?: addr?.get("quarter")?.asString
+                        ?: addr?.get("village")?.asString
+                        ?: addr?.get("town")?.asString
+                        ?: addr?.get("hamlet")?.asString
+                        ?: rawName
+                    val district = addr?.get("county")?.asString
+                        ?: addr?.get("district")?.asString
+                        ?: addr?.get("city_district")?.asString
+                        ?: addr?.get("municipality")?.asString
+                    val province = addr?.get("state")?.asString
+                        ?: addr?.get("province")?.asString
+                        ?: addr?.get("city")?.asString
+                    val country = addr?.get("country")?.asString ?: "Việt Nam"
+
+                    val formatted = formatHierarchyLocation(ward, district, province, country)
+                    val cleanAdmin = compactVietnameseAdministrativeName(province) ?: compactVietnameseAdministrativeName(district)
+
+                    list.add(
+                        CityLocation(
+                            name = formatted.first,
+                            country = country,
+                            admin1 = cleanAdmin,
+                            latitude = lat,
+                            longitude = lon
+                        )
+                    )
                 }
+                list
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
+
+        val openMeteoList = openMeteoDeferred.await()
+        val nominatimList = nominatimDeferred.await()
+
+        val merged = mutableListOf<CityLocation>()
+        // Nếu người dùng tìm cụ thể cấp xã/phường/huyện, ưu tiên kết quả chi tiết từ Nominatim lên đầu
+        val orderedSources = if (isSpecificCommuneQuery) {
+            nominatimList + openMeteoList + localMatches
+        } else {
+            localMatches + nominatimList + openMeteoList
+        }
+
+        for (candidate in orderedSources) {
+            val isDuplicate = merged.any { existing ->
+                (existing.name.equals(candidate.name, ignoreCase = true) &&
+                    kotlin.math.abs(existing.latitude - candidate.latitude) < 0.03 &&
+                    kotlin.math.abs(existing.longitude - candidate.longitude) < 0.03) ||
+                (kotlin.math.abs(existing.latitude - candidate.latitude) < 0.008 &&
+                    kotlin.math.abs(existing.longitude - candidate.longitude) < 0.008)
+            }
+            if (!isDuplicate) {
+                merged.add(candidate)
+            }
+        }
+
+        merged.ifEmpty {
+            CityLocation.POPULAR_CITIES.filter {
+                CityLocation.normalizeVietnamese(it.name).contains(normQuery)
             }
         }
     }
@@ -168,12 +266,18 @@ class WeatherApiService {
                                     val types = obj.getAsJsonArray("types")?.map { it.asString } ?: emptyList()
                                     val longName = obj.get("long_name")?.asString ?: ""
 
-                                    if (types.contains("sublocality_level_1") || types.contains("sublocality") || types.contains("neighborhood")) {
+                                    if (types.contains("sublocality_level_1") ||
+                                        types.contains("sublocality") ||
+                                        types.contains("administrative_area_level_3") ||
+                                        types.contains("neighborhood")
+                                    ) {
                                         if (gWard == null) gWard = longName
                                     } else if (types.contains("administrative_area_level_2")) {
                                         if (gDistrict == null) gDistrict = longName
                                     } else if (types.contains("administrative_area_level_1")) {
                                         if (gProvince == null) gProvince = longName
+                                    } else if (types.contains("locality") && gWard == null) {
+                                        gWard = longName
                                     } else if (types.contains("country")) {
                                         if (gCountry == null) gCountry = longName
                                     }
@@ -202,8 +306,9 @@ class WeatherApiService {
                 // Phân tích chuỗi địa chỉ đầy đủ (getAddressLine) để bóc tách Phường/Xã -> Quận/Huyện -> Tỉnh
                 val fullLine = addr.getAddressLine(0)
                 if (!fullLine.isNullOrBlank()) {
-                    val segments = fullLine.split(",").map { it.trim() }
-                    for (seg in segments) {
+                    val segments = fullLine.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    var wardIndex = -1
+                    for ((idx, seg) in segments.withIndex()) {
                         val lower = seg.lowercase()
                         if (ward == null && (
                             lower.startsWith("phường") || lower.startsWith("xã") ||
@@ -212,6 +317,7 @@ class WeatherApiService {
                             lower.contains("phường ") || lower.contains("xã ")
                         )) {
                             ward = seg
+                            wardIndex = idx
                         } else if (district == null && (
                             lower.startsWith("quận") || lower.startsWith("huyện") ||
                             lower.startsWith("thị xã") || lower.startsWith("q.") ||
@@ -226,10 +332,31 @@ class WeatherApiService {
                             province = seg
                         }
                     }
+
+                    // Nếu tìm thấy Xã/Phường ở segments[wardIndex] nhưng Huyện tiếp theo không có chữ "Huyện" ở đầu
+                    // (ví dụ: "Xã Hoằng Thanh, Hoằng Hóa, Thanh Hóa, Việt Nam")
+                    if (wardIndex >= 0 && district == null && wardIndex + 2 < segments.size) {
+                        val candidateDistrict = segments[wardIndex + 1]
+                        val cleanProv = compactVietnameseAdministrativeName(province)
+                        val cleanCand = compactVietnameseAdministrativeName(candidateDistrict)
+                        if (!cleanCand.isNullOrBlank() &&
+                            !cleanCand.equals(cleanProv, ignoreCase = true) &&
+                            !cleanCand.equals("Việt Nam", ignoreCase = true)
+                        ) {
+                            district = candidateDistrict
+                        }
+                    }
                 }
 
                 if (district == null && addr.locality != null && !isCentralCity(addr.locality!!)) {
-                    district = addr.locality
+                    val cleanLoc = compactVietnameseAdministrativeName(addr.locality)
+                    val cleanProv = compactVietnameseAdministrativeName(province)
+                    val cleanWard = compactVietnameseAdministrativeName(ward)
+                    if (!cleanLoc.equals(cleanProv, ignoreCase = true) &&
+                        !cleanLoc.equals(cleanWard, ignoreCase = true)
+                    ) {
+                        district = addr.locality
+                    }
                 }
 
                 if (!ward.isNullOrBlank() || !district.isNullOrBlank() || !province.isNullOrBlank()) {
@@ -240,7 +367,7 @@ class WeatherApiService {
 
         // 3. Dự phòng qua OpenStreetMap Nominatim Reverse Geocoding
         try {
-            val osmUrl = "https://nominatim.openstreetmap.org/reverse?lat=$latitude&lon=$longitude&format=json&accept-language=vi"
+            val osmUrl = "https://nominatim.openstreetmap.org/reverse?lat=$latitude&lon=$longitude&format=json&addressdetails=1&accept-language=vi"
             val osmRequest = Request.Builder()
                 .url(osmUrl)
                 .header("User-Agent", "Weather24h-App/1.0 (Android; vi-VN)")
@@ -255,12 +382,15 @@ class WeatherApiService {
                         ?: addressObj.get("quarter")?.asString
                         ?: addressObj.get("neighbourhood")?.asString
                         ?: addressObj.get("village")?.asString
+                        ?: addressObj.get("town")?.asString
+                        ?: addressObj.get("hamlet")?.asString
                     val osmDistrict = addressObj.get("city_district")?.asString
                         ?: addressObj.get("district")?.asString
                         ?: addressObj.get("county")?.asString
-                    val osmProvince = addressObj.get("city")?.asString
-                        ?: addressObj.get("state")?.asString
+                        ?: addressObj.get("municipality")?.asString
+                    val osmProvince = addressObj.get("state")?.asString
                         ?: addressObj.get("province")?.asString
+                        ?: addressObj.get("city")?.asString
                     val osmCountry = addressObj.get("country")?.asString ?: "Việt Nam"
 
                     if (!osmWard.isNullOrBlank() || !osmDistrict.isNullOrBlank() || !osmProvince.isNullOrBlank()) {
@@ -394,7 +524,7 @@ class WeatherApiService {
         )
 
         // Parse Hourly 24h chuẩn xác theo giờ hiện tại
-        val hourlyTimes = hourlyObj?.getAsJsonArray("time") ?: com.google.gson.JsonArray()
+        val hourlyTimes = hourlyObj?.getAsJsonArray("time") ?: JsonArray()
         val hourlyTemps = hourlyObj?.getAsJsonArray("temperature_2m")
         if (hourlyTimes.size() == 0 || hourlyTemps == null) {
             throw IllegalStateException("Open-Meteo thiếu dự báo theo giờ")
@@ -406,14 +536,31 @@ class WeatherApiService {
         val hourlyWinds = hourlyObj?.getAsJsonArray("wind_speed_10m")
         val hourlyIsDays = hourlyObj?.getAsJsonArray("is_day")
 
-        val getHourlyRainProb = { idx: Int ->
-            val prob = if (hourlyRains != null && idx < hourlyRains.size() && !hourlyRains.get(idx).isJsonNull) {
+        val getEffectiveHourlyRainProb = { idx: Int, temp: Double, wCode: Int, precipMm: Double?, isDayHour: Boolean ->
+            val rawProb = if (hourlyRains != null && idx < hourlyRains.size() && !hourlyRains.get(idx).isJsonNull) {
                 hourlyRains.get(idx).asInt
             } else {
                 -1
             }
-            // Lượng mưa không thể quy đổi thành xác suất. -1 biểu thị nguồn không cung cấp.
-            if (prob in 0..100) prob else -1
+            if (rawProb !in 0..100) {
+                -1
+            } else if (precipMm != null) {
+                val isSevereCode = wCode in listOf(63, 65, 80, 81, 82, 95, 96, 99)
+                when {
+                    // Khi lượng mưa thực tế = 0.0mm và không phải mã mưa rào/dông:
+                    // khử nhiễu xác suất mưa Ensemble lưới rộng (ven biển) bị vọt ảo lên 60-80%
+                    precipMm <= 0.05 && !isSevereCode -> {
+                        if (wCode in 0..3) minOf(rawProb, 15) else minOf(rawProb, 25)
+                    }
+                    // Khi lượng mưa <= 0.15mm (vết ẩm) giữa ban ngày trời nắng nóng >= 28°C:
+                    precipMm <= 0.15 && isDayHour && temp >= 28.0 && wCode !in listOf(63, 65, 81, 82, 95, 96, 99) -> {
+                        minOf(rawProb, 30)
+                    }
+                    else -> rawProb
+                }
+            } else {
+                rawProb
+            }
         }
 
         // Tìm vị trí giờ hiện tại trong mảng Open-Meteo
@@ -456,25 +603,29 @@ class WeatherApiService {
                 hourNum in 6..18
             }
 
-            val rainProb = getHourlyRainProb(i)
+            val hTemp = hourlyTemps.get(i).asDouble
+            val hCode = hourlyCodes?.get(i)?.asInt ?: current.weatherCode
+            val hPrecip = hourlyPrecips?.takeIf { i < it.size() }?.get(i)?.takeUnless { it.isJsonNull }?.asDouble
+            val rainProb = getEffectiveHourlyRainProb(i, hTemp, hCode, hPrecip, isDayHour)
+
             hourlyList.add(
                 HourlyForecast(
                     timeString = tStr,
                     hourLabel = rawHour,
-                    temperature = hourlyTemps.get(i).asDouble,
-                    weatherCode = hourlyCodes?.get(i)?.asInt ?: current.weatherCode,
+                    temperature = hTemp,
+                    weatherCode = hCode,
                     precipitationProbability = rainProb,
                     humidity = hourlyHumids?.get(i)?.asInt ?: current.humidity,
                     windSpeed = hourlyWinds?.get(i)?.asDouble ?: current.windSpeed,
                     isDay = isDayHour,
-                    precipitationMm = hourlyPrecips?.takeIf { i < it.size() }?.get(i)?.takeUnless { it.isJsonNull }?.asDouble
+                    precipitationMm = hPrecip
                 )
             )
         }
         if (hourlyList.isEmpty()) throw IllegalStateException("Open-Meteo trả dự báo giờ rỗng")
 
         // Parse Daily 7-day
-        val dailyTimes = dailyObj?.getAsJsonArray("time") ?: com.google.gson.JsonArray()
+        val dailyTimes = dailyObj?.getAsJsonArray("time") ?: JsonArray()
         val dailyCodes = dailyObj?.getAsJsonArray("weather_code")
         val dailyMaxs = dailyObj?.getAsJsonArray("temperature_2m_max")
         val dailyMins = dailyObj?.getAsJsonArray("temperature_2m_min")
@@ -482,9 +633,9 @@ class WeatherApiService {
         val dailySunsets = dailyObj?.getAsJsonArray("sunset")
         val dailyUvs = dailyObj?.getAsJsonArray("uv_index_max")
         val dailyRains = dailyObj?.getAsJsonArray("precipitation_probability_max")
+        val dailyPrecipSums = dailyObj?.getAsJsonArray("precipitation_sum")
 
-
-        val getDailyRainProb = { idx: Int ->
+        val getRawDailyRainProb = { idx: Int ->
             if (dailyRains != null && idx < dailyRains.size() && !dailyRains.get(idx).isJsonNull) {
                 dailyRains.get(idx).asInt.takeIf { it in 0..100 } ?: -1
             } else {
@@ -502,6 +653,7 @@ class WeatherApiService {
             val dayOfWeek = if (i == 0) "Hôm nay" else parseDayOfWeek(dateStr)
             val sunriseStr = dailySunrises?.get(i)?.asString?.substringAfter("T") ?: "06:00"
             val sunsetStr = dailySunsets?.get(i)?.asString?.substringAfter("T") ?: "18:00"
+            val precipSum = dailyPrecipSums?.takeIf { i < it.size() }?.get(i)?.takeUnless { it.isJsonNull }?.asDouble
 
             // Trích xuất dự báo nhiệt độ và thời tiết từng giờ của riêng ngày đó (24 giờ)
             val dayHourly = mutableListOf<HourlyForecast>()
@@ -515,24 +667,59 @@ class WeatherApiService {
                         val hNum = rawHour.substringBefore(":").toIntOrNull() ?: 12
                         hNum in 6..18
                     }
+                    val hTemp = hourlyTemps?.get(j)?.asDouble ?: 25.0
+                    val hCode = hourlyCodes?.get(j)?.asInt ?: 1
+                    val hPrecip = hourlyPrecips?.takeIf { j < it.size() }?.get(j)?.takeUnless { it.isJsonNull }?.asDouble
 
                     dayHourly.add(
                         HourlyForecast(
                             timeString = tStr,
                             hourLabel = rawHour,
-                            temperature = hourlyTemps?.get(j)?.asDouble ?: 25.0,
-                            weatherCode = hourlyCodes?.get(j)?.asInt ?: 1,
-                            precipitationProbability = getHourlyRainProb(j),
+                            temperature = hTemp,
+                            weatherCode = hCode,
+                            precipitationProbability = getEffectiveHourlyRainProb(j, hTemp, hCode, hPrecip, isDayHour),
                             humidity = hourlyHumids?.get(j)?.asInt ?: 70,
                             windSpeed = hourlyWinds?.get(j)?.asDouble ?: 10.0,
                             isDay = isDayHour,
-                            precipitationMm = hourlyPrecips?.takeIf { j < it.size() }?.get(j)?.takeUnless { it.isJsonNull }?.asDouble
+                            precipitationMm = hPrecip
                         )
                     )
                 }
             }
 
-            val dailyRainProb = getDailyRainProb(i)
+            val rawDailyProb = getRawDailyRainProb(i)
+            val effectiveDailyRainProb = if (rawDailyProb !in 0..100) {
+                -1
+            } else if (dayHourly.isNotEmpty()) {
+                val relevantHours = if (i == 0) {
+                    dayHourly.filter { it.timeString >= targetPrefix }.ifEmpty { dayHourly }
+                } else {
+                    dayHourly
+                }
+                val totalMm = precipSum ?: dayHourly.sumOf { it.precipitationMm ?: 0.0 }
+                val maxHourlyProb = relevantHours.maxOfOrNull { it.precipitationProbability }?.takeIf { it >= 0 }
+                val hasMeasurableHour = relevantHours.any { (it.precipitationMm ?: 0.0) >= 0.25 }
+
+                when {
+                    // Nếu cả ngày lượng mưa <= 0.3mm và không có giờ nào mưa >= 0.25mm:
+                    // tránh việc báo xác suất mưa 70-80% cho một ngày thực tế nắng ráo
+                    totalMm <= 0.3 && !hasMeasurableHour -> {
+                        minOf(maxHourlyProb ?: rawDailyProb, 25)
+                    }
+                    // Nếu tổng lượng mưa nhỏ (< 1.0mm): lấy theo max xác suất mưa đã hiệu chỉnh của các giờ trong ngày
+                    totalMm < 1.0 && maxHourlyProb != null -> {
+                        minOf(rawDailyProb, maxHourlyProb)
+                    }
+                    // Với ngày Hôm nay, ưu tiên xác suất mưa của các khung giờ còn lại từ hiện tại
+                    i == 0 && maxHourlyProb != null -> {
+                        maxHourlyProb
+                    }
+                    else -> rawDailyProb
+                }
+            } else {
+                if (precipSum != null && precipSum <= 0.2) minOf(rawDailyProb, 25) else rawDailyProb
+            }
+
             dailyList.add(
                 DailyForecast(
                     dateString = dateStr,
@@ -540,12 +727,13 @@ class WeatherApiService {
                     maxTemp = dailyMaxs.get(i).asDouble,
                     minTemp = dailyMins.get(i).asDouble,
                     weatherCode = dailyCodes?.get(i)?.asInt ?: 1,
-                    precipitationProbability = dailyRainProb,
+                    precipitationProbability = effectiveDailyRainProb,
                     sunrise = sunriseStr,
                     sunset = sunsetStr,
                     uvIndexMax = dailyUvs?.get(i)?.asDouble ?: 5.0,
                     hourly24h = dayHourly,
-                    sourceName = "Open-Meteo"
+                    sourceName = "Open-Meteo",
+                    precipitationSum = precipSum
                 )
             )
         }
@@ -584,6 +772,4 @@ class WeatherApiService {
             dateStr
         }
     }
-
 }
-

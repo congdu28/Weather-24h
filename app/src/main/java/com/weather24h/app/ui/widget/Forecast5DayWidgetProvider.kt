@@ -6,7 +6,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
+import android.os.Bundle
+import android.view.View
 import android.widget.RemoteViews
 import com.google.gson.Gson
 import com.weather24h.app.MainActivity
@@ -33,6 +34,17 @@ class Forecast5DayWidgetProvider : AppWidgetProvider() {
             updateForecastWidget(context, appWidgetManager, widgetId, weather)
         }
         WeatherWidgetProvider.refreshWidgetWeatherWithLocation(context, isSilent = true)
+    }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        val weather = getSavedWeather(context)
+        updateForecastWidget(context, appWidgetManager, appWidgetId, weather)
     }
 
     companion object {
@@ -100,7 +112,6 @@ class Forecast5DayWidgetProvider : AppWidgetProvider() {
 
                 // 3. Bảng màu chữ tương ứng với theme
                 val colorPrimary = if (isDark || widgetStyle != WidgetStyle.FROSTED_GLASS) 0xFFFFFFFF.toInt() else 0xFF0F172A.toInt()
-                val colorSecondary = if (isDark || widgetStyle != WidgetStyle.FROSTED_GLASS) 0xFFCBD5E1.toInt() else 0xFF475569.toInt()
                 val colorAccent = if (isDark || widgetStyle != WidgetStyle.FROSTED_GLASS) 0xFF38BDF8.toInt() else 0xFF0284C7.toInt()
                 val colorDim = if (isDark) 0xFF94A3B8.toInt() else 0xFF64748B.toInt()
                 val chipBgRes = if (isDark) R.drawable.widget_hour_chip_dark else R.drawable.widget_hour_chip_light
@@ -136,6 +147,17 @@ class Forecast5DayWidgetProvider : AppWidgetProvider() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 views.setOnClickPendingIntent(R.id.forecast_widget_root, pendingIntent)
+
+                // Responsive: ẩn bớt ngày thứ 4, 5 nếu người dùng thu hẹp chiều ngang thành 2x1 / 3x1
+                val options = appWidgetManager.getAppWidgetOptions(widgetId)
+                val minWidth = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH) ?: 280
+                val visibleDays = when {
+                    minWidth >= 270 -> 5
+                    minWidth >= 215 -> 4
+                    else -> 3
+                }
+                views.setViewVisibility(R.id.forecast_chip_3, if (visibleDays >= 4) View.VISIBLE else View.GONE)
+                views.setViewVisibility(R.id.forecast_chip_4, if (visibleDays >= 5) View.VISIBLE else View.GONE)
 
                 if (weather != null) {
                     val condition = weather.current.condition
@@ -173,15 +195,17 @@ class Forecast5DayWidgetProvider : AppWidgetProvider() {
 
                         if (i < days.size) {
                             val day = days[i]
-                            val dayCond = WeatherCondition.fromWmoCode(day.weatherCode)
+                            val dayCond = day.condition
                             val dayEmoji = getWeatherEmoji(dayCond, isDay = true)
                             val dayName = formatShortDay(day.dayOfWeek, i)
+                            val showRain = day.precipitationProbability >= 20 ||
+                                dayCond.type in listOf(WeatherType.DRIZZLE, WeatherType.RAIN, WeatherType.THUNDERSTORM)
 
                             views.setTextViewText(labelId, dayName)
                             views.setTextViewText(iconId, dayEmoji)
                             views.setTextViewText(maxTempId, "${day.maxTemp.roundToInt()}°")
                             views.setTextViewText(minTempId, "${day.minTemp.roundToInt()}°")
-                            views.setTextViewText(rainId, if (day.precipitationProbability > 0) "${day.precipitationProbability}%" else "—")
+                            views.setTextViewText(rainId, if (showRain && day.precipitationProbability > 0) "${day.precipitationProbability}%" else "—")
                         }
                     }
                 } else {
@@ -192,7 +216,7 @@ class Forecast5DayWidgetProvider : AppWidgetProvider() {
                 }
 
                 appWidgetManager.updateAppWidget(widgetId, views)
-            } catch (e: Exception) {}
+            } catch (_: Exception) {}
         }
 
         private fun formatShortDay(dayOfWeek: String, index: Int): String {
@@ -229,7 +253,7 @@ class Forecast5DayWidgetProvider : AppWidgetProvider() {
                 if (prefs.getInt("cached_weather_schema", 0) != 3) return null
                 val json = prefs.getString("cached_weather_json", null) ?: return null
                 Gson().fromJson(json, WeatherData::class.java)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 null
             }
         }

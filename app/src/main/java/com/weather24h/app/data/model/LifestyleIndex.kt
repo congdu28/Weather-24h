@@ -17,10 +17,15 @@ object LifestyleCalculator {
         val daily = weather.daily7Days.firstOrNull()
 
         val rainProbNext12h = hourly.take(12).maxOfOrNull { it.precipitationProbability } ?: 0
+        val hasRealRainNext12h = hourly.take(12).any {
+            it.condition.type in listOf(WeatherType.DRIZZLE, WeatherType.RAIN, WeatherType.THUNDERSTORM) &&
+                ((it.precipitationMm ?: 0.0) >= 0.3 || (it.precipitationMm == null && it.precipitationProbability >= 50))
+        }
+        val isCurrentlyRaining = current.effectivePrecipitationMm > 0.0
         val humidity = current.humidity
         val temp = current.temperature
         val windSpeed = current.windSpeed
-        val uv = maxOf(current.uvIndex, daily?.uvIndexMax ?: 0.0)
+        val uv = if (current.isDay) maxOf(current.uvIndex, daily?.uvIndexMax ?: 0.0) else current.uvIndex
         val pm25 = weather.airQuality?.pm25 ?: 20.0
         val tempSwing = weather.maxTemp24h - weather.minTemp24h
 
@@ -28,10 +33,10 @@ object LifestyleCalculator {
 
         // 1. PHƠI ĐỒ (Laundry Drying)
         val (laundryStatus, laundryColor, laundryTip, laundryDetail) = when {
-            rainProbNext12h >= 50 -> Quadruple(
+            isCurrentlyRaining || (rainProbNext12h >= 50 && (hasRealRainNext12h || rainProbNext12h >= 65)) -> Quadruple(
                 "Không nên phơi",
                 0xFFEF4444L, // Red
-                "Khả năng có mưa $rainProbNext12h%",
+                if (isCurrentlyRaining) "Trời đang có mưa" else "Khả năng có mưa $rainProbNext12h%",
                 "Dự báo có mưa với xác suất lên tới $rainProbNext12h% trong 12 giờ tới. Quần áo dễ bị ẩm mốc nếu phơi ngoài trời."
             )
             humidity >= 85 -> Quadruple(
@@ -40,7 +45,7 @@ object LifestyleCalculator {
                 "Độ ẩm không khí cao ($humidity%)",
                 "Độ ẩm không khí đạt $humidity%, thời gian khô quần áo kéo dài. Nên vắt kỹ và phơi nơi thông thoáng hoặc sấy khô."
             )
-            humidity <= 60 && current.isDay -> Quadruple(
+            humidity <= 65 && current.isDay && temp >= 27.0 -> Quadruple(
                 "Rất nhanh khô",
                 0xFF22C55EL, // Green
                 "Nắng ráo & gió thoáng",
@@ -66,18 +71,22 @@ object LifestyleCalculator {
         )
 
         // 2. RỬA XE (Car Wash)
-        val rainNext48h = weather.daily7Days.take(2).maxOfOrNull { it.precipitationProbability } ?: 0
+        val next2Days = weather.daily7Days.take(2)
+        val rainNext48h = next2Days.maxOfOrNull { it.precipitationProbability } ?: 0
+        val hasRainDayNext48h = next2Days.any {
+            it.condition.type in listOf(WeatherType.DRIZZLE, WeatherType.RAIN, WeatherType.THUNDERSTORM)
+        }
         val (carStatus, carColor, carTip, carDetail) = when {
-            rainNext48h >= 45 -> Quadruple(
+            isCurrentlyRaining || (rainNext48h >= 50 && hasRainDayNext48h) || rainNext48h >= 65 -> Quadruple(
                 "Không nên rửa",
                 0xFFEF4444L,
                 "Sắp có mưa 1-2 ngày tới",
                 "Dự báo có mưa trong vòng 48 giờ tới (xác suất $rainNext48h%). Xe sau khi rửa sẽ nhanh chóng bị dính nước mưa và bùn đất."
             )
-            rainNext48h in 20..44 -> Quadruple(
+            rainNext48h in 25..64 && hasRainDayNext48h -> Quadruple(
                 "Cân nhắc",
                 0xFFF59E0BL,
-                "Thời tiết tạm ổn",
+                "Có thể có mưa rải rác",
                 "Khả năng có mưa rải rác nhẹ. Nếu xe quá bụi bẩn bạn có thể rửa nhanh bên ngoài."
             )
             else -> Quadruple(
@@ -101,10 +110,10 @@ object LifestyleCalculator {
 
         // 3. THỂ THAO NGOÀI TRỜI (Outdoor Fitness)
         val (sportStatus, sportColor, sportTip, sportDetail) = when {
-            rainProbNext12h >= 60 || current.precipitation > 0 -> Quadruple(
+            isCurrentlyRaining || (rainProbNext12h >= 60 && (hasRealRainNext12h || rainProbNext12h >= 70)) -> Quadruple(
                 "Tập trong nhà",
                 0xFFEF4444L,
-                "Cân nhắc mưa trong 12 giờ tới",
+                if (isCurrentlyRaining) "Hiện tại đang có mưa" else "Cân nhắc mưa trong 12 giờ tới",
                 "Nguồn dữ liệu báo có mưa hoặc xác suất mưa đạt $rainProbNext12h% ở một khung giờ trong 12 giờ tới. Kiểm tra dự báo đúng giờ tập; nếu đang mưa, ưu tiên tập trong nhà."
             )
             pm25 >= 55.4 -> Quadruple(
@@ -113,7 +122,7 @@ object LifestyleCalculator {
                 "Chất lượng không khí kém",
                 "Chỉ số bụi mịn PM2.5 cao (${pm25.toInt()} µg/m³). Hít thở sâu khi vận động mạnh ngoài trời có thể ảnh hưởng xấu đến phổi."
             )
-            temp in 18.0..28.0 && current.feelsLike < 32.0 -> Quadruple(
+            temp in 18.0..28.5 && current.feelsLike < 32.0 -> Quadruple(
                 "Tuyệt vời",
                 0xFF22C55EL,
                 "Thời tiết mát mẻ lý tưởng",
@@ -158,7 +167,7 @@ object LifestyleCalculator {
                 "Độ ẩm không khí $humidity%",
                 "Không khí ẩm, quần áo và chăn gối có thể hơi ẩm. Chú ý lau khô các khu vực thông gió kém."
             )
-            humidity in 45..75 -> Quadruple(
+            humidity in 45..74 -> Quadruple(
                 "Dễ chịu",
                 0xFF22C55EL,
                 "Độ ẩm lý tưởng ($humidity%)",

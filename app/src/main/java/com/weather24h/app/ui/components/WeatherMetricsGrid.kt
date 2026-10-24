@@ -33,10 +33,68 @@ fun WeatherMetricsGrid(
 ) {
     val current = weather.current
     val todayDaily = weather.daily7Days.firstOrNull()
-    val uv = todayDaily?.uvIndexMax ?: current.uvIndex
+    val displayUv = if (current.isDay) {
+        if (current.uvIndex > 0.0) current.uvIndex else (todayDaily?.uvIndexMax ?: 0.0)
+    } else {
+        current.uvIndex.coerceAtLeast(0.0)
+    }
+    val uvSubtext = if (!current.isDay && displayUv <= 0.5) {
+        val peak = todayDaily?.uvIndexMax
+        if (peak != null && peak > 0.0) {
+            "Ban đêm an toàn • Đỉnh ngày: ${String.format("%.1f", peak)}"
+        } else {
+            "Ban đêm • An toàn"
+        }
+    } else {
+        getUvAdvice(displayUv)
+    }
+
+    val humiditySubtext = when {
+        current.humidity >= 85 -> "Rất ẩm • Dễ đọng sương"
+        current.humidity >= 70 -> "Khá ẩm ướt"
+        current.humidity >= 45 -> "Độ ẩm lý tưởng, dễ chịu"
+        else -> "Không khí khô • Cần cấp ẩm"
+    }
+
+    val windDesc = when {
+        current.windSpeed < 6.0 -> "Gió nhẹ"
+        current.windSpeed < 20.0 -> "Gió vừa"
+        current.windSpeed < 39.0 -> "Gió mạnh"
+        else -> "Gió giật mạnh"
+    }
+
+    val tempDiff = current.feelsLike - current.temperature
+    val feelsLikeSubtext = when {
+        tempDiff >= 2.5 -> "Oi bức hơn thực tế (+${tempDiff.roundToInt()}°)"
+        tempDiff >= 0.8 -> "Cảm giác ấm/nóng hơn"
+        tempDiff <= -2.0 -> "Lạnh hơn do gió (${tempDiff.roundToInt()}°)"
+        tempDiff <= -0.8 -> "Cảm giác dịu mát hơn"
+        else -> "Tương đương nhiệt độ thực"
+    }
+
+    val visibilitySubtext = when {
+        current.visibilityKm >= 10.0 -> "Tầm nhìn xa rất tốt"
+        current.visibilityKm >= 5.0 -> "Tầm nhìn khá rõ"
+        current.visibilityKm >= 2.0 -> "Hạn chế nhẹ do mù/ẩm"
+        else -> "Tầm nhìn kém • Chú ý lái xe"
+    }
+
+    val pressureSubtext = when {
+        current.surfacePressure < 1003.0 -> "Áp thấp • Dễ có mây/mưa"
+        current.surfacePressure > 1020.0 -> "Áp cao • Thời tiết ổn định"
+        else -> "Áp suất khí quyển ổn định"
+    }
+
+    val effectivePrecip = current.effectivePrecipitationMm
+    val precipSubtext = when {
+        effectivePrecip >= 5.0 -> "Mưa lớn • Chú ý đường trơn"
+        effectivePrecip >= 1.5 -> "Mưa vừa hiện tại"
+        effectivePrecip > 0.0 -> "Mưa nhỏ hiện tại"
+        else -> "Hiện tại không có mưa"
+    }
+
     val isDark = LocalIsDarkTheme.current
     val contentColor = LocalContentTextColor.current
-    val subtextColor = LocalSubtextColor.current
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Title
@@ -69,9 +127,9 @@ fun WeatherMetricsGrid(
             MetricCard(
                 icon = Icons.Default.WbSunny,
                 title = "CHỈ SỐ UV",
-                value = String.format("%.1f", uv),
-                subtext = getUvAdvice(uv),
-                accentColor = getUvColor(uv),
+                value = String.format("%.1f", displayUv),
+                subtext = uvSubtext,
+                accentColor = getUvColor(displayUv),
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
@@ -81,7 +139,7 @@ fun WeatherMetricsGrid(
                 icon = Icons.Default.WaterDrop,
                 title = "ĐỘ ẨM",
                 value = "${current.humidity}%",
-                subtext = if (current.humidity > 70) "Khá ẩm ướt" else "Độ ẩm dễ chịu",
+                subtext = humiditySubtext,
                 accentColor = Color(0xFF48CAE4),
                 modifier = Modifier
                     .weight(1f)
@@ -101,7 +159,7 @@ fun WeatherMetricsGrid(
                 icon = Icons.Default.Air,
                 title = "GIÓ",
                 value = "${current.windSpeed.roundToInt()} km/h",
-                subtext = "Hướng ${current.windDirectionText}",
+                subtext = "Hướng ${current.windDirectionText} • $windDesc",
                 accentColor = Color(0xFF06D6A0),
                 modifier = Modifier
                     .weight(1f)
@@ -112,7 +170,7 @@ fun WeatherMetricsGrid(
                 icon = Icons.Default.Thermostat,
                 title = "CẢM NHẬN",
                 value = "${current.feelsLike.roundToInt()}°C",
-                subtext = if (current.feelsLike > current.temperature) "Cảm giác nóng hơn" else "Mát mẻ hơn",
+                subtext = feelsLikeSubtext,
                 accentColor = Color(0xFFFFD166),
                 modifier = Modifier
                     .weight(1f)
@@ -143,7 +201,7 @@ fun WeatherMetricsGrid(
                 icon = Icons.Default.Visibility,
                 title = "TẦM NHÌN",
                 value = "${current.visibilityKm.roundToInt()} km",
-                subtext = "Tầm nhìn xa tốt",
+                subtext = visibilitySubtext,
                 accentColor = Color(0xFF118AB2),
                 modifier = Modifier
                     .weight(1f)
@@ -163,7 +221,7 @@ fun WeatherMetricsGrid(
                 icon = Icons.Default.Speed,
                 title = "ÁP SUẤT",
                 value = "${current.surfacePressure.roundToInt()} hPa",
-                subtext = "Áp suất chuẩn",
+                subtext = pressureSubtext,
                 accentColor = if (isDark) Color.White.copy(alpha = 0.85f) else Color(0xFF334155),
                 modifier = Modifier
                     .weight(1f)
@@ -173,8 +231,8 @@ fun WeatherMetricsGrid(
             MetricCard(
                 icon = Icons.Default.Umbrella,
                 title = "LƯỢNG MƯA",
-                value = "${current.precipitation} mm",
-                subtext = if (current.precipitation > 0) "Mưa tích lũy hiện tại" else "Không có mưa",
+                value = "$effectivePrecip mm",
+                subtext = precipSubtext,
                 accentColor = Color(0xFF38BDF8),
                 modifier = Modifier
                     .weight(1f)

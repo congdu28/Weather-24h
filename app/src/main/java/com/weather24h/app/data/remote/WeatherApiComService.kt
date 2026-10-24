@@ -213,6 +213,7 @@ class WeatherApiComService {
                 val dProb = dayInfo.get("daily_chance_of_rain")?.takeUnless { it.isJsonNull }?.asInt
                     ?.takeIf { it in 0..100 } ?: -1
                 val dUv = dayInfo?.get("uv")?.asDouble ?: 5.0
+                val dPrecipSum = dayInfo.get("totalprecip_mm")?.takeUnless { it.isJsonNull }?.asDouble
 
                 val sunrise = astro?.get("sunrise")?.asString?.let { formatAstroTime(it) } ?: "05:45"
                 val sunset = astro?.get("sunset")?.asString?.let { formatAstroTime(it) } ?: "17:55"
@@ -232,7 +233,8 @@ class WeatherApiComService {
                         sunset = sunset,
                         uvIndexMax = dUv,
                         hourly24h = dayHourly,
-                        sourceName = "WeatherAPI.com"
+                        sourceName = "WeatherAPI.com",
+                        precipitationSum = dPrecipSum
                     )
                 )
             }

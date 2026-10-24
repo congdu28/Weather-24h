@@ -14,9 +14,9 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
-import com.weather24h.app.BuildConfig
+import com.weather24h.app.util.SecurityVault
 
-class GeminiStylistService(context: Context) {
+class GeminiStylistService(private val context: Context) {
     private val prefs = context.getSharedPreferences("weather24h_prefs", Context.MODE_PRIVATE)
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -43,7 +43,7 @@ class GeminiStylistService(context: Context) {
     }
 
     fun getDefaultApiKey(): String? {
-        val key = BuildConfig.DEFAULT_GEMINI_API_KEY.trim()
+        val key = SecurityVault.getDefaultGeminiKey(context).trim()
         return if (key.isNotEmpty()) key else null
     }
 

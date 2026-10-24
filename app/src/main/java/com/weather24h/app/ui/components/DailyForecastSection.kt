@@ -95,21 +95,7 @@ fun DailyForecastSection(
 
             // 7 Days List
             dailyList.forEachIndexed { index, day ->
-                val rawCondition = WeatherCondition.fromWmoCode(day.weatherCode)
-                val baseCondition = if ((rawCondition.type == com.weather24h.app.data.model.WeatherType.DRIZZLE || rawCondition.type == com.weather24h.app.data.model.WeatherType.RAIN) &&
-                    day.precipitationProbability in 0..35 && day.maxTemp >= 28.0
-                ) {
-                    WeatherCondition("Nắng xen mây", com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)
-                } else {
-                    rawCondition
-                }
-                val condition = if (day.precipitationProbability >= 60 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
-                    WeatherCondition("Nắng gián đoạn, có lúc mưa rào", com.weather24h.app.data.model.WeatherType.DRIZZLE)
-                } else if (day.precipitationProbability >= 40 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
-                    WeatherCondition("Nắng xen mây, có thể có mưa", com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)
-                } else {
-                    baseCondition
-                }
+                val condition = day.condition
                 val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
                 val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true, isDark = isDark)
 
@@ -166,7 +152,13 @@ fun DailyForecastSection(
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        if (day.precipitationProbability > 0) {
+                        val showRainPercent = day.precipitationProbability >= 20 ||
+                            condition.type in listOf(
+                                com.weather24h.app.data.model.WeatherType.DRIZZLE,
+                                com.weather24h.app.data.model.WeatherType.RAIN,
+                                com.weather24h.app.data.model.WeatherType.THUNDERSTORM
+                            )
+                        if (showRainPercent && day.precipitationProbability > 0) {
                             Text(
                                 text = day.rainProbabilityText,
                                 color = Color(0xFF0284C7),
@@ -175,8 +167,8 @@ fun DailyForecastSection(
                             )
                         } else {
                             Text(
-                                text = day.rainProbabilityText,
-                                color = subtextColor.copy(alpha = 0.70f),
+                                text = "—",
+                                color = subtextColor.copy(alpha = 0.55f),
                                 fontSize = 10.sp
                             )
                         }
@@ -267,21 +259,7 @@ fun DayForecastDetailDialog(
     day: DailyForecast,
     onDismiss: () -> Unit
 ) {
-    val rawCondition = WeatherCondition.fromWmoCode(day.weatherCode)
-    val baseCondition = if ((rawCondition.type == com.weather24h.app.data.model.WeatherType.DRIZZLE || rawCondition.type == com.weather24h.app.data.model.WeatherType.RAIN) &&
-        day.precipitationProbability in 0..35 && day.maxTemp >= 28.0
-    ) {
-        WeatherCondition("Nắng xen mây", com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)
-    } else {
-        rawCondition
-    }
-    val condition = if (day.precipitationProbability >= 60 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
-        WeatherCondition("Nắng gián đoạn, có lúc mưa rào", com.weather24h.app.data.model.WeatherType.DRIZZLE)
-    } else if (day.precipitationProbability >= 40 && baseCondition.type == com.weather24h.app.data.model.WeatherType.CLEAR) {
-        WeatherCondition("Nắng xen mây, có thể có mưa", com.weather24h.app.data.model.WeatherType.PARTLY_CLOUDY)
-    } else {
-        baseCondition
-    }
+    val condition = day.condition
     val isDark = LocalIsDarkTheme.current
     val icon = WeatherCondition.getWeatherIcon(condition.type, isDay = true)
     val iconTint = WeatherCondition.getWeatherIconTint(condition.type, isDay = true, isDark = isDark)
@@ -607,7 +585,9 @@ fun DayForecastDetailDialog(
                                                     horizontalArrangement = Arrangement.Center,
                                                     modifier = Modifier.height(16.dp)
                                                 ) {
-                                                    if (item.precipitationProbability > 0) {
+                                                    val hasMeasurableRain = (item.precipitationMm ?: 0.0) >= 0.1
+                                                    val hasNotableProb = item.precipitationProbability >= 20
+                                                    if ((hasMeasurableRain || hasNotableProb) && item.precipitationProbability > 0) {
                                                         Text(
                                                             text = "☔ ${item.precipitationProbability}%",
                                                             color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),

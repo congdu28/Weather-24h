@@ -707,7 +707,7 @@ class WeatherRepository(
     fun getEffectiveWeatherApiKey(): String {
         val custom = getCustomWeatherApiKey()
         if (!custom.isNullOrBlank()) return custom
-        return BuildConfig.DEFAULT_WEATHER_API_KEY
+        return com.weather24h.app.util.SecurityVault.getDefaultWeatherApiKey(context)
     }
 
     fun hasWeatherApiKey(): Boolean = getEffectiveWeatherApiKey().isNotBlank()
@@ -731,7 +731,7 @@ class WeatherRepository(
     fun getEffectiveGoogleWeatherKey(): String {
         val custom = getCustomGoogleWeatherKey()
         if (!custom.isNullOrBlank()) return custom
-        return BuildConfig.DEFAULT_GOOGLE_WEATHER_KEY
+        return com.weather24h.app.util.SecurityVault.getDefaultGoogleWeatherKey(context)
     }
 
     fun hasGoogleWeatherKey(): Boolean = getEffectiveGoogleWeatherKey().isNotBlank()

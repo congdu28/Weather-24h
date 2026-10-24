@@ -375,12 +375,14 @@ fun HourlyForecastSection(
                                     }
 
                                     // 2. Thẻ Lượng mưa / Xác suất mưa (Xanh Biển)
-                                    val isDryHour = selectedItem.precipitationProbability < 20 && (selectedItem.precipitationMm ?: 0.0) < 0.1
+                                    val isDryHour = (selectedItem.precipitationProbability in 0..19) && (selectedItem.precipitationMm ?: 0.0) < 0.1
                                     val rainTitle = if (isDryHour) "🌤️ Tạnh ráo" else "🌧️ Mưa"
+                                    val probStr = selectedItem.rainProbabilityText
                                     val rainDetail = if ((selectedItem.precipitationMm ?: 0.0) >= 0.1) {
-                                        "${selectedItem.precipitationProbability}% (${selectedItem.precipitationMm}mm)"
+                                        val mmFormatted = String.format(java.util.Locale.US, "%.1fmm", selectedItem.precipitationMm)
+                                        if (selectedItem.precipitationProbability >= 0) "$probStr ($mmFormatted)" else mmFormatted
                                     } else {
-                                        "${selectedItem.precipitationProbability}%"
+                                        probStr
                                     }
 
                                     Surface(
@@ -664,7 +666,11 @@ fun HourlyForecastSection(
                                     )
                                 }
                                 ChartDisplayMode.PRECIPITATION -> {
-                                    val rainMmText = if (item.precipitationMm != null && item.precipitationMm > 0) "${item.precipitationMm} mm" else "0 mm"
+                                    val rainMmText = if (item.precipitationMm != null && item.precipitationMm > 0) {
+                                        String.format(java.util.Locale.US, "%.1f mm", item.precipitationMm)
+                                    } else {
+                                        "0 mm"
+                                    }
                                     Text(
                                         text = rainMmText,
                                         color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),

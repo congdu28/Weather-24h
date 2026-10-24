@@ -501,17 +501,17 @@ fun WeatherScreen(
                                 )
                             }
 
-                            // 6. Chất lượng không khí & Bụi mịn PM2.5 / PM10 (AQI chuyên sâu)
-                            item(key = "air_quality_card", contentType = "aqi") {
-                                AirQualityCard(weather = weather)
-                            }
-
-                            // 7. 7-Day Forecast Section
+                            // 6. 7-Day Forecast Section (Đưa lên trên khối Chất lượng không khí)
                             item(key = "daily_forecast_section", contentType = "daily") {
                                 DailyForecastSection(
                                     dailyList = weather.daily7Days,
                                     showLunarCalendar = isLunarCalendarEnabled
                                 )
+                            }
+
+                            // 7. Chất lượng không khí & Bụi mịn PM2.5 / PM10 (AQI chuyên sâu)
+                            item(key = "air_quality_card", contentType = "aqi") {
+                                AirQualityCard(weather = weather)
                             }
 
                             // 7. Chỉ số Sức khỏe & Hoạt động Ngoài trời (Phơi đồ, Rửa xe, Nồm ẩm, v.v.)

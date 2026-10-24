@@ -20,13 +20,41 @@ val defaultWeatherApiKey: String = localProps.getProperty("WEATHER_API_KEY")?.ta
     ?: (project.findProperty("WEATHER_API_KEY") as? String)?.takeIf { it.isNotBlank() }
     ?: ""
 
+val defaultGoogleWeatherKey: String = localProps.getProperty("GOOGLE_WEATHER_KEY")?.takeIf { it.isNotBlank() }
+    ?: System.getenv("GOOGLE_WEATHER_KEY")?.takeIf { it.isNotBlank() }
+    ?: (project.findProperty("GOOGLE_WEATHER_KEY") as? String)?.takeIf { it.isNotBlank() }
+    ?: ""
+
+/**
+ * Mã hóa XOR + Hex khóa API ngay tại thời điểm biên dịch (Build-time Obfuscation)
+ * để không tồn tại bất kỳ chuỗi khóa dạng văn bản thuần (plaintext) nào trong BuildConfig.java hay classes.dex.
+ */
+fun encodeSecretForBuildConfig(raw: String, seed: Int): String {
+    val trimmed = raw.trim()
+    if (trimmed.isEmpty()) return ""
+    val bytes = trimmed.toByteArray(Charsets.UTF_8)
+    val sb = StringBuilder(bytes.size * 2)
+    for (i in bytes.indices) {
+        val b = bytes[i].toInt() and 0xFF
+        val k = ((seed ushr ((i % 4) * 8)) xor (i * 31 + 0x5A)) and 0xFF
+        val enc = b xor k
+        sb.append(String.format("%02x", enc))
+    }
+    return sb.toString()
+}
+
+val maskSeed = 0x5A3C9E71
+val encodedGeminiKey = encodeSecretForBuildConfig(defaultGeminiKey, maskSeed)
+val encodedWeatherApiKey = encodeSecretForBuildConfig(defaultWeatherApiKey, maskSeed xor 0x13572468)
+val encodedGoogleWeatherKey = encodeSecretForBuildConfig(defaultGoogleWeatherKey, maskSeed xor 0x24681357)
+
 val appVersionName: String = (project.findProperty("versionName") as? String)
     ?: System.getenv("APP_VERSION_NAME")
-    ?: "1.0.54"
+    ?: "1.0.55"
 
 val appVersionCode: Int = (project.findProperty("versionCode") as? String)?.toIntOrNull()
     ?: (System.getenv("APP_VERSION_CODE")?.toIntOrNull())
-    ?: 154
+    ?: 155
 
 android {
     namespace = "com.weather24h.app"
@@ -36,10 +64,19 @@ android {
         create("release") {
             val keystoreFile = rootProject.file("keystore/release.jks")
             if (keystoreFile.exists()) {
+                val ksPass = localProps.getProperty("KEYSTORE_PASSWORD")
+                    ?: System.getenv("KEYSTORE_PASSWORD")
+                    ?: "weather24h"
+                val kAlias = localProps.getProperty("KEY_ALIAS")
+                    ?: System.getenv("KEY_ALIAS")
+                    ?: "weather24h"
+                val kPass = localProps.getProperty("KEY_PASSWORD")
+                    ?: System.getenv("KEY_PASSWORD")
+                    ?: "weather24h"
                 storeFile = keystoreFile
-                storePassword = "weather24h"
-                keyAlias = "weather24h"
-                keyPassword = "weather24h"
+                storePassword = ksPass
+                keyAlias = kAlias
+                keyPassword = kPass
             } else {
                 val debugConfig = signingConfigs.getByName("debug")
                 storeFile = debugConfig.storeFile
@@ -62,16 +99,16 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "DEFAULT_GEMINI_API_KEY", "\"$defaultGeminiKey\"")
-        buildConfigField("String", "DEFAULT_GOOGLE_WEATHER_KEY", "\"\"")
-        buildConfigField("String", "DEFAULT_WEATHER_API_KEY", "\"$defaultWeatherApiKey\"")
+        buildConfigField("String", "DEFAULT_GEMINI_API_KEY_ENC", "\"$encodedGeminiKey\"")
+        buildConfigField("String", "DEFAULT_GOOGLE_WEATHER_KEY_ENC", "\"$encodedGoogleWeatherKey\"")
+        buildConfigField("String", "DEFAULT_WEATHER_API_KEY_ENC", "\"$encodedWeatherApiKey\"")
     }
-
 
     buildTypes {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            isDebuggable = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -87,6 +124,11 @@ android {
 
     kotlinOptions {
         jvmTarget = "1.8"
+        freeCompilerArgs = freeCompilerArgs + listOf(
+            "-Xno-param-assertions",
+            "-Xno-call-assertions",
+            "-Xno-receiver-assertions"
+        )
     }
 
     buildFeatures {
@@ -106,6 +148,9 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/*.kotlin_module"
+            excludes += "/META-INF/version-control-info.textproto"
+            excludes += "/DebugProbesKt.bin"
         }
     }
 }
