@@ -155,7 +155,22 @@ data class DayAlmanac(
 
     val bestHours: List<HourInfo> get() = hours.filter { it.isBest }
 
-    val clashAgesText: String get() = "Tuổi ${VietnameseLunarCalendar.CHI[clashChi]}"
+    val clashAgesText: String
+        get() {
+            val jd = if (lunar.julianDay > 0) lunar.julianDay else VietnameseLunarCalendar.jdFromLocalDate(date)
+            val canIdx = (jd + 9) % 10
+            val c1 = "${VietnameseLunarCalendar.CAN[(canIdx + 4) % 10]} ${VietnameseLunarCalendar.CHI[clashChi]}"
+            val c2 = "${VietnameseLunarCalendar.CAN[(canIdx + 6) % 10]} ${VietnameseLunarCalendar.CHI[clashChi]}"
+            return "Tuổi ${VietnameseLunarCalendar.CHI[clashChi]} ($c1, $c2)"
+        }
+
+    val isYangDay: Boolean
+        get() {
+            val jd = if (lunar.julianDay > 0) lunar.julianDay else VietnameseLunarCalendar.jdFromLocalDate(date)
+            return ((jd + 9) % 10) % 2 == 0
+        }
+
+    val yinYangLabel: String get() = if (isYangDay) "Ngày Dương" else "Ngày Âm"
 }
 
 /** Thông tin cá nhân theo năm sinh Âm lịch */
@@ -168,6 +183,10 @@ data class PersonalProfile(
 ) {
     val canChi: String get() = "${VietnameseLunarCalendar.CAN[canIndex]} ${VietnameseLunarCalendar.CHI[chiIndex]}"
     val zodiacAnimal: String get() = LunarAlmanac.ZODIAC_ANIMALS[chiIndex]
+    val isYang: Boolean get() = canIndex % 2 == 0
+    val yinYangLabel: String get() = if (isYang) "Dương (${VietnameseLunarCalendar.CAN[canIndex]} ${LunarAlmanac.elementOfCan(canIndex).label})" else "Âm (${VietnameseLunarCalendar.CAN[canIndex]} ${LunarAlmanac.elementOfCan(canIndex).label})"
+    val canElement: FiveElement get() = LunarAlmanac.elementOfCan(canIndex)
+    val chiElement: FiveElement get() = LunarAlmanac.elementOfChi(chiIndex)
 
     /** Màu bản mệnh & màu tương sinh (hợp) */
     val luckyColors: String
@@ -370,6 +389,22 @@ object LunarAlmanac {
         else -> FiveElement.THUY
     }
 
+    /** Ngũ hành của Địa Chi (Tý-Hợi Thủy, Dần-Mão Mộc, Tỵ-Ngọ Hỏa, Thân-Dậu Kim, Thìn-Tuất-Sửu-Mùi Thổ) */
+    fun elementOfChi(chiIdx: Int): FiveElement = when (chiIdx) {
+        2, 3 -> FiveElement.MOC
+        5, 6 -> FiveElement.HOA
+        8, 9 -> FiveElement.KIM
+        11, 0 -> FiveElement.THUY
+        else -> FiveElement.THO
+    }
+
+    /** Thiên Can Ngũ Hợp (Giáp-Kỷ, Ất-Canh, Bính-Tân, Đinh-Nhâm, Mậu-Quý) */
+    fun isCanHarmony(a: Int, b: Int): Boolean = (a + 5) % 10 == b
+
+    /** Thiên Can Tương Xung (Giáp-Canh, Ất-Tân, Bính-Nhâm, Đinh-Quý) */
+    fun isCanClash(a: Int, b: Int): Boolean =
+        (a % 2 == b % 2) && (((a + 6) % 10 == b) || ((b + 6) % 10 == a)) && (a % 5 != 2)
+
     // ------------------------------------------------------------------
     // HƯỚNG XUẤT HÀNH
     // ------------------------------------------------------------------
@@ -438,11 +473,15 @@ object LunarAlmanac {
 
     private val PUNISH_GROUPS = listOf(setOf(0, 3), setOf(2, 5, 8), setOf(1, 10, 7))
     private val SELF_PUNISH = setOf(4, 6, 9, 11)
+    private val BREAK_PAIRS = setOf(0 to 9, 9 to 0, 3 to 6, 6 to 3, 1 to 4, 4 to 1, 7 to 10, 10 to 7)
 
     fun isPunish(a: Int, b: Int): Boolean {
         if (a == b) return a in SELF_PUNISH
         return PUNISH_GROUPS.any { a in it && b in it }
     }
+
+    /** Lục Phá Địa Chi (Tý-Dậu, Mão-Ngọ, Sửu-Thìn, Mùi-Tuất) */
+    fun isBreak(a: Int, b: Int): Boolean = (a to b) in BREAK_PAIRS
 
     // ------------------------------------------------------------------
     // CÁT TINH & NGÀY KỴ (tính theo tháng Âm lịch)
@@ -647,36 +686,97 @@ object LunarAlmanac {
         val dayChi = (jd + 1) % 12
         val notes = mutableListOf<String>()
         var points = 0
+        val userCan = profile.canIndex
         val userChi = profile.chiIndex
-        val animal = "tuổi ${CHI[userChi]}"
+        val animal = "tuổi ${CHI[userChi]} (${profile.canChi})"
 
+        // 1. Quan hệ Địa Chi (Lục Xung, Lục Hợp, Tam Hợp, Tương Hình, Tương Hại, Lục Phá)
         if (isClash(userChi, dayChi)) {
-            val canClash = elementOfCan(dayCan).overcomes(elementOfCan(profile.canIndex)) ||
-                elementOfCan(profile.canIndex).overcomes(elementOfCan(dayCan))
+            val canClash = elementOfCan(dayCan).overcomes(elementOfCan(userCan)) ||
+                elementOfCan(userCan).overcomes(elementOfCan(dayCan))
             if (canClash) {
-                points -= 4
-                notes.add("⚠️ Thiên khắc địa xung với $animal (${profile.canChi}) – nên tránh việc quan trọng")
+                points -= 5
+                notes.add("⚠️ Thiên khắc địa xung: Ngày ${CAN[dayCan]} ${CHI[dayChi]} khắc trực diện $animal – đại kỵ khởi sự lớn")
             } else {
                 points -= 3
-                notes.add("⚠️ Ngày ${CHI[dayChi]} lục xung với $animal")
+                notes.add("⚠️ Địa chi lục xung: Ngày ${CHI[dayChi]} xung với tuổi ${CHI[userChi]}")
             }
         }
-        if (isHarm(userChi, dayChi)) { points -= 1; notes.add("Ngày ${CHI[dayChi]} tương hại với $animal") }
-        if (isPunish(userChi, dayChi)) { points -= 1; notes.add("Ngày ${CHI[dayChi]} tương hình với $animal") }
-        if (isSixHarmony(userChi, dayChi)) { points += 2; notes.add("✅ Ngày ${CHI[dayChi]} lục hợp với $animal") }
-        if (isTripleHarmony(userChi, dayChi)) { points += 2; notes.add("✅ Ngày ${CHI[dayChi]} tam hợp với $animal") }
+        if (isSixHarmony(userChi, dayChi)) {
+            points += 2
+            notes.add("✅ Địa chi lục hợp: Ngày ${CHI[dayChi]} nhị hợp với tuổi ${CHI[userChi]} (cát lợi)")
+        }
+        if (isTripleHarmony(userChi, dayChi)) {
+            points += 2
+            notes.add("✅ Địa chi tam hợp: Ngày ${CHI[dayChi]} tam hợp với tuổi ${CHI[userChi]} (quý nhân trợ giúp)")
+        }
+        if (isHarm(userChi, dayChi)) {
+            points -= 1
+            notes.add("⚠️ Địa chi tương hại: Ngày ${CHI[dayChi]} lục hại với tuổi ${CHI[userChi]}")
+        }
+        if (isPunish(userChi, dayChi)) {
+            points -= 1
+            notes.add("⚠️ Địa chi tương hình: Ngày ${CHI[dayChi]} phạm hình với tuổi ${CHI[userChi]}")
+        }
+        if (isBreak(userChi, dayChi)) {
+            points -= 1
+            notes.add("⚠️ Địa chi tương phá: Ngày ${CHI[dayChi]} lục phá với tuổi ${CHI[userChi]}")
+        }
 
+        // 2. Quan hệ Thiên Can (Ngũ Hợp, Tương Xung, Tương Sinh / Tương Khắc)
+        val dayCanEl = elementOfCan(dayCan)
+        val userCanEl = elementOfCan(userCan)
+        when {
+            isCanHarmony(dayCan, userCan) -> {
+                points += 2
+                notes.add("✅ Thiên can ngũ hợp: Can ngày ${CAN[dayCan]} hợp với can tuổi ${CAN[userCan]}")
+            }
+            isCanClash(dayCan, userCan) -> {
+                points -= 1
+                notes.add("⚠️ Thiên can tương xung: Can ngày ${CAN[dayCan]} (${dayCanEl.label}) xung can tuổi ${CAN[userCan]} (${userCanEl.label})")
+            }
+            dayCanEl.generates(userCanEl) -> {
+                points += 1
+                notes.add("✅ Thiên can tương sinh: Can ngày ${CAN[dayCan]} (${dayCanEl.label}) sinh can tuổi ${CAN[userCan]} (${userCanEl.label})")
+            }
+            dayCanEl.overcomes(userCanEl) && !isClash(userChi, dayChi) -> {
+                points -= 1
+                notes.add("⚠️ Thiên can ngày ${CAN[dayCan]} (${dayCanEl.label}) khắc can tuổi ${CAN[userCan]} (${userCanEl.label})")
+            }
+        }
+
+        // 3. Quan hệ Ngũ Hành Nạp Âm & Âm Dương
         val dayEl = almanac.napAmElement
         val userEl = profile.element
         when {
-            dayEl.generates(userEl) -> { points += 1; notes.add("Ngũ hành ngày (${dayEl.label}) sinh mệnh ${userEl.label} – được hỗ trợ") }
-            dayEl.overcomes(userEl) -> { points -= 1; notes.add("Ngũ hành ngày (${dayEl.label}) khắc mệnh ${userEl.label} – cần thận trọng") }
-            userEl.overcomes(dayEl) -> notes.add("Mệnh ${userEl.label} khắc ngũ hành ngày (${dayEl.label}) – chủ động, nhưng tốn sức")
-            dayEl == userEl -> notes.add("Ngũ hành ngày cùng hành ${userEl.label} với mệnh – bình hòa")
-            else -> notes.add("Mệnh ${userEl.label} sinh ngũ hành ngày (${dayEl.label}) – hao tổn chút ít")
+            dayEl.generates(userEl) -> {
+                points += 2
+                notes.add("✅ Ngũ hành nạp âm: Ngày ${almanac.napAm} (${dayEl.label}) tương sinh bản mệnh ${profile.napAm} (${userEl.label}) – đại cát")
+            }
+            dayEl == userEl -> {
+                points += 1
+                notes.add("✅ Ngũ hành nạp âm: Ngày ${almanac.napAm} tỷ hòa cùng hành ${userEl.label} với bản mệnh – thuận lợi")
+            }
+            userEl.overcomes(dayEl) -> {
+                points += 1
+                notes.add("✅ Ngũ hành nạp âm: Bản mệnh ${userEl.label} chế khắc được hành ngày (${dayEl.label}) – chủ động, đắc tài")
+            }
+            dayEl.overcomes(userEl) -> {
+                points -= 2
+                notes.add("⚠️ Ngũ hành nạp âm: Ngày ${almanac.napAm} (${dayEl.label}) khắc bản mệnh ${profile.napAm} (${userEl.label}) – nên thận trọng")
+            }
+            else -> {
+                notes.add("ℹ️ Ngũ hành nạp âm: Bản mệnh ${userEl.label} sinh xuất cho hành ngày (${dayEl.label}) – bình hòa, hao sức nhẹ")
+            }
+        }
+
+        // 4. Cân bằng Âm Dương
+        if (profile.isYang != almanac.isYangDay) {
+            notes.add("☯️ Âm Dương giao hòa: Tuổi ${if (profile.isYang) "Dương" else "Âm"} gặp ${almanac.yinYangLabel} – cân bằng tốt")
         }
 
         val verdict = when {
+            isClash(userChi, dayChi) -> ActivityVerdict.BAD
             points >= 2 -> ActivityVerdict.GOOD
             points <= -2 -> ActivityVerdict.BAD
             else -> ActivityVerdict.NEUTRAL

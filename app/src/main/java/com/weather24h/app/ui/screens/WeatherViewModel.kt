@@ -398,22 +398,40 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         checkUpdateOnStartup()
     }
 
-    private var hasDismissedUpdateThisSession = false
+    private var dismissedUpdateVersion: String? = null
+    private var lastUpdateCheckTimeMs: Long = 0L
 
     private fun checkUpdateOnStartup() {
         viewModelScope.launch {
             try {
-                // Đợi 2.5s sau khi mở app để tải thời tiết và GPS ổn định mượt mà trước
-                delay(2500)
+                // Đợi 1.8s sau khi mở app để tải thời tiết và GPS ổn định mượt mà trước
+                delay(1800)
+                checkUpdateOnResumeIfNeeded(forceCheck = true)
+            } catch (_: Exception) {}
+        }
+    }
+
+    /**
+     * Tự động kiểm tra bản cập nhật mới khi người dùng mở lại app từ nền hoặc kéo làm mới.
+     * Có giới hạn tối thiểu 60 giây giữa 2 lần kiểm tra để tiết kiệm pin và lưu lượng.
+     */
+    fun checkUpdateOnResumeIfNeeded(forceCheck: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!forceCheck && now - lastUpdateCheckTimeMs < 60_000L) return
+        lastUpdateCheckTimeMs = now
+
+        viewModelScope.launch {
+            try {
                 val result = appUpdateManager.checkForUpdates(com.weather24h.app.BuildConfig.VERSION_NAME)
                 result.onSuccess { info ->
                     if (info.isUpdateAvailable) {
                         _newUpdateAvailableInfo.value = info
-                        // Tự động mở hộp thoại cập nhật cho người dùng nếu chưa bấm bỏ qua phiên này
-                        if (!hasDismissedUpdateThisSession) {
+                        val currentUpdateState = _updateUiState.value
+                        val isBusy = currentUpdateState is UpdateUiState.Downloading ||
+                            currentUpdateState is UpdateUiState.ReadyToInstall
+                        if (!isBusy && dismissedUpdateVersion != info.latestVersionName) {
                             _updateUiState.value = UpdateUiState.UpdateAvailable(info)
                         }
-                        // Gửi thông báo hệ thống lên thanh thông báo để nhắc nhở người dùng
                         WeatherNotificationHelper.sendAppUpdateNotification(getApplication(), info)
                     }
                 }
@@ -520,6 +538,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun refreshWeather(isPullRefresh: Boolean = false) {
+        if (isPullRefresh) {
+            checkUpdateOnResumeIfNeeded()
+        }
         if (!isPullRefresh || _uiState.value !is WeatherUiState.Success) {
             loadWeather(currentCity)
             return
@@ -725,6 +746,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun setLocationFromGps(lat: Double, lon: Double, isPullRefresh: Boolean = false) {
+        if (isPullRefresh) {
+            checkUpdateOnResumeIfNeeded()
+        }
         gpsJob?.cancel()
         loadWeatherJob?.cancel()
         loadOutfitJob?.cancel()
@@ -815,7 +839,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             val result = appUpdateManager.checkForUpdates(com.weather24h.app.BuildConfig.VERSION_NAME)
             result.onSuccess { info ->
                 if (info.isUpdateAvailable) {
+                    _newUpdateAvailableInfo.value = info
                     _updateUiState.value = UpdateUiState.UpdateAvailable(info)
+                    WeatherNotificationHelper.sendAppUpdateNotification(getApplication(), info, force = !silent)
                 } else if (!silent) {
                     _updateUiState.value = UpdateUiState.NoUpdateAvailable(com.weather24h.app.BuildConfig.VERSION_NAME)
                 }
@@ -871,7 +897,10 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun dismissUpdateDialog() {
-        hasDismissedUpdateThisSession = true
+        val current = _updateUiState.value
+        if (current is UpdateUiState.UpdateAvailable) {
+            dismissedUpdateVersion = current.info.latestVersionName
+        }
         downloadJob?.cancel()
         _updateUiState.value = UpdateUiState.Idle
     }

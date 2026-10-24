@@ -121,6 +121,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        viewModel.checkUpdateOnResumeIfNeeded()
+    }
+
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
         // Đồng bộ cập nhật tất cả Widget nếu Widget đang theo theme thiết bị

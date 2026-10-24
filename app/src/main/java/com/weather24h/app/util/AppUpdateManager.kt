@@ -144,6 +144,8 @@ class AppUpdateManager(private val context: Context) {
             val request = Request.Builder()
                 .url(latestUrl)
                 .header("Accept", SecurityVault.getUpdateAcceptHeader())
+                .header("Cache-Control", "no-cache")
+                .header("Pragma", "no-cache")
                 .header("User-Agent", "Weather24h-Android/${BuildConfig.VERSION_NAME}")
                 .build()
 
@@ -157,9 +159,66 @@ class AppUpdateManager(private val context: Context) {
             val bodyString = response.body?.string()
                 ?: return@withContext Result.failure(Exception("Phản hồi rỗng từ máy chủ"))
 
-            val jsonObject = JsonParser.parseString(bodyString).asJsonObject
-            val rawTag = jsonObject.get("tag_name")?.asString ?: ""
-            val latestVersion = rawTag.removePrefix("v").removePrefix("V")
+            var jsonObject = JsonParser.parseString(bodyString).asJsonObject
+            var rawTag = jsonObject.get("tag_name")?.asString ?: ""
+            var latestVersion = rawTag.removePrefix("v").removePrefix("V")
+            var apkUrl = ""
+            var apkSize = 0L
+
+            val extractApk: (com.google.gson.JsonObject) -> Pair<String, Long> = { obj ->
+                var url = ""
+                var size = 0L
+                val assetsArray = obj.getAsJsonArray("assets")
+                if (assetsArray != null) {
+                    for (element in assetsArray) {
+                        val asset = element.asJsonObject
+                        val name = asset.get("name")?.asString ?: ""
+                        if (name.endsWith(".apk", ignoreCase = true)) {
+                            url = asset.get("browser_download_url")?.asString ?: ""
+                            size = asset.get("size")?.asLong ?: 0L
+                            break
+                        }
+                    }
+                }
+                Pair(url, size)
+            }
+
+            val primaryApk = extractApk(jsonObject)
+            apkUrl = primaryApk.first
+            apkSize = primaryApk.second
+
+            // Nếu bản release mới nhất đang trong quá trình đóng gói APK trên CI (chưa có asset .apk),
+            // kiểm tra danh sách 5 bản phát hành gần nhất để tìm bản mới nhất đã có sẵn file APK
+            if (apkUrl.isBlank()) {
+                try {
+                    val listReq = Request.Builder()
+                        .url("$baseEndpoint/releases?per_page=5")
+                        .header("Accept", SecurityVault.getUpdateAcceptHeader())
+                        .header("Cache-Control", "no-cache")
+                        .header("User-Agent", "Weather24h-Android/${BuildConfig.VERSION_NAME}")
+                        .build()
+                    val listResp = client.newCall(listReq).execute()
+                    if (listResp.isSuccessful) {
+                        val listBody = listResp.body?.string()
+                        if (!listBody.isNullOrBlank()) {
+                            val releasesArr = JsonParser.parseString(listBody).asJsonArray
+                            for (relElem in releasesArr) {
+                                val relObj = relElem.asJsonObject
+                                val candidateApk = extractApk(relObj)
+                                if (candidateApk.first.isNotBlank()) {
+                                    jsonObject = relObj
+                                    rawTag = relObj.get("tag_name")?.asString ?: ""
+                                    latestVersion = rawTag.removePrefix("v").removePrefix("V")
+                                    apkUrl = candidateApk.first
+                                    apkSize = candidateApk.second
+                                    break
+                                }
+                            }
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+
             val rawTitle = jsonObject.get("name")?.asString ?: "Bản cập nhật v$latestVersion"
             val releaseTitle = rawTitle.replace(Regex("""https?://\S+"""), "").trim().ifBlank { "Bản cập nhật v$latestVersion" }
             var releaseNotes = sanitizeReleaseNotes(jsonObject.get("body")?.asString)
@@ -172,22 +231,6 @@ class AppUpdateManager(private val context: Context) {
                     val commitNotes = fetchCommitReleaseNotes(baseEndpoint, rawTag)
                     if (!commitNotes.isNullOrBlank() && !isFallbackReleaseNotes(commitNotes)) {
                         releaseNotes = commitNotes
-                    }
-                }
-            }
-
-            var apkUrl = ""
-            var apkSize = 0L
-
-            val assetsArray = jsonObject.getAsJsonArray("assets")
-            if (assetsArray != null) {
-                for (element in assetsArray) {
-                    val asset = element.asJsonObject
-                    val name = asset.get("name")?.asString ?: ""
-                    if (name.endsWith(".apk", ignoreCase = true)) {
-                        apkUrl = asset.get("browser_download_url")?.asString ?: ""
-                        apkSize = asset.get("size")?.asLong ?: 0L
-                        break
                     }
                 }
             }

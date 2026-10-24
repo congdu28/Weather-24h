@@ -110,6 +110,15 @@ class VietnameseLunarCalendarTest {
         assertEquals("Giản Hạ Thủy", profile.napAm)
         assertEquals(FiveElement.THUY, profile.element)
 
+        val profile2002 = LunarAlmanac.getPersonalProfile(2002) // Nhâm Ngọ - Dương Liễu Mộc
+        assertEquals("Nhâm Ngọ", profile2002.canChi)
+        assertEquals("Dương Liễu Mộc", profile2002.napAm)
+        assertEquals(FiveElement.MOC, profile2002.element)
+        assertEquals(FiveElement.THUY, profile2002.canElement)
+        assertEquals(FiveElement.HOA, profile2002.chiElement)
+        assertTrue(profile2002.isYang)
+        assertEquals("Dương (Nhâm Thủy)", profile2002.yinYangLabel)
+
         val goodDays = LunarAlmanac.findGoodDays(
             activity = AlmanacActivity.OPENING,
             from = LocalDate.of(2026, 10, 24),

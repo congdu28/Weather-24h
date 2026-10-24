@@ -69,6 +69,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         const val EXTRA_FORCE_GPS_REFRESH = "EXTRA_FORCE_GPS_REFRESH"
         private var lastAutoRefreshTime = 0L
         private var lastManualRefreshTime = 0L
+        private var lastUpdateCheckTime = 0L
 
         /**
          * Tự động xác định vị trí GPS thời gian thực và cập nhật thời tiết cho tất cả Widget
@@ -194,6 +195,21 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     // Đồng bộ bản tin thông báo nhiệt độ hệ thống nếu có bật
                     if (repository.getPeriodicNotifIntervalHours() > 0) {
                         WeatherNotificationHelper.showCurrentWeatherNotification(appContext, finalWeather)
+                    }
+
+                    // Kiểm tra bản cập nhật ứng dụng mới ngầm khi Widget làm mới (tối đa 15 phút/lần)
+                    val checkNow = System.currentTimeMillis()
+                    if (checkNow - lastUpdateCheckTime > 15 * 60_000L) {
+                        lastUpdateCheckTime = checkNow
+                        try {
+                            val updateManager = com.weather24h.app.util.AppUpdateManager(appContext)
+                            val updateResult = updateManager.checkForUpdates(com.weather24h.app.BuildConfig.VERSION_NAME)
+                            updateResult.onSuccess { info ->
+                                if (info.isUpdateAvailable) {
+                                    WeatherNotificationHelper.sendAppUpdateNotification(appContext, info)
+                                }
+                            }
+                        } catch (_: Exception) {}
                     }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) {

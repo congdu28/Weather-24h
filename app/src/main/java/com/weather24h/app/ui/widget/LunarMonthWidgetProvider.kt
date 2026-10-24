@@ -331,10 +331,13 @@ class LunarMonthWidgetProvider : AppWidgetProvider() {
             val headerH = if (hasSubHeader) height * 0.165f else height * 0.125f
             val weekdayH = height * 0.088f
             val footerH = if (config.showFooterBox) {
-                val extraLines = (if (config.showSolarTermAndDir) 1 else 0) + (if (config.showGoodHours) 1 else 0)
-                when (extraLines) {
-                    2 -> height * 0.225f
-                    1 -> height * 0.185f
+                val totalFooterLines = 1 +
+                    (if (config.showSolarTermAndDir) 1 else 0) +
+                    (if (config.showGoodHours) 2 else 0)
+                when (totalFooterLines) {
+                    4 -> height * 0.245f
+                    3 -> height * 0.215f
+                    2 -> height * 0.180f
                     else -> height * 0.145f
                 }
             } else {
@@ -577,34 +580,44 @@ class LunarMonthWidgetProvider : AppWidgetProvider() {
                     lines.add(Triple(line2, line2Color, false))
                 }
 
-                // Dòng 3 (Tùy chọn): Đầy đủ 6 Giờ Hoàng Đạo trong ngày
+                // Dòng 3 & 4 (Tùy chọn): Đầy đủ 6 Giờ Hoàng Đạo kèm khung giờ (VD: Tý (23-1h), Dần (3-5h)...)
                 if (config.showGoodHours) {
-                    val allSixGoodHours = todayLunar.auspiciousHours.joinToString(", ") { it.substringBefore(" (") }
-                    val line3 = "⏰ Giờ Hoàng Đạo: $allSixGoodHours"
-                    lines.add(Triple(line3, if (isDark) greenHoangDao else cyanAccent, true))
+                    val firstThree = todayLunar.auspiciousHours.take(3).joinToString(" • ")
+                    val lastThree = todayLunar.auspiciousHours.drop(3).joinToString(" • ")
+                    val hoursColor = if (isDark) greenHoangDao else cyanAccent
+                    lines.add(Triple("⏰ Giờ Hoàng Đạo: $firstThree", hoursColor, true))
+                    if (lastThree.isNotEmpty()) {
+                        lines.add(Triple("    $lastThree", hoursColor, true))
+                    }
                 }
 
                 val lineCount = lines.size
                 for ((idx, item) in lines.withIndex()) {
                     val (txt, col, bold) = item
                     paint.typeface = Typeface.create(Typeface.DEFAULT, if (bold) Typeface.BOLD else Typeface.NORMAL)
-                    paint.textSize = (if (idx == 0) 9.4f else 8.7f) * scale * fontMult
+                    paint.textSize = (if (idx == 0) 9.3f else 8.5f) * scale * fontMult
                     paint.color = col
 
                     // Tự động thu nhẹ cỡ chữ nếu dòng quá dài để không bị mất chữ cuối
                     var fittedSize = paint.textSize
-                    while (fittedSize > 7.2f * scale && paint.measureText(txt) > maxInfoWidth) {
-                        fittedSize -= 0.3f * scale
+                    while (fittedSize > 6.8f * scale && paint.measureText(txt) > maxInfoWidth) {
+                        fittedSize -= 0.25f * scale
                         paint.textSize = fittedSize
                     }
 
                     val yRatio = when (lineCount) {
                         1 -> 0.58f
                         2 -> if (idx == 0) 0.40f else 0.78f
-                        else -> when (idx) {
-                            0 -> 0.30f
+                        3 -> when (idx) {
+                            0 -> 0.29f
                             1 -> 0.58f
                             else -> 0.86f
+                        }
+                        else -> when (idx) {
+                            0 -> 0.23f
+                            1 -> 0.46f
+                            2 -> 0.69f
+                            else -> 0.90f
                         }
                     }
                     val baselineY = footerRect.top + footerRect.height() * yRatio

@@ -607,13 +607,16 @@ fun LunarAlmanacFullScreenDialog(
                     .navigationBarsPadding()
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                // Top Bar
+                // Top Bar (Hàng 1: Nút quay lại + Tiêu đề đầy đủ + Nút Sửa Widget)
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
@@ -625,82 +628,95 @@ fun LunarAlmanacFullScreenDialog(
                             Icon(Icons.Default.ArrowBack, "Đóng", tint = contentColor, modifier = Modifier.size(20.dp))
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "LỊCH VẠN NIÊN VIỆT NAM",
-                                color = contentColor,
-                                fontSize = 15.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1
+                        Text(
+                            text = "LỊCH VẠN NIÊN VIỆT NAM",
+                            color = contentColor,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF38BDF8).copy(alpha = 0.16f),
+                        border = BorderStroke(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.45f)),
+                        modifier = Modifier.clickable { showWidgetConfigDialog = true }
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Settings,
+                                null,
+                                tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                modifier = Modifier.size(14.dp)
                             )
+                            Spacer(modifier = Modifier.width(5.dp))
                             Text(
-                                text = profile?.let { "Tuổi ${it.canChi} (${it.birthYear}) • ${it.napAm}" }
-                                    ?: "Bấm nút Năm sinh để xem xung hợp theo tuổi",
-                                color = subtextColor,
-                                fontSize = 11.sp,
+                                text = "Sửa Widget",
+                                color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                                fontSize = 11.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                softWrap = false
+                            )
+                        }
+                    }
+                }
+
+                // Hàng 2: Thanh thông tin Tuổi / Bản mệnh (hiển thị trọn vẹn không bị che khuất)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFFB703).copy(alpha = if (isDark) 0.13f else 0.12f),
+                    border = BorderStroke(0.5.dp, Color(0xFFFFB703).copy(alpha = 0.42f)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                        .clickable { showBirthYearDialog = true }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 11.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f).padding(end = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                null,
+                                tint = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = profile?.let {
+                                    "Tuổi ${it.canChi} (${it.birthYear}) • ${it.element.emoji} ${it.napAm} (${it.yinYangLabel})"
+                                } ?: "Chạm để chọn Năm sinh — Xem xung hợp Can Chi, Ngũ Hành",
+                                color = if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E),
+                                fontSize = 11.8.sp,
+                                fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
-                    }
-
-                    // Nút chỉnh sửa Widget Lịch Tháng & Nút chọn năm sinh
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
                         Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFF38BDF8).copy(alpha = 0.16f),
-                            border = BorderStroke(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.45f)),
-                            modifier = Modifier.clickable { showWidgetConfigDialog = true }
+                            shape = RoundedCornerShape(8.dp),
+                            color = Color(0xFFFFB703).copy(alpha = 0.22f)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Settings,
-                                    null,
-                                    tint = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                    modifier = Modifier.size(13.5.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Sửa Widget",
-                                    color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    softWrap = false
-                                )
-                            }
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFFFFB703).copy(alpha = 0.16f),
-                            border = BorderStroke(0.5.dp, Color(0xFFFFB703).copy(alpha = 0.45f)),
-                            modifier = Modifier.clickable { showBirthYearDialog = true }
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Person,
-                                    null,
-                                    tint = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = if (profile != null) "${profile.birthYear}" else "Năm sinh",
-                                    color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
-                                    fontSize = 11.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    softWrap = false
-                                )
-                            }
+                            Text(
+                                text = if (profile != null) "Đổi tuổi (${profile.birthYear})" else "Chọn tuổi ›",
+                                color = if (isDark) Color(0xFFFFD166) else Color(0xFFB45309),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
                         }
                     }
                 }
@@ -948,7 +964,7 @@ private fun DayDetailTabContent(
                             fontSize = 12.sp
                         )
                         Text(
-                            text = "Ngày ${lunar.dayCanChi}",
+                            text = "Ngày ${lunar.dayCanChi} (${almanac.yinYangLabel})",
                             color = contentColor,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold
@@ -1252,31 +1268,56 @@ private fun DayDetailTabContent(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "• Lục xung: Tuổi ${VietnameseLunarCalendar.CHI[almanac.clashChi]} • Tương hại: Tuổi ${VietnameseLunarCalendar.CHI[almanac.harmChi]}",
+                    text = "• Xung khắc mạnh: ${almanac.clashAgesText}",
                     color = if (isDark) Color(0xFFF87171) else Color(0xFFDC2626),
                     fontSize = 12.5.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-                if (almanac.punishChi.isNotEmpty()) {
-                    Text(
-                        text = "• Tương hình: Tuổi ${almanac.punishChi.joinToString(", ") { VietnameseLunarCalendar.CHI[it] }}",
-                        color = subtextColor,
-                        fontSize = 12.sp
-                    )
-                }
+                Text(
+                    text = "• Tương hại: Tuổi ${VietnameseLunarCalendar.CHI[almanac.harmChi]}${if (almanac.punishChi.isNotEmpty()) " • Tương hình: Tuổi ${almanac.punishChi.joinToString(", ") { VietnameseLunarCalendar.CHI[it] }}" else ""}",
+                    color = subtextColor,
+                    fontSize = 12.sp
+                )
 
                 if (profile != null && personalMatch != null) {
                     HorizontalDivider(color = cardBorder, modifier = Modifier.padding(vertical = 6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "👤 Đối chiếu: ${profile.canChi} (${profile.birthYear}) • ${profile.yinYangLabel}",
+                            color = contentColor,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val matchColor = when {
+                            personalMatch.verdict == ActivityVerdict.BAD -> Color(0xFFEF4444)
+                            personalMatch.points >= 6 -> Color(0xFF10B981)
+                            personalMatch.points < 0 -> Color(0xFFF97316)
+                            else -> Color(0xFF38BDF8)
+                        }
+                        val matchBadge = when {
+                            personalMatch.verdict == ActivityVerdict.BAD -> "Xung tuổi (${personalMatch.points})"
+                            personalMatch.points >= 6 -> "Rất hợp (+${personalMatch.points})"
+                            personalMatch.points > 0 -> "Hợp (+${personalMatch.points})"
+                            personalMatch.points < 0 -> "Hơi khắc (${personalMatch.points})"
+                            else -> "Bình hòa"
+                        }
+                        SmallPill(text = matchBadge, color = matchColor)
+                    }
                     Text(
-                        text = "👤 Đối chiếu tuổi của bạn: ${profile.canChi} (${profile.birthYear}) — Mệnh ${profile.napAm}",
-                        color = contentColor,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
+                        text = "• Bản mệnh: ${profile.element.emoji} ${profile.napAm} (Can ${profile.canElement.label}, Chi ${profile.chiElement.label})",
+                        color = if (isDark) Color(0xFF38BDF8) else Color(0xFF0284C7),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                     personalMatch.notes.forEach { n ->
-                        Text("• $n", color = subtextColor, fontSize = 12.sp)
+                        Text("• $n", color = subtextColor, fontSize = 12.sp, lineHeight = 16.5.sp)
                     }
-                    Text("• Màu hợp mệnh: ${profile.luckyColors}", color = subtextColor, fontSize = 11.5.sp)
+                    Text("• Màu sắc hợp mệnh: ${profile.luckyColors}", color = subtextColor, fontSize = 11.5.sp)
                 }
             }
         }
@@ -2048,10 +2089,14 @@ private fun BirthYearPickerDialog(
                 )
                 if (preview != null) {
                     Text(
-                        text = "Tuổi: ${preview.canChi} (con ${preview.zodiacAnimal})\nMệnh: ${preview.element.emoji} ${preview.napAm}\nMàu hợp: ${preview.luckyColors}",
+                        text = "Tuổi: ${preview.canChi} (con ${preview.zodiacAnimal}) • ${preview.yinYangLabel}\n" +
+                               "Mệnh Nạp âm: ${preview.element.emoji} ${preview.napAm}\n" +
+                               "Ngũ hành Can Chi: Thiên can ${preview.canElement.label} – Địa chi ${preview.chiElement.label}\n" +
+                               "Màu hợp: ${preview.luckyColors}",
                         fontSize = 12.sp,
                         color = Color(0xFF10B981),
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.SemiBold,
+                        lineHeight = 17.sp
                     )
                 }
             }
