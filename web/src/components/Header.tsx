@@ -117,16 +117,16 @@ export default function Header({
   return (
     <>
       <header
-        className={`sticky top-0 z-40 w-full backdrop-blur-xl border-b px-4 py-3 transition-colors ${
+        className={`sticky top-0 z-40 w-full backdrop-blur-xl border-b px-3 sm:px-4 py-2 sm:py-3 transition-colors ${
           isDarkTheme
             ? "bg-slate-950/70 border-white/10 text-white"
             : "bg-white/80 border-slate-200/80 text-slate-900 shadow-sm"
         }`}
       >
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
           {/* Logo / App Name đồng bộ tuyệt đối với APK Android */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative w-10 h-10 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20 border border-white/20 bg-slate-900 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20 border border-white/20 bg-slate-900 shrink-0">
               <Image
                 src="/logo.png"
                 alt="Weather 24h"
@@ -137,13 +137,13 @@ export default function Header({
               />
             </div>
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight flex items-center gap-1.5">
+              <h1 className="text-base sm:text-lg lg:text-xl font-black tracking-tight flex items-center gap-1 sm:gap-1.5">
                 Weather 24h
-                <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                <span className="text-[9px] sm:text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
                   Lịch Âm
                 </span>
               </h1>
-              <p className={`text-xs sm:text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+              <p className={`hidden sm:block text-xs font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
                 Dự báo chuẩn & Lịch Vạn Niên
               </p>
             </div>
@@ -191,10 +191,10 @@ export default function Header({
           </nav>
 
           {/* Location Selector & Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <button
               onClick={() => setIsSearchOpen(true)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium max-w-[150px] sm:max-w-xs truncate transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-semibold max-w-[110px] sm:max-w-[180px] md:max-w-xs truncate transition-all ${
                 isDarkTheme
                   ? "bg-white/10 hover:bg-white/15 border-white/15 text-slate-200"
                   : "bg-white hover:bg-slate-50 border-slate-300 text-slate-800 shadow-sm"
@@ -204,13 +204,13 @@ export default function Header({
               <span className="truncate" suppressHydrationWarning>
                 {currentLocation.name}
               </span>
-              <Search className="w-3.5 h-3.5 opacity-60 ml-auto shrink-0" />
+              <Search className="w-3.5 h-3.5 opacity-60 ml-auto shrink-0 hidden xs:block" />
             </button>
 
             <button
               onClick={handleLocateMe}
               title="Định vị vị trí của tôi"
-              className={`p-2 rounded-xl border transition-all ${
+              className={`p-1.5 sm:p-2 rounded-xl border transition-all ${
                 isDarkTheme
                   ? "bg-white/10 hover:bg-white/15 border-white/15 text-slate-200 hover:text-amber-300"
                   : "bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-sm hover:text-amber-600"
@@ -223,7 +223,7 @@ export default function Header({
               onClick={onRefresh}
               disabled={isLoading}
               title="Làm mới thời tiết"
-              className={`p-2 rounded-xl border transition-all ${
+              className={`p-1.5 sm:p-2 rounded-xl border transition-all ${
                 isDarkTheme
                   ? "bg-white/10 hover:bg-white/15 border-white/15 text-slate-200"
                   : "bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-sm"
@@ -236,7 +236,7 @@ export default function Header({
             <button
               onClick={onOpenSettings}
               title="Cài đặt giao diện & tùy chọn"
-              className={`p-2 rounded-xl border transition-all ${
+              className={`p-1.5 sm:p-2 rounded-xl border transition-all ${
                 isDarkTheme
                   ? "bg-white/10 hover:bg-white/15 border-white/15 text-slate-200 hover:text-amber-300"
                   : "bg-white hover:bg-slate-50 border-slate-300 text-slate-700 shadow-sm hover:text-amber-600"
@@ -249,42 +249,42 @@ export default function Header({
 
         {/* Mobile Navigation Bar */}
         <div
-          className={`flex md:hidden items-center justify-around gap-1 mt-2.5 pt-2 border-t ${
-            isDarkTheme ? "border-white/5" : "border-slate-200"
+          className={`flex md:hidden items-center justify-around gap-1 mt-2 pt-2 border-t ${
+            isDarkTheme ? "border-white/10" : "border-slate-200"
           }`}
         >
           <button
             onClick={() => onTabChange("weather")}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
               activeTab === "weather"
-                ? "bg-blue-600 text-white font-semibold shadow-sm"
+                ? "bg-blue-600 text-white shadow-sm"
                 : isDarkTheme ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <CloudSun className="w-3.5 h-3.5" />
-            Thời Tiết
+            <span>Thời Tiết</span>
           </button>
           <button
             onClick={() => onTabChange("lunar")}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
               activeTab === "lunar"
-                ? "bg-amber-600 text-white font-semibold shadow-sm"
+                ? "bg-amber-600 text-white shadow-sm"
                 : isDarkTheme ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Calendar className="w-3.5 h-3.5" />
-            Lịch Vạn Niên
+            <span>Lịch Vạn Niên</span>
           </button>
           <button
             onClick={() => onTabChange("radar")}
-            className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
+            className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all ${
               activeTab === "radar"
-                ? "bg-emerald-600 text-white font-semibold shadow-sm"
+                ? "bg-emerald-600 text-white shadow-sm"
                 : isDarkTheme ? "text-slate-400 hover:text-white" : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Radar className="w-3.5 h-3.5" />
-            Radar Mưa
+            <span>Radar Mưa</span>
           </button>
         </div>
       </header>

@@ -16,7 +16,7 @@ export default function HourlyForecastCard({ hourly, isDarkTheme = true }: Props
 
   return (
     <div
-      className={`rounded-3xl p-5 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
+      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
         isDarkTheme
           ? "bg-slate-900/50 border-white/10 text-white"
           : "bg-white/75 border-white/60 text-slate-900 shadow-sky-500/10"

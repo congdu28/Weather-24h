@@ -14,10 +14,10 @@ export default function AirQualityCard({ airQuality, isDarkTheme = true }: Props
 
   return (
     <div
-      className={`rounded-3xl p-5 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
+      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
         isDarkTheme
           ? "bg-slate-900/50 border-white/10 text-white"
-          : "bg-white/85 border-slate-200/90 text-slate-900 shadow-sky-500/5"
+          : "bg-white/75 border-white/60 text-slate-900 shadow-sky-500/10"
       }`}
     >
       <div className="flex items-center justify-between pb-3 border-b border-white/10 dark:border-white/10">

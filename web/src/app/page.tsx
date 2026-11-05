@@ -263,7 +263,7 @@ export default function Home() {
       />
 
       {/* Main Container (z-10) */}
-      <main className="relative z-10 max-w-6xl mx-auto px-4 pt-4 space-y-5">
+      <main className="relative z-10 max-w-6xl mx-auto px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 space-y-4 sm:space-y-6">
         {/* Quick Bar: Favorite Cities & GPS */}
         {activeTab === "weather" && (
           <FavoriteCitiesQuickBar

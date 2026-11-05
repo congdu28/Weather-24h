@@ -23,7 +23,7 @@ export default function VietnameseLunarCard({ onOpenDetailedAlmanac, isDarkTheme
 
   return (
     <div
-      className={`relative overflow-hidden rounded-3xl p-6 sm:p-7 backdrop-blur-xl border shadow-xl transition-all ${
+      className={`relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 backdrop-blur-xl border shadow-xl transition-all ${
         isDarkTheme
           ? "bg-gradient-to-br from-amber-950/40 via-slate-900/60 to-slate-950/80 border-amber-500/25 text-white"
           : "bg-gradient-to-br from-amber-50/95 via-white/95 to-amber-100/70 border-amber-200/90 text-slate-900 shadow-amber-500/5"
@@ -33,19 +33,19 @@ export default function VietnameseLunarCard({ onOpenDetailedAlmanac, isDarkTheme
       <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-amber-500/15 blur-2xl pointer-events-none" />
 
       {/* Top Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-amber-500/20">
+      <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-amber-500/20">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-500 border border-amber-500/30">
-            <Calendar className="w-5 h-5" />
+          <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/20 text-amber-500 border border-amber-500/30">
+            <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
           <div>
-            <h2 className={`text-sm font-bold flex items-center gap-1.5 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+            <h2 className={`text-sm sm:text-base font-bold flex items-center gap-1.5 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
               Lịch Âm Việt Nam
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-600 dark:text-amber-300 border border-amber-400/30 font-semibold">
                 GMT+7
               </span>
             </h2>
-            <p className={`text-xs font-medium ${isDarkTheme ? "text-amber-200/70" : "text-amber-800"}`}>
+            <p className={`text-[11px] sm:text-xs font-medium ${isDarkTheme ? "text-amber-200/70" : "text-amber-800"}`}>
               Lịch Vạn Niên & Thiên Văn Học Hồ Ngọc Đức
             </p>
           </div>
@@ -53,7 +53,7 @@ export default function VietnameseLunarCard({ onOpenDetailedAlmanac, isDarkTheme
 
         {/* Auspicious Day Badge */}
         <div
-          className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 border shadow-sm ${
+          className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 border shadow-sm ${
             todayLunar.isAuspiciousDay
               ? isDarkTheme
                 ? "bg-amber-500/20 text-amber-300 border-amber-400/40"

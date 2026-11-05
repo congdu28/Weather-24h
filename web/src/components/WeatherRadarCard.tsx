@@ -18,33 +18,33 @@ export default function WeatherRadarCard({ location, isDarkTheme = true }: Props
 
   return (
     <div
-      className={`rounded-3xl p-5 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
+      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
         isDarkTheme
           ? "bg-slate-900/50 border-white/10 text-white"
           : "bg-white/75 border-white/60 text-slate-900 shadow-sky-500/10"
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-black/5 dark:border-white/10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-black/5 dark:border-white/10">
         <div>
           <h3 className={`text-base font-extrabold flex items-center gap-2 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
             <Radar className="w-4 h-4 text-emerald-500" />
             Radar Thời Tiết Trực Tiếp
           </h3>
           <p className={`text-xs sm:text-sm mt-0.5 flex items-center gap-1 font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-            <MapPin className="w-3.5 h-3.5 text-amber-500" />
+            <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
             Theo dõi mây mưa thời gian thực tại {location.name}
           </p>
         </div>
 
         {/* Layer Selector */}
         <div
-          className={`flex items-center gap-1 p-1 rounded-xl border ${
+          className={`flex items-center gap-1 p-1 rounded-xl border self-start sm:self-auto ${
             isDarkTheme ? "bg-white/10 border-white/10" : "bg-slate-100 border-slate-200"
           }`}
         >
           <button
             onClick={() => setLayer("radar")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
               layer === "radar"
                 ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
                 : isDarkTheme ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -54,7 +54,7 @@ export default function WeatherRadarCard({ location, isDarkTheme = true }: Props
           </button>
           <button
             onClick={() => setLayer("clouds")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
               layer === "clouds"
                 ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
                 : isDarkTheme ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -64,7 +64,7 @@ export default function WeatherRadarCard({ location, isDarkTheme = true }: Props
           </button>
           <button
             onClick={() => setLayer("wind")}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
               layer === "wind"
                 ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
                 : isDarkTheme ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
@@ -76,7 +76,7 @@ export default function WeatherRadarCard({ location, isDarkTheme = true }: Props
       </div>
 
       {/* Radar Map Container */}
-      <div className="relative mt-4 w-full h-[450px] rounded-2xl overflow-hidden border border-white/15 shadow-inner bg-slate-950">
+      <div className="relative mt-3 sm:mt-4 w-full h-[320px] sm:h-[400px] md:h-[460px] rounded-2xl overflow-hidden border border-white/15 shadow-inner bg-slate-950">
         <iframe
           src={embedUrl}
           title="Windy Weather Radar"

@@ -63,7 +63,7 @@ export default function AiStylistCard({ current, todayForecast, isDarkTheme = tr
 
   return (
     <div
-      className={`rounded-3xl p-5 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
+      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
         isDarkTheme
           ? "bg-gradient-to-br from-indigo-950/40 via-purple-950/30 to-slate-900/60 border-purple-500/25 text-white"
           : "bg-gradient-to-br from-purple-50/90 via-indigo-50/70 to-white/90 border-purple-200/90 text-slate-900 shadow-purple-500/5"
