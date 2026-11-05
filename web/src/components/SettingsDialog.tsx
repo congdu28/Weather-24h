@@ -406,17 +406,6 @@ export default function SettingsDialog({
                       weather-24h.vercel.app
                     </a>
                   </p>
-                  <p>
-                    • <strong>Bản Android APK:</strong>{" "}
-                    <a
-                      href="https://github.com/congdu28/Weather-24h/releases"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-amber-500 hover:underline font-semibold"
-                    >
-                      GitHub Releases
-                    </a>
-                  </p>
                 </div>
               </div>
             )}

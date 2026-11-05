@@ -241,6 +241,7 @@ export default function Home() {
             isDay={weatherData.current.isDay}
             enabled={settings.atmosphereEnabled}
             isDarkTheme={isDarkTheme}
+            windSpeed={weatherData.current.windSpeed}
           />
         </>
       )}

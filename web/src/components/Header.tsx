@@ -137,13 +137,13 @@ export default function Header({
               />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight flex items-center gap-1.5">
+              <h1 className="text-xl font-extrabold tracking-tight flex items-center gap-1.5">
                 Weather 24h
-                <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
+                <span className="text-[11px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
                   Lịch Âm
                 </span>
               </h1>
-              <p className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+              <p className={`text-xs sm:text-sm font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
                 Dự báo chuẩn & Lịch Vạn Niên
               </p>
             </div>

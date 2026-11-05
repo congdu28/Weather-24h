@@ -1,13 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Google Sans', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-heading: 'Google Sans', 'Plus Jakarta Sans', sans-serif;
+}
+
 :root {
   --background: #020617;
   --foreground: #f8fafc;
 }
 
 html.light {
-  --background: #f0f9ff;
+  --background: #e0f2fe;
   --foreground: #0f172a;
 }
 
@@ -17,7 +22,7 @@ html.dark {
 }
 
 html {
-  font-size: 16.5px;
+  font-size: 18px;
   scroll-behavior: smooth;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -26,7 +31,13 @@ html {
 
 @media (min-width: 640px) {
   html {
-    font-size: 17px;
+    font-size: 18.5px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 19px;
   }
 }
 
@@ -37,6 +48,10 @@ body {
   overflow-x: hidden;
   min-height: 100vh;
   letter-spacing: -0.01em;
+}
+
+html, body, button, input, select, textarea, [class*="font-sans"] {
+  font-family: 'Google Sans', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 /* Tối ưu hóa GPU tăng tốc phần cứng khi cuộn */

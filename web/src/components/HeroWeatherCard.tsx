@@ -90,7 +90,7 @@ export default function HeroWeatherCard({
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={onLocationClick}
-              className={`group flex items-center gap-2 px-4 py-2 rounded-2xl border backdrop-blur-md transition-all active:scale-95 ${
+              className={`group flex items-center gap-2 px-4 py-2.5 rounded-2xl border backdrop-blur-md transition-all active:scale-95 ${
                 isDarkTheme
                   ? "bg-white/10 hover:bg-white/15 border-white/15 text-white"
                   : "bg-white/90 hover:bg-white border-slate-200/80 text-slate-900 shadow-sm"
@@ -103,7 +103,7 @@ export default function HeroWeatherCard({
                 <MapPin className="w-5 h-5 text-amber-500 shrink-0" />
               )}
 
-              <span className="text-xl sm:text-2xl font-bold tracking-tight" suppressHydrationWarning>
+              <span className="text-2xl sm:text-3xl font-black tracking-tight" suppressHydrationWarning>
                 {location.name}
               </span>
 
@@ -193,13 +193,13 @@ export default function HeroWeatherCard({
               >
                 <WeatherIcon name={cond.icon} className="w-12 h-12 sm:w-14 sm:h-14" />
               </div>
-              <div className={`text-base sm:text-lg font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+              <div className={`text-lg sm:text-xl font-extrabold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                 {cond.description}
               </div>
-              <div className={`text-xs sm:text-sm font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+              <div className={`text-sm sm:text-base font-semibold ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                 Nhiệt độ ngày: <strong className={isDarkTheme ? "text-white" : "text-slate-900"}>{maxTemp}° / {minTemp}°</strong>
               </div>
-              <div className={`text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+              <div className={`text-xs sm:text-sm font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                 Cảm giác như: {current.apparentTemperature}°C
               </div>
             </div>

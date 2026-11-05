@@ -34,15 +34,15 @@ export default function DailyForecastCard({
         className={`rounded-3xl p-5 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
           isDarkTheme
             ? "bg-slate-900/50 border-white/10 text-white"
-            : "bg-white/85 border-slate-200/90 text-slate-900 shadow-sky-500/5"
+            : "bg-white/75 border-white/60 text-slate-900 shadow-sky-500/10"
         }`}
       >
-        <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10 dark:border-white/10">
-          <h3 className={`text-sm font-bold flex items-center gap-2 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-black/5 dark:border-white/10">
+          <h3 className={`text-base font-extrabold flex items-center gap-2 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
             <CalendarDays className="w-4 h-4 text-emerald-500" />
             Dự báo 7 ngày tới
           </h3>
-          <span className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>
+          <span className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-600 font-semibold"}`}>
             Chạm để xem chi tiết ngày
           </span>
         </div>

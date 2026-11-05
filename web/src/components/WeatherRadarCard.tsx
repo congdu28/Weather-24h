@@ -21,17 +21,17 @@ export default function WeatherRadarCard({ location, isDarkTheme = true }: Props
       className={`rounded-3xl p-5 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
         isDarkTheme
           ? "bg-slate-900/50 border-white/10 text-white"
-          : "bg-white/85 border-slate-200/90 text-slate-900 shadow-sky-500/5"
+          : "bg-white/75 border-white/60 text-slate-900 shadow-sky-500/10"
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 dark:border-white/10">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-black/5 dark:border-white/10">
         <div>
-          <h3 className={`text-sm font-bold flex items-center gap-2 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+          <h3 className={`text-base font-extrabold flex items-center gap-2 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
             <Radar className="w-4 h-4 text-emerald-500" />
             Radar Thời Tiết Trực Tiếp
           </h3>
-          <p className={`text-xs mt-0.5 flex items-center gap-1 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-            <MapPin className="w-3 h-3 text-amber-500" />
+          <p className={`text-xs sm:text-sm mt-0.5 flex items-center gap-1 font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+            <MapPin className="w-3.5 h-3.5 text-amber-500" />
             Theo dõi mây mưa thời gian thực tại {location.name}
           </p>
         </div>
