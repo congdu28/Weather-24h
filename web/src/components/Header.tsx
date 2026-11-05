@@ -196,7 +196,7 @@ export default function Header({
               }`}
             >
               <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="truncate">
+              <span className="truncate" suppressHydrationWarning>
                 {currentLocation.name}
               </span>
               <Search className="w-3.5 h-3.5 opacity-60 ml-auto shrink-0" />

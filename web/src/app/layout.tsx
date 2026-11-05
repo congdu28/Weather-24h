@@ -6,8 +6,11 @@ export const metadata: Metadata = {
   description: "Dự báo thời tiết 24 giờ, 7 ngày, radar mưa thời gian thực và Lịch Vạn Niên Việt Nam chuẩn xác.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.png", sizes: "192x192", type: "image/png" }
+    ],
+    shortcut: "/favicon.ico",
     apple: "/logo.png"
   },
   appleWebApp: {

@@ -17,6 +17,7 @@ import WeatherMetricsGrid from "../components/WeatherMetricsGrid";
 import LunarAlmanacView from "../components/LunarAlmanacView";
 import SettingsDialog, { SettingsState } from "../components/SettingsDialog";
 import { CityLocation, WeatherData } from "../types/weather";
+import { usePersistentState } from "../utils/usePersistentState";
 import {
   DEFAULT_LOCATION,
   fetchFullWeather,
@@ -37,41 +38,20 @@ const DEFAULT_SETTINGS: SettingsState = {
 };
 
 export default function Home() {
-  const [location, setLocation] = useState<CityLocation>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("weather24h_last_loc");
-        if (saved) return JSON.parse(saved);
-      } catch {
-        // ignore
-      }
-    }
-    return DEFAULT_LOCATION;
-  });
+  const [location, setLocation] = usePersistentState<CityLocation>(
+    "weather24h_last_loc",
+    DEFAULT_LOCATION
+  );
 
-  const [settings, setSettings] = useState<SettingsState>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("weather24h_settings");
-        if (saved) return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
-      } catch {
-        // ignore
-      }
-    }
-    return DEFAULT_SETTINGS;
-  });
+  const [settings, setSettings] = usePersistentState<SettingsState>(
+    "weather24h_settings",
+    DEFAULT_SETTINGS
+  );
 
-  const [favoriteCities, setFavoriteCities] = useState<CityLocation[]>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("weather24h_favs");
-        if (saved) return JSON.parse(saved);
-      } catch {
-        // ignore
-      }
-    }
-    return [VIETNAM_MAJOR_CITIES[0], VIETNAM_MAJOR_CITIES[1], VIETNAM_MAJOR_CITIES[2]];
-  });
+  const [favoriteCities, setFavoriteCities] = usePersistentState<CityLocation[]>(
+    "weather24h_favs",
+    [VIETNAM_MAJOR_CITIES[0], VIETNAM_MAJOR_CITIES[1], VIETNAM_MAJOR_CITIES[2]]
+  );
 
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(true);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);

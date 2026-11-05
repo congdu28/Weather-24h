@@ -103,7 +103,7 @@ export default function HeroWeatherCard({
                 <MapPin className="w-5 h-5 text-amber-500 shrink-0" />
               )}
 
-              <span className="text-xl sm:text-2xl font-bold tracking-tight">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight" suppressHydrationWarning>
                 {location.name}
               </span>
 
@@ -132,9 +132,12 @@ export default function HeroWeatherCard({
 
           {/* Tên Phụ / Xã / Huyện / Tỉnh */}
           {subText && (
-            <div className={`text-xs sm:text-sm font-medium pl-1 ${
-              isDarkTheme ? "text-slate-300" : "text-slate-600"
-            }`}>
+            <div
+              suppressHydrationWarning
+              className={`text-xs sm:text-sm font-medium pl-1 ${
+                isDarkTheme ? "text-slate-300" : "text-slate-600"
+              }`}
+            >
               {subText}
             </div>
           )}
