@@ -36,7 +36,7 @@ export default function RootLayout({
     <html lang="vi" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className="min-h-screen antialiased selection:bg-amber-500 selection:text-black"
+        className="min-h-screen antialiased selection:bg-amber-500 selection:text-black font-sans"
       >
         {children}
       </body>

@@ -143,26 +143,46 @@ export default function Home() {
     localStorage.setItem("weather24h_settings", JSON.stringify(newSettings));
   };
 
-  const isFavorite = favoriteCities.some(
-    (c) => c.name.toLowerCase() === location.name.toLowerCase()
+  const isCityFavorite = useCallback(
+    (city: CityLocation) => {
+      return favoriteCities.some(
+        (c) =>
+          c.name.trim().toLowerCase() === city.name.trim().toLowerCase() ||
+          (Math.abs(c.latitude - city.latitude) < 0.02 && Math.abs(c.longitude - city.longitude) < 0.02)
+      );
+    },
+    [favoriteCities]
   );
 
-  const toggleFavorite = () => {
-    let updated: CityLocation[];
-    if (isFavorite) {
-      updated = favoriteCities.filter((c) => c.name.toLowerCase() !== location.name.toLowerCase());
-    } else {
-      updated = [...favoriteCities, location];
-    }
-    setFavoriteCities(updated);
-    localStorage.setItem("weather24h_favs", JSON.stringify(updated));
-  };
+  const isFavorite = isCityFavorite(location);
 
-  const removeFavorite = (city: CityLocation) => {
-    const updated = favoriteCities.filter((c) => c.name.toLowerCase() !== city.name.toLowerCase());
-    setFavoriteCities(updated);
-    localStorage.setItem("weather24h_favs", JSON.stringify(updated));
-  };
+  const removeFavorite = useCallback(
+    (target: CityLocation) => {
+      setFavoriteCities((prev) =>
+        prev.filter(
+          (c) =>
+            c.name.trim().toLowerCase() !== target.name.trim().toLowerCase() &&
+            !(Math.abs(c.latitude - target.latitude) < 0.02 && Math.abs(c.longitude - target.longitude) < 0.02)
+        )
+      );
+    },
+    [setFavoriteCities]
+  );
+
+  const toggleFavoriteCity = useCallback(
+    (city: CityLocation) => {
+      if (isCityFavorite(city)) {
+        removeFavorite(city);
+      } else {
+        setFavoriteCities((prev) => [...prev, city]);
+      }
+    },
+    [isCityFavorite, removeFavorite, setFavoriteCities]
+  );
+
+  const toggleFavorite = useCallback(() => {
+    toggleFavoriteCity(location);
+  }, [toggleFavoriteCity, location]);
 
   const handleGpsLocation = () => {
     if (!navigator.geolocation) {
@@ -237,6 +257,8 @@ export default function Home() {
         isSearchOpen={isSearchOpen}
         onSetSearchOpen={setIsSearchOpen}
         isDarkTheme={isDarkTheme}
+        favoriteCities={favoriteCities}
+        onToggleFavoriteCity={toggleFavoriteCity}
       />
 
       {/* Main Container (z-10) */}
@@ -247,6 +269,7 @@ export default function Home() {
             currentCityName={location.name}
             favoriteCities={favoriteCities}
             onSelectCity={handleSelectLocation}
+            onRemoveCity={removeFavorite}
             onSelectGps={handleGpsLocation}
             onOpenSearch={() => setIsSearchOpen(true)}
             isDarkTheme={isDarkTheme}

@@ -11,7 +11,8 @@ import {
   Calendar,
   CloudSun,
   Radar,
-  Settings
+  Settings,
+  Star
 } from "lucide-react";
 import { CityLocation } from "../types/weather";
 import {
@@ -31,6 +32,8 @@ interface Props {
   isSearchOpen?: boolean;
   onSetSearchOpen?: (open: boolean) => void;
   isDarkTheme?: boolean;
+  favoriteCities?: CityLocation[];
+  onToggleFavoriteCity?: (city: CityLocation) => void;
 }
 
 export default function Header({
@@ -43,7 +46,9 @@ export default function Header({
   onOpenSettings,
   isSearchOpen: controlledSearchOpen,
   onSetSearchOpen,
-  isDarkTheme = true
+  isDarkTheme = true,
+  favoriteCities = [],
+  onToggleFavoriteCity
 }: Props) {
   const [internalSearchOpen, setInternalSearchOpen] = useState(false);
   const isSearchOpen = controlledSearchOpen !== undefined ? controlledSearchOpen : internalSearchOpen;
@@ -359,14 +364,16 @@ export default function Header({
                     city.name.includes("Trường Sa") ||
                     (city.admin1 && (city.admin1.includes("Hoàng Sa") || city.admin1.includes("Trường Sa")));
 
+                  const isFav = favoriteCities.some(
+                    (c) =>
+                      c.name.trim().toLowerCase() === city.name.trim().toLowerCase() ||
+                      (Math.abs(c.latitude - city.latitude) < 0.02 && Math.abs(c.longitude - city.longitude) < 0.02)
+                  );
+
                   return (
-                    <button
+                    <div
                       key={`${city.latitude}-${city.longitude}-${idx}`}
-                      onClick={() => {
-                        onSelectLocation(city);
-                        setIsSearchOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left group ${
+                      className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left ${
                         isDarkTheme
                           ? "hover:bg-white/10 border-transparent hover:border-white/10"
                           : "hover:bg-slate-100 border-transparent hover:border-slate-200"
@@ -378,7 +385,13 @@ export default function Header({
                           : ""
                       }`}
                     >
-                      <div>
+                      <button
+                        onClick={() => {
+                          onSelectLocation(city);
+                          setIsSearchOpen(false);
+                        }}
+                        className="flex-1 text-left group pr-2"
+                      >
                         <div className="text-sm font-semibold flex items-center gap-1.5 group-hover:text-amber-500 transition-colors">
                           {city.name}
                           {isSovereign && (
@@ -391,9 +404,39 @@ export default function Header({
                           {city.admin1 ? `${city.admin1}, ` : ""}
                           {city.country}
                         </div>
+                      </button>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {onToggleFavoriteCity && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleFavoriteCity(city);
+                            }}
+                            className={`p-2 rounded-xl transition-all ${
+                              isFav
+                                ? "text-amber-400 hover:bg-amber-400/20"
+                                : isDarkTheme
+                                ? "text-slate-400 hover:text-amber-400 hover:bg-white/10"
+                                : "text-slate-400 hover:text-amber-500 hover:bg-slate-200"
+                            }`}
+                            title={isFav ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"}
+                          >
+                            <Star className={`w-4 h-4 ${isFav ? "fill-amber-400 text-amber-400" : ""}`} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            onSelectLocation(city);
+                            setIsSearchOpen(false);
+                          }}
+                          className="p-2 text-slate-400 hover:text-amber-500 transition-colors"
+                          title="Chọn vị trí này"
+                        >
+                          <MapPin className="w-4 h-4" />
+                        </button>
                       </div>
-                      <MapPin className="w-4 h-4 text-slate-400 group-hover:text-amber-500 transition-colors shrink-0" />
-                    </button>
+                    </div>
                   );
                 })}
             </div>
