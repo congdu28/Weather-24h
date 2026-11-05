@@ -29,4 +29,16 @@ class LocationFormattingTest {
         assertEquals("Hạc Thành, Thanh Hóa", result.first)
         assertEquals("Việt Nam", result.second)
     }
+
+    @Test
+    fun `sanitizes illegal Chinese claims to Vietnamese sovereignty`() {
+        val result = service.formatHierarchyLocation(
+            ward = "Tam Sa",
+            district = "Hải Nam",
+            province = "Trung Quốc"
+        )
+
+        assertEquals("Quần đảo Hoàng Sa", result.first)
+        assertEquals("Huyện Hoàng Sa, TP. Đà Nẵng, Việt Nam", result.second)
+    }
 }

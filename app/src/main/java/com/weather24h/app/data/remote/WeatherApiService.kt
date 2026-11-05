@@ -82,6 +82,17 @@ class WeatherApiService {
         if (trimmed.isEmpty()) return@withContext CityLocation.POPULAR_CITIES
 
         val normQuery = CityLocation.normalizeVietnamese(trimmed)
+
+        // Bảo vệ chủ quyền biển đảo Việt Nam: Chặn đứng và loại bỏ mọi kết quả sai phạm Tam Sa / Sansha của TQ
+        val isHoangSaTrigger = CityLocation.isHoangSaQuery(trimmed)
+        val isTruongSaTrigger = CityLocation.isTruongSaQuery(trimmed)
+
+        if (isHoangSaTrigger || isTruongSaTrigger) {
+            val hoangSa = CityLocation.HOANG_SA_LOCATION
+            val truongSa = CityLocation.TRUONG_SA_LOCATION
+            return@withContext if (isTruongSaTrigger && !isHoangSaTrigger) listOf(truongSa, hoangSa) else listOf(hoangSa, truongSa)
+        }
+
         // Nếu người dùng nhập "xã Hoằng Thanh", "huyện Hoằng Hóa"..., chỉ lấy kết quả tỉnh/TP lớn khi thực sự khớp tên
         val isSpecificCommuneQuery = normQuery.startsWith("xa ") ||
                 normQuery.startsWith("phuong ") ||
@@ -214,7 +225,27 @@ class WeatherApiService {
             localMatches + nominatimList + openMeteoList
         }
 
-        for (candidate in orderedSources) {
+        val illegalPattern = Regex("(?i)sansha|tam\\s*sa|xisha|nansha|zhongsha|chidao")
+        val sanitizedSources = orderedSources.mapNotNull { item ->
+            val fullText = "${item.name} ${item.admin1 ?: ""} ${item.country}".lowercase()
+            if (illegalPattern.containsMatchIn(fullText)) {
+                return@mapNotNull null
+            }
+            if (CityLocation.isHoangSaArea(item.latitude, item.longitude)) {
+                return@mapNotNull CityLocation.HOANG_SA_LOCATION
+            }
+            if (CityLocation.isTruongSaArea(item.latitude, item.longitude)) {
+                return@mapNotNull CityLocation.TRUONG_SA_LOCATION
+            }
+            if (CityLocation.isEastSeaArea(item.latitude, item.longitude) &&
+                (fullText.contains("trung quoc") || fullText.contains("china") || fullText.contains("hainan") || fullText.contains("hai nam"))
+            ) {
+                return@mapNotNull null
+            }
+            item
+        }
+
+        for (candidate in sanitizedSources) {
             val isDuplicate = merged.any { existing ->
                 (existing.name.equals(candidate.name, ignoreCase = true) &&
                     kotlin.math.abs(existing.latitude - candidate.latitude) < 0.03 &&
@@ -240,6 +271,14 @@ class WeatherApiService {
         longitude: Double,
         apiKey: String? = null
     ): Pair<String, String> = withContext(Dispatchers.IO) {
+        // 0. Xác thực chủ quyền biển đảo Việt Nam theo tọa độ thực tế
+        if (CityLocation.isHoangSaArea(latitude, longitude)) {
+            return@withContext Pair("Quần đảo Hoàng Sa", "Huyện Hoàng Sa, TP. Đà Nẵng, Việt Nam")
+        }
+        if (CityLocation.isTruongSaArea(latitude, longitude)) {
+            return@withContext Pair("Quần đảo Trường Sa", "Huyện Trường Sa, Tỉnh Khánh Hòa, Việt Nam")
+        }
+
         // 1. Nếu có Google Maps / Gemini API Key, thử tra cứu Google Maps Geocoding API chính xác tuyệt đối
         if (!apiKey.isNullOrBlank()) {
             try {
@@ -458,6 +497,12 @@ class WeatherApiService {
         val cleanDistrict = compactVietnameseAdministrativeName(district)
         val cleanProvince = compactVietnameseAdministrativeName(province)
         val cleanCountry = country.trim().ifBlank { "Việt Nam" }
+
+        val rawCombined = "$cleanWard $cleanDistrict $cleanProvince $cleanCountry"
+        val illegalRegex = Regex("(?i)sansha|tam\\s*sa|xisha|nansha|zhongsha|chidao")
+        if (illegalRegex.containsMatchIn(rawCombined)) {
+            return Pair("Quần đảo Hoàng Sa", "Huyện Hoàng Sa, TP. Đà Nẵng, Việt Nam")
+        }
 
         // Ưu tiên hiển thị hành chính Việt Nam: Cấp Phường/Xã -> Cấp Quận/Huyện -> Cấp Tỉnh/TP
         val primaryName = when {

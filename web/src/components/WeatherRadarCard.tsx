@@ -1,0 +1,101 @@
+"use client";
+
+import React, { useState } from "react";
+import { Radar, ExternalLink, MapPin } from "lucide-react";
+import { CityLocation } from "../types/weather";
+
+interface Props {
+  location: CityLocation;
+  isDarkTheme?: boolean;
+}
+
+export default function WeatherRadarCard({ location, isDarkTheme = true }: Props) {
+  const [layer, setLayer] = useState<"radar" | "clouds" | "wind">("radar");
+
+  // Windy embed URL with responsive parameter and overlay
+  const windyOverlay = layer === "radar" ? "radar" : layer === "clouds" ? "clouds" : "wind";
+  const embedUrl = `https://embed.windy.com/embed2.html?lat=${location.latitude}&lon=${location.longitude}&detailLat=${location.latitude}&detailLon=${location.longitude}&width=100%25&height=480&zoom=7&level=surface&overlay=${windyOverlay}&product=radar&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail=&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`;
+
+  return (
+    <div
+      className={`rounded-3xl p-5 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
+        isDarkTheme
+          ? "bg-slate-900/50 border-white/10 text-white"
+          : "bg-white/85 border-slate-200/90 text-slate-900 shadow-sky-500/5"
+      }`}
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/10 dark:border-white/10">
+        <div>
+          <h3 className={`text-sm font-bold flex items-center gap-2 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+            <Radar className="w-4 h-4 text-emerald-500" />
+            Radar Thời Tiết Trực Tiếp
+          </h3>
+          <p className={`text-xs mt-0.5 flex items-center gap-1 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+            <MapPin className="w-3 h-3 text-amber-500" />
+            Theo dõi mây mưa thời gian thực tại {location.name}
+          </p>
+        </div>
+
+        {/* Layer Selector */}
+        <div
+          className={`flex items-center gap-1 p-1 rounded-xl border ${
+            isDarkTheme ? "bg-white/10 border-white/10" : "bg-slate-100 border-slate-200"
+          }`}
+        >
+          <button
+            onClick={() => setLayer("radar")}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              layer === "radar"
+                ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/30"
+                : isDarkTheme ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Radar Mưa
+          </button>
+          <button
+            onClick={() => setLayer("clouds")}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              layer === "clouds"
+                ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
+                : isDarkTheme ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Lớp Mây
+          </button>
+          <button
+            onClick={() => setLayer("wind")}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              layer === "wind"
+                ? "bg-teal-600 text-white shadow-md shadow-teal-600/30"
+                : isDarkTheme ? "text-slate-300 hover:text-white" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Gió
+          </button>
+        </div>
+      </div>
+
+      {/* Radar Map Container */}
+      <div className="relative mt-4 w-full h-[450px] rounded-2xl overflow-hidden border border-white/15 shadow-inner bg-slate-950">
+        <iframe
+          src={embedUrl}
+          title="Windy Weather Radar"
+          className="w-full h-full border-0"
+          loading="lazy"
+          allow="geolocation"
+        />
+
+        {/* Open in full Windy badge */}
+        <a
+          href={`https://www.windy.com/?${location.latitude},${location.longitude},8`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white text-xs font-medium border border-white/20 shadow-lg flex items-center gap-1.5 transition-all backdrop-blur-md"
+        >
+          <span>Mở toàn màn hình</span>
+          <ExternalLink className="w-3.5 h-3.5 text-slate-300" />
+        </a>
+      </div>
+    </div>
+  );
+}

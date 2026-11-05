@@ -425,11 +425,13 @@ fun CitySearchDialog(
                                 CityLocation.VIETNAM_MAJOR_CITIES.forEach { city ->
                                     val isFav = favoriteCities.any { it.name.equals(city.name, ignoreCase = true) }
                                     val isCurrent = city.name.equals(currentCityName, ignoreCase = true)
+                                    val isIsland = city.isIslandSovereignty
                                     Surface(
                                         shape = RoundedCornerShape(12.dp),
                                         color = when {
                                             isCurrent -> Color(0xFF0284C7).copy(alpha = if (isDark) 0.22f else 0.15f)
                                             isFav -> Color(0xFFFFD166).copy(alpha = if (isDark) 0.15f else 0.12f)
+                                            isIsland -> Color(0xFFDC2626).copy(alpha = if (isDark) 0.22f else 0.12f)
                                             else -> chipBg
                                         },
                                         border = BorderStroke(
@@ -437,6 +439,7 @@ fun CitySearchDialog(
                                             when {
                                                 isCurrent -> Color(0xFF38BDF8).copy(alpha = 0.35f)
                                                 isFav -> Color(0xFFFFD166).copy(alpha = 0.25f)
+                                                isIsland -> Color(0xFFEF4444).copy(alpha = 0.40f)
                                                 else -> Color.Transparent
                                             }
                                         ),
@@ -446,11 +449,18 @@ fun CitySearchDialog(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier.padding(start = 10.dp, end = 4.dp, top = 2.dp, bottom = 2.dp)
                                         ) {
+                                            if (isIsland) {
+                                                Text(
+                                                    text = "🇻🇳 ",
+                                                    fontSize = 11.sp,
+                                                    modifier = Modifier.padding(end = 2.dp)
+                                                )
+                                            }
                                             Text(
                                                 text = city.name,
-                                                color = contentColor,
+                                                color = if (isIsland && !isCurrent) (if (isDark) Color(0xFFFFD166) else Color(0xFFB91C1C)) else contentColor,
                                                 fontSize = 12.5.sp,
-                                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                                fontWeight = if (isCurrent || isIsland) FontWeight.Bold else FontWeight.Medium,
                                                 modifier = Modifier
                                                     .clickable {
                                                         onSelectCity(city)
@@ -574,6 +584,24 @@ private fun FavoriteCityCardItem(
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f, fill = false)
                         )
+                        if (city.isIslandSovereignty) {
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFDC2626).copy(alpha = 0.20f),
+                                border = BorderStroke(0.5.dp, Color(0xFFEF4444).copy(alpha = 0.45f))
+                            ) {
+                                Text(
+                                    text = "🇻🇳 Việt Nam",
+                                    color = Color(0xFFFFD166),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.5.dp)
+                                )
+                            }
+                        }
                         if (isCurrent) {
                             Spacer(modifier = Modifier.width(5.dp))
                             Surface(
@@ -679,14 +707,34 @@ private fun CityItemRow(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Column(modifier = Modifier.weight(1f, fill = false)) {
-                    Text(
-                        text = city.name,
-                        color = contentColor,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = city.name,
+                            color = contentColor,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (city.isIslandSovereignty) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Color(0xFFDC2626).copy(alpha = 0.18f),
+                                border = BorderStroke(0.5.dp, Color(0xFFEF4444).copy(alpha = 0.45f))
+                            ) {
+                                Text(
+                                    text = "🇻🇳 Chủ quyền Việt Nam",
+                                    color = Color(0xFFFFD166),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
                     if (city.displayName.isNotEmpty()) {
                         Text(
                             text = city.displayName,

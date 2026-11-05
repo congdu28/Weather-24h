@@ -154,6 +154,24 @@ fun CurrentWeatherCard(
                 )
             }
 
+            if (weather.location.isIslandSovereignty) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Color(0xFFDC2626).copy(alpha = 0.35f),
+                    border = BorderStroke(0.5.dp, Color(0xFFFFD166).copy(alpha = 0.6f))
+                ) {
+                    Text(
+                        text = "🇻🇳 Chủ quyền thiêng liêng của Việt Nam",
+                        color = Color(0xFFFFD166),
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        style = TextStyle(shadow = heroTextShadow),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
             // Nhãn hiển thị nếu đang xem ngoại tuyến
             if (weather.isOffline) {
                 Spacer(modifier = Modifier.height(6.dp))

@@ -12,6 +12,12 @@ data class CityLocation(
     @SerializedName("longitude") val longitude: Double,
     @SerializedName("isCurrentLocation") val isCurrentLocation: Boolean = false
 ) {
+    val isIslandSovereignty: Boolean
+        get() = name.contains("Hoàng Sa", ignoreCase = true) ||
+                name.contains("Trường Sa", ignoreCase = true) ||
+                admin1?.contains("Hoàng Sa", ignoreCase = true) == true ||
+                admin1?.contains("Trường Sa", ignoreCase = true) == true
+
     val displayName: String
         get() {
             return if (!admin1.isNullOrEmpty() && admin1 != name) {
@@ -45,6 +51,22 @@ data class CityLocation(
         }
 
     companion object {
+        val HOANG_SA_LOCATION = CityLocation(
+            name = "Quần đảo Hoàng Sa",
+            country = "Việt Nam",
+            admin1 = "Huyện Hoàng Sa, TP. Đà Nẵng",
+            latitude = 16.5375,
+            longitude = 111.6083
+        )
+
+        val TRUONG_SA_LOCATION = CityLocation(
+            name = "Quần đảo Trường Sa",
+            country = "Việt Nam",
+            admin1 = "Huyện Trường Sa, Tỉnh Khánh Hòa",
+            latitude = 8.6433,
+            longitude = 111.9189
+        )
+
         val DEFAULT_LOCATION = CityLocation(
             name = "Hà Nội",
             country = "Việt Nam",
@@ -62,8 +84,10 @@ data class CityLocation(
             CityLocation(name = "Bắc Ninh", country = "Việt Nam", admin1 = "Bắc Ninh", latitude = 21.1861, longitude = 106.0763),
             CityLocation(name = "Thái Nguyên", country = "Việt Nam", admin1 = "Thái Nguyên", latitude = 21.5942, longitude = 105.8481),
             CityLocation(name = "Nam Định", country = "Việt Nam", admin1 = "Nam Định", latitude = 20.4344, longitude = 106.1685),
-            // Miền Trung & Tây Nguyên
+            // Miền Trung & Tây Nguyên (Bao gồm 2 quần đảo thiêng liêng Hoàng Sa & Trường Sa)
             CityLocation(name = "Đà Nẵng", country = "Việt Nam", admin1 = "Đà Nẵng", latitude = 16.0544, longitude = 108.2022),
+            HOANG_SA_LOCATION,
+            TRUONG_SA_LOCATION,
             CityLocation(name = "Huế", country = "Việt Nam", admin1 = "Thừa Thiên Huế", latitude = 16.4637, longitude = 107.5909),
             CityLocation(name = "Nha Trang", country = "Việt Nam", admin1 = "Khánh Hòa", latitude = 12.2388, longitude = 109.1967),
             CityLocation(name = "Đà Lạt", country = "Việt Nam", admin1 = "Lâm Đồng", latitude = 11.9404, longitude = 108.4583),
@@ -87,6 +111,25 @@ data class CityLocation(
             CityLocation(name = "Bangkok", country = "Thái Lan", latitude = 13.7563, longitude = 100.5018),
             CityLocation(name = "Paris", country = "Pháp", latitude = 48.8566, longitude = 2.3522)
         )
+
+        fun isHoangSaArea(lat: Double, lon: Double): Boolean =
+            lat in 15.5..17.5 && lon in 111.0..113.0
+
+        fun isTruongSaArea(lat: Double, lon: Double): Boolean =
+            lat in 6.5..12.5 && lon in 111.0..117.5
+
+        fun isEastSeaArea(lat: Double, lon: Double): Boolean =
+            lat in 6.0..22.0 && lon in 108.0..119.5
+
+        fun isHoangSaQuery(query: String): Boolean {
+            val norm = normalizeVietnamese(query)
+            return Regex("(?i)(tam\\s*sa|san\\s*sha|xi\\s*sha|hoang\\s*sa|paracel|tay\\s*sa)").containsMatchIn(norm)
+        }
+
+        fun isTruongSaQuery(query: String): Boolean {
+            val norm = normalizeVietnamese(query)
+            return Regex("(?i)(truong\\s*sa|spratly|nan\\s*sha|nam\\s*sa)").containsMatchIn(norm)
+        }
 
         fun normalizeVietnamese(text: String): String {
             val temp = java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
