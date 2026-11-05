@@ -2,8 +2,24 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://weather-24h.vercel.app"),
   title: "Thời Tiết 24h & Lịch Âm Việt Nam",
-  description: "Dự báo thời tiết 24 giờ, 7 ngày, radar mưa thời gian thực và Lịch Vạn Niên Việt Nam chuẩn xác.",
+  description: "Dự báo thời tiết 24 giờ, 7 ngày, chất lượng không khí AQI, radar mưa và Lịch Vạn Niên Việt Nam chuẩn xác 100%.",
+  applicationName: "Thời Tiết 24h",
+  authors: [{ name: "Weather 24h Team" }],
+  keywords: [
+    "thời tiết 24h",
+    "dự báo thời tiết",
+    "lịch âm",
+    "lịch việt nam",
+    "lịch vạn niên",
+    "hoàng sa",
+    "trường sa",
+    "biển đông",
+    "weather 24h",
+    "vietnam weather",
+    "lunar calendar"
+  ],
   manifest: "/manifest.json",
   icons: {
     icon: [
@@ -12,6 +28,28 @@ export const metadata: Metadata = {
     ],
     shortcut: "/favicon.ico",
     apple: "/logo.png"
+  },
+  openGraph: {
+    title: "Thời Tiết 24h & Lịch Âm Việt Nam",
+    description: "Dự báo thời tiết 24 giờ, 7 ngày, chất lượng không khí AQI, radar mưa và Lịch Vạn Niên Việt Nam chuẩn xác. Khẳng định chủ quyền Hoàng Sa & Trường Sa của Việt Nam 🇻🇳.",
+    url: "https://weather-24h.vercel.app",
+    siteName: "Thời Tiết 24h",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Logo Thời Tiết 24h & Lịch Âm Việt Nam"
+      }
+    ],
+    locale: "vi_VN",
+    type: "website"
+  },
+  twitter: {
+    card: "summary",
+    title: "Thời Tiết 24h & Lịch Âm Việt Nam",
+    description: "Dự báo thời tiết 24 giờ, 7 ngày, radar mưa và Lịch Vạn Niên Việt Nam chuẩn xác 100%.",
+    images: ["/logo.png"]
   },
   appleWebApp: {
     capable: true,

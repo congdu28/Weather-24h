@@ -390,11 +390,33 @@ export default function SettingsDialog({
                   </div>
                 </div>
 
-                <div className={`space-y-1.5 pt-2 ${isDarkTheme ? "text-slate-300" : "text-slate-800"}`}>
+                <div className={`space-y-2 pt-2 text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-800"}`}>
                   <p>• <strong>Dữ liệu Khí tượng:</strong> Open-Meteo API & OpenStreetMap Geocoding.</p>
                   <p>• <strong>Dữ liệu Radar Mây Mưa:</strong> Windy & RainViewer Live Radar.</p>
                   <p>• <strong>Thuật toán Âm Lịch:</strong> Nghiên cứu thiên văn học chính thống của TS. Hồ Ngọc Đức (GMT+7).</p>
                   <p>• <strong>Công nghệ:</strong> Next.js 16, React 19, Tailwind CSS v4, PWA.</p>
+                  <p>
+                    • <strong>Bản Web:</strong>{" "}
+                    <a
+                      href="https://weather-24h.vercel.app"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-500 hover:underline font-semibold"
+                    >
+                      weather-24h.vercel.app
+                    </a>
+                  </p>
+                  <p>
+                    • <strong>Bản Android APK:</strong>{" "}
+                    <a
+                      href="https://github.com/congdu28/Weather-24h/releases"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-500 hover:underline font-semibold"
+                    >
+                      GitHub Releases
+                    </a>
+                  </p>
                 </div>
               </div>
             )}

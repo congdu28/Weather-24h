@@ -2,6 +2,13 @@
 
 Phiên bản Web của ứng dụng **Weather 24h**, được xây dựng bằng **Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS v4**.
 
+[![Trải nghiệm trực tuyến](https://img.shields.io/badge/Tr%E1%BA%A3i%20nghi%E1%BB%87m-weather--24h.vercel.app-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://weather-24h.vercel.app/)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
+[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind-CSS_v4-06B6D4?style=flat&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+
+🌐 **Địa chỉ truy cập chính thức**: [**https://weather-24h.vercel.app/**](https://weather-24h.vercel.app/)
+
 ## ✨ Tính năng chính
 
 1. **Thời tiết thời gian thực & Dự báo**:

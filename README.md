@@ -1,11 +1,15 @@
-# Weather 24h
+# Weather 24h & Lịch Âm Việt Nam
 
-Ứng dụng dự báo thời tiết trực quan, hiện đại và tinh tế dành cho Android, được phát triển hoàn toàn bằng **Kotlin** và **Jetpack Compose**.
+Ứng dụng dự báo thời tiết trực quan, hiện đại và tinh tế dành cho Android (Kotlin & Jetpack Compose) và Bản Web (Next.js 16 & React 19).
 
+[![Web Live](https://img.shields.io/badge/Web%20Tr%E1%BA%A3i%20Nghi%E1%BB%87m-weather--24h.vercel.app-000000?style=flat&logo=vercel&logoColor=white)](https://weather-24h.vercel.app/)
 [![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat&logo=android&logoColor=white)](https://android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-1.9%2B-7F52FF?style=flat&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/Jetpack-Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
 [![Release](https://img.shields.io/github/v/release/congdu28/Weather-24h?color=0284C7&label=Release)](https://github.com/congdu28/Weather-24h/releases/latest)
+
+> 🌐 **Trải nghiệm ngay bản Web trực tuyến:** [**https://weather-24h.vercel.app/**](https://weather-24h.vercel.app/)  
+> 📲 **Tải ứng dụng Android (APK):** [**GitHub Releases**](https://github.com/congdu28/Weather-24h/releases/latest)
 
 ---
 
