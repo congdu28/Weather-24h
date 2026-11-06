@@ -34,9 +34,11 @@ data class CurrentWeather(
             )
             if (isRainCode && isPhysicallySunny) {
                 return when {
-                    cloudCover <= 20.0 -> WeatherCondition("Trời quang đãng, nắng đẹp", WeatherType.CLEAR)
-                    cloudCover <= 50.0 -> WeatherCondition(if (temperature >= 33.0) "Trời nắng nóng" else "Trời nắng, ít mây", WeatherType.CLEAR)
-                    else -> WeatherCondition("Nắng xen mây", WeatherType.PARTLY_CLOUDY)
+                    cloudCover <= 15.0 -> WeatherCondition("Trời quang đãng, nắng đẹp", WeatherType.CLEAR)
+                    temperature >= 32.0 || feelsLike >= 36.0 ->
+                        WeatherCondition("Trời nắng, mây thay đổi", WeatherType.PARTLY_CLOUDY)
+                    else ->
+                        WeatherCondition("Nắng xen mây", WeatherType.PARTLY_CLOUDY)
                 }
             }
 
