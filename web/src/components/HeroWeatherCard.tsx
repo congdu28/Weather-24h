@@ -204,6 +204,41 @@ export default function HeroWeatherCard({
               <div className={`text-xs font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                 Cảm giác như: {current.apparentTemperature}°C
               </div>
+
+              {/* Huy hiệu đối chiếu & chuẩn hóa Radar thực tế */}
+              {current.radarStatus && (
+                <div
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all mt-1 ${
+                    current.radarStatus.calibrated
+                      ? isDarkTheme
+                        ? "bg-emerald-500/15 border-emerald-400/40 text-emerald-300"
+                        : "bg-emerald-50 border-emerald-400 text-emerald-800 shadow-xs"
+                      : current.radarStatus.isRainObserved
+                        ? isDarkTheme
+                          ? "bg-sky-500/15 border-sky-400/40 text-sky-300"
+                          : "bg-sky-50 border-sky-400 text-sky-800 shadow-xs"
+                        : isDarkTheme
+                          ? "bg-white/5 border-white/10 text-slate-300"
+                          : "bg-slate-100 border-slate-300 text-slate-700"
+                  }`}
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full shrink-0 ${
+                      current.radarStatus.calibrated
+                        ? "bg-emerald-400 animate-pulse"
+                        : current.radarStatus.isRainObserved
+                          ? "bg-sky-400 animate-pulse"
+                          : "bg-slate-400"
+                    }`}
+                  />
+                  <span className="truncate max-w-[280px] sm:max-w-none">
+                    {current.radarStatus.note ||
+                      (current.radarStatus.calibrated
+                        ? "Đã hiệu chỉnh theo Radar thực tế (0 dBZ)"
+                        : "Khớp quan trắc Radar thực tế")}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

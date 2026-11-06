@@ -216,14 +216,109 @@ function calculateLifestyles(current: CurrentWeather, daily: DailyForecast[]): L
   ];
 }
 
-export async function fetchFullWeather(location: CityLocation): Promise<WeatherData> {
-  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,uv_index,visibility&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max,precipitation_sum&timezone=auto&forecast_days=7`;
+/**
+ * Đọc dữ liệu phản hồi mây mưa thực tế (Radar dBZ) từ RainViewer API.
+ * Lấy tile radar thời gian thực gần nhất theo kinh độ/vĩ độ người dùng,
+ * quét ma trận điểm ảnh xung quanh tọa độ (bán kính ~15-20km).
+ * Trả về true nếu phát hiện có phản hồi radar mưa (>15 dBZ), false nếu 0 dBZ (khô ráo).
+ */
+export async function checkRainViewerRadar(
+  lat: number,
+  lon: number
+): Promise<{ isRainObserved: boolean } | null> {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return null;
+  }
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 2000);
+
+    const metaRes = await fetch("https://api.rainviewer.com/public/weather-maps.json", {
+      signal: controller.signal
+    });
+    const meta = await metaRes.json();
+    clearTimeout(timeout);
+
+    if (!meta?.radar?.past?.length || !meta.host) return null;
+    const latest = meta.radar.past[meta.radar.past.length - 1];
+
+    const zoom = 6;
+    const n = Math.pow(2, zoom);
+    const exactX = ((lon + 180) / 360) * n;
+    const latRad = (lat * Math.PI) / 180;
+    const exactY = ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
+    const tileX = Math.floor(exactX);
+    const tileY = Math.floor(exactY);
+    const pixelX = Math.floor((exactX % 1) * 256);
+    const pixelY = Math.floor((exactY % 1) * 256);
+
+    const tileUrl = `${meta.host}${latest.path}/256/${zoom}/${tileX}/${tileY}/2/1_1.png`;
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      const timer = setTimeout(() => {
+        img.src = "";
+        resolve(null);
+      }, 2000);
+
+      img.onload = () => {
+        clearTimeout(timer);
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 256;
+          canvas.height = 256;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(null);
+            return;
+          }
+          ctx.drawImage(img, 0, 0);
+
+          let rainPixels = 0;
+          const radius = 2; // Khảo sát vùng lân cận 5x5 pixels (~15km)
+          for (let dx = -radius; dx <= radius; dx++) {
+            for (let dy = -radius; dy <= radius; dy++) {
+              const px = Math.min(255, Math.max(0, pixelX + dx));
+              const py = Math.min(255, Math.max(0, pixelY + dy));
+              const data = ctx.getImageData(px, py, 1, 1).data;
+              // data[3] là kênh Alpha (trong suốt = 0 nghĩa là 0 dBZ, không có mưa)
+              if (data[3] > 30) {
+                rainPixels++;
+              }
+            }
+          }
+          resolve({ isRainObserved: rainPixels >= 2 });
+        } catch {
+          resolve(null);
+        }
+      };
+
+      img.onerror = () => {
+        clearTimeout(timer);
+        resolve(null);
+      };
+
+      img.src = tileUrl;
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchFullWeather(
+  location: CityLocation,
+  modelId?: string
+): Promise<WeatherData> {
+  const modelParam = modelId && modelId !== "best_match" ? `&models=${encodeURIComponent(modelId)}` : "";
+  const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${location.latitude}&longitude=${location.longitude}${modelParam}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,uv_index,visibility,cloud_cover&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max,precipitation_sum&timezone=auto&forecast_days=7`;
 
   const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${location.latitude}&longitude=${location.longitude}&current=pm10,pm2_5,european_aqi`;
 
-  const [weatherRes, aqiRes] = await Promise.all([
+  const [weatherRes, aqiRes, radarCheck] = await Promise.all([
     fetch(weatherUrl).then(r => r.json()),
-    fetch(aqiUrl).then(r => r.json()).catch(() => null)
+    fetch(aqiUrl).then(r => r.json()).catch(() => null),
+    checkRainViewerRadar(location.latitude, location.longitude).catch(() => null)
   ]);
 
   if (!weatherRes || !weatherRes.current) {
@@ -231,19 +326,92 @@ export async function fetchFullWeather(location: CityLocation): Promise<WeatherD
   }
 
   const cur = weatherRes.current;
+  let finalWeatherCode = cur.weather_code;
+  const isDay = cur.is_day === 1;
+  const uv = cur.uv_index ?? 0;
+  const cloud = cur.cloud_cover ?? 50;
+  const precip = cur.precipitation ?? 0;
+
+  // Nhóm mã thời tiết mưa theo chuẩn WMO
+  const isRainCode = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(cur.weather_code);
+
+  let radarStatus: CurrentWeather["radarStatus"] = undefined;
+
+  if (radarCheck !== null) {
+    if (radarCheck.isRainObserved) {
+      radarStatus = {
+        isRainObserved: true,
+        calibrated: false,
+        note: "Radar thời gian thực xác nhận có mây mưa"
+      };
+      if (!isRainCode && cur.weather_code <= 2) {
+        finalWeatherCode = 61; // Mưa rào nhẹ
+        radarStatus = {
+          isRainObserved: true,
+          calibrated: true,
+          note: "Hiệu chỉnh theo Radar: Ghi nhận có mưa thực tế"
+        };
+      }
+    } else {
+      // Radar không thấy mưa (0 dBZ)
+      if (isRainCode) {
+        // Sai lệch giữa mô hình số trị và radar mặt đất!
+        if (uv >= 2.5 || cloud <= 60 || precip <= 0.3) {
+          if (cloud <= 20) {
+            finalWeatherCode = 0; // Trời quang, nắng đẹp
+          } else if (cloud <= 50) {
+            finalWeatherCode = 1; // Hầu như không mây / Đêm ít mây
+          } else {
+            finalWeatherCode = 2; // Mây rải rác
+          }
+          radarStatus = {
+            isRainObserved: false,
+            calibrated: true,
+            note: `Radar đối chiếu 0 dBZ (Không mưa) & Mây ${cloud}%`
+          };
+        } else {
+          finalWeatherCode = 3; // Trời nhiều mây, không mưa
+          radarStatus = {
+            isRainObserved: false,
+            calibrated: true,
+            note: "Radar đối chiếu 0 dBZ: Điều chỉnh thành trời nhiều mây, không mưa"
+          };
+        }
+      } else {
+        radarStatus = {
+          isRainObserved: false,
+          calibrated: false,
+          note: "Radar xác nhận không mưa (0 dBZ)"
+        };
+      }
+    }
+  } else {
+    // Dự phòng khi chưa tải được ảnh Radar (hiệu chỉnh theo trường quang học và mây)
+    if (isRainCode && (uv >= 3.0 || (precip <= 0.1 && cloud <= 45))) {
+      finalWeatherCode = cloud <= 35 ? 1 : 2;
+      radarStatus = {
+        isRainObserved: false,
+        calibrated: true,
+        note: `Chuẩn hóa quang học (UV ${uv.toFixed(1)}, Mây ${cloud}%)`
+      };
+    }
+  }
+
   const current: CurrentWeather = {
     temperature: Math.round(cur.temperature_2m),
     apparentTemperature: Math.round(cur.apparent_temperature),
     relativeHumidity: cur.relative_humidity_2m,
-    weatherCode: cur.weather_code,
-    isDay: cur.is_day === 1,
+    weatherCode: finalWeatherCode,
+    isDay,
     windSpeed: Math.round(cur.wind_speed_10m),
     windDirection: cur.wind_direction_10m,
     surfacePressure: Math.round(cur.surface_pressure),
-    uvIndex: cur.uv_index ?? 0,
+    uvIndex: uv,
     visibility: Math.round((cur.visibility ?? 10000) / 1000),
-    precipitation: cur.precipitation ?? 0,
-    time: cur.time
+    precipitation: precip,
+    cloudCover: cloud,
+    time: cur.time,
+    radarStatus
   };
 
   // Hourly next 24h
@@ -265,6 +433,11 @@ export async function fetchFullWeather(location: CityLocation): Promise<WeatherD
         isDay: hourlyData.is_day ? hourlyData.is_day[i] === 1 : (itemDate.getHours() >= 6 && itemDate.getHours() < 18)
       });
     }
+  }
+
+  // Đồng bộ slot giờ hiện tại ("Bây giờ") với trạng thái đã hiệu chuẩn
+  if (hourly.length > 0) {
+    hourly[0].weatherCode = finalWeatherCode;
   }
 
   // Daily 7 days

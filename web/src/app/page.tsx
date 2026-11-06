@@ -97,7 +97,7 @@ export default function Home() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchFullWeather(loc);
+      const data = await fetchFullWeather(loc, settings.forecastModel);
       setWeatherData(data);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Không thể tải dữ liệu thời tiết. Vui lòng thử lại!";
@@ -105,11 +105,11 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [settings.forecastModel]);
 
   useEffect(() => {
     let ignore = false;
-    fetchFullWeather(location)
+    fetchFullWeather(location, settings.forecastModel)
       .then((data) => {
         if (!ignore) {
           setWeatherData(data);
@@ -126,7 +126,7 @@ export default function Home() {
     return () => {
       ignore = true;
     };
-  }, [location]);
+  }, [location, settings.forecastModel]);
 
   const handleSelectLocation = (loc: CityLocation) => {
     setLocation(loc);
@@ -139,8 +139,18 @@ export default function Home() {
   };
 
   const handleUpdateSettings = (newSettings: SettingsState) => {
+    const prevModel = settings.forecastModel;
     setSettings(newSettings);
     localStorage.setItem("weather24h_settings", JSON.stringify(newSettings));
+    if (newSettings.forecastModel !== prevModel) {
+      setIsLoading(true);
+      fetchFullWeather(location, newSettings.forecastModel)
+        .then((data) => {
+          setWeatherData(data);
+          setIsLoading(false);
+        })
+        .catch(() => setIsLoading(false));
+    }
   };
 
   const isCityFavorite = useCallback(

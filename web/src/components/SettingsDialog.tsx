@@ -266,6 +266,7 @@ export default function SettingsDialog({
                 </div>
                 {[
                   { id: "best_match", title: "Tự động tối ưu (Best Match)", desc: "Tự động kết hợp mô hình tốt nhất theo tọa độ thực tế." },
+                  { id: "jma_seamless", title: "JMA (Khí tượng Nhật Bản - Đề xuất cho VN)", desc: "Mô hình khí tượng chuyên biệt Châu Á, độ chính xác cao cho gió mùa nhiệt đới." },
                   { id: "ecmwf_ifs", title: "ECMWF (Châu Âu IFS)", desc: "Mô hình dự báo độ chính xác cao nhất thế giới." },
                   { id: "gfs_seamless", title: "GFS (Hoa Kỳ NOAA)", desc: "Mô hình khí quyển toàn cầu của Mỹ." },
                   { id: "icon_seamless", title: "DWD ICON (Cục Khí Tượng Đức)", desc: "Mô hình dự báo thời tiết chuẩn Châu Âu của Đức." }

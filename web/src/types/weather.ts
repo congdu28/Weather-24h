@@ -19,7 +19,13 @@ export interface CurrentWeather {
   uvIndex: number;
   visibility: number;
   precipitation: number;
+  cloudCover?: number;
   time: string;
+  radarStatus?: {
+    isRainObserved: boolean;
+    calibrated: boolean;
+    note?: string;
+  };
 }
 
 export interface HourlyForecast {
