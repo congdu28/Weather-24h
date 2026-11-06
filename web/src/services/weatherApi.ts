@@ -218,9 +218,8 @@ function calculateLifestyles(current: CurrentWeather, daily: DailyForecast[]): L
 
 /**
  * Đọc dữ liệu phản hồi mây mưa thực tế (Radar dBZ) từ RainViewer API.
- * Lấy tile radar thời gian thực gần nhất theo kinh độ/vĩ độ người dùng,
- * quét ma trận điểm ảnh xung quanh tọa độ (bán kính ~15-20km).
- * Trả về true nếu phát hiện có phản hồi radar mưa (>15 dBZ), false nếu 0 dBZ (khô ráo).
+ * Sử dụng Zoom 8 (độ phân giải cao ~600m/pixel - cấp độ Phường/Xã) và ảnh thô không làm nhòe (0_0.png).
+ * Áp dụng bộ lọc Chroma sắc độ để loại bỏ viền đen/xám quét của trạm radar (chỉ tính mưa khi có màu phản hồi thực tế).
  */
 export async function checkRainViewerRadar(
   lat: number,
@@ -242,7 +241,8 @@ export async function checkRainViewerRadar(
     if (!meta?.radar?.past?.length || !meta.host) return null;
     const latest = meta.radar.past[meta.radar.past.length - 1];
 
-    const zoom = 6;
+    // Zoom 8 cho độ phân giải siêu nét (~600m mỗi điểm ảnh), tương ứng bán kính cấp Phường/Xã
+    const zoom = 8;
     const n = Math.pow(2, zoom);
     const exactX = ((lon + 180) / 360) * n;
     const latRad = (lat * Math.PI) / 180;
@@ -252,7 +252,8 @@ export async function checkRainViewerRadar(
     const pixelX = Math.floor((exactX % 1) * 256);
     const pixelY = Math.floor((exactY % 1) * 256);
 
-    const tileUrl = `${meta.host}${latest.path}/256/${zoom}/${tileX}/${tileY}/2/1_1.png`;
+    // 0_0.png: Lấy dữ liệu radar gốc, không kích hoạt Gaussian blur làm nhòe mây xa sang trung tâm
+    const tileUrl = `${meta.host}${latest.path}/256/${zoom}/${tileX}/${tileY}/2/0_0.png`;
 
     return new Promise((resolve) => {
       const img = new Image();
@@ -276,18 +277,28 @@ export async function checkRainViewerRadar(
           ctx.drawImage(img, 0, 0);
 
           let rainPixels = 0;
-          const radius = 2; // Khảo sát vùng lân cận 5x5 pixels (~15km)
+          // Quét phạm vi 3x3 pixels (~1.5km x 1.5km) đúng chuẩn cấp Phường
+          const radius = 1;
           for (let dx = -radius; dx <= radius; dx++) {
             for (let dy = -radius; dy <= radius; dy++) {
               const px = Math.min(255, Math.max(0, pixelX + dx));
               const py = Math.min(255, Math.max(0, pixelY + dy));
               const data = ctx.getImageData(px, py, 1, 1).data;
-              // data[3] là kênh Alpha (trong suốt = 0 nghĩa là 0 dBZ, không có mưa)
-              if (data[3] > 30) {
+              const r = data[0];
+              const g = data[1];
+              const b = data[2];
+              const a = data[3];
+
+              // Bộ lọc màu sắc thực (Chroma filter):
+              // Viền bóng đài radar là màu đen/xám (r ≈ g ≈ b, chroma = 0..15).
+              // Chỉ hạt mưa thật trên radar mới có sắc màu đậm (xanh, vàng, cam, đỏ: chroma >= 25).
+              const chroma = Math.max(r, g, b) - Math.min(r, g, b);
+              if (a > 40 && chroma >= 25) {
                 rainPixels++;
               }
             }
           }
+          // Có từ 2 pixel phản hồi sắc màu trở lên mới xác nhận có mưa thực địa
           resolve({ isRainObserved: rainPixels >= 2 });
         } catch {
           resolve(null);
@@ -335,48 +346,53 @@ export async function fetchFullWeather(
   // Nhóm mã thời tiết mưa theo chuẩn WMO
   const isRainCode = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(cur.weather_code);
 
+  // Điều kiện quang học mặt đất: Nếu có nắng rõ (UV >= 2.0 và mây <= 60%) hoặc mây rất ít (<= 40%),
+  // thì lượng mưa mô phỏng <= 0.3mm của ô lưới 25km chỉ là mưa rìa ô lưới hoặc bốc hơi tầng cao (virga).
+  const isPhysicallySunny = (uv >= 2.0 && cloud <= 60) || (uv >= 1.5 && cloud <= 45);
+
   let radarStatus: CurrentWeather["radarStatus"] = undefined;
 
   if (radarCheck !== null) {
     if (radarCheck.isRainObserved) {
-      radarStatus = {
-        isRainObserved: true,
-        calibrated: false,
-        note: "Radar thời gian thực xác nhận có mây mưa"
-      };
-      if (!isRainCode && cur.weather_code <= 2) {
-        finalWeatherCode = 61; // Mưa rào nhẹ
+      if (isPhysicallySunny) {
+        // Mặc dù radar có vết mưa ở phạm vi lân cận, nhưng tại tọa độ mặt đất trời đang nắng rực rỡ
+        finalWeatherCode = cloud <= 20 ? 0 : cloud <= 50 ? 1 : 2;
+        radarStatus = {
+          isRainObserved: false,
+          calibrated: true,
+          note: `Trời nắng ráo (UV ${uv.toFixed(1)}) & Mây ${cloud}% (Mưa cục bộ ở xa)`
+        };
+      } else {
         radarStatus = {
           isRainObserved: true,
-          calibrated: true,
-          note: "Hiệu chỉnh theo Radar: Ghi nhận có mưa thực tế"
+          calibrated: false,
+          note: "Radar thời gian thực ghi nhận có mây mưa"
         };
-      }
-    } else {
-      // Radar không thấy mưa (0 dBZ)
-      if (isRainCode) {
-        // Sai lệch giữa mô hình số trị và radar mặt đất!
-        if (uv >= 2.5 || cloud <= 60 || precip <= 0.3) {
-          if (cloud <= 20) {
-            finalWeatherCode = 0; // Trời quang, nắng đẹp
-          } else if (cloud <= 50) {
-            finalWeatherCode = 1; // Hầu như không mây / Đêm ít mây
-          } else {
-            finalWeatherCode = 2; // Mây rải rác
-          }
+        if (!isRainCode && cur.weather_code <= 2) {
+          finalWeatherCode = 61; // Mưa rào nhẹ
           radarStatus = {
-            isRainObserved: false,
+            isRainObserved: true,
             calibrated: true,
-            note: `Radar đối chiếu 0 dBZ (Không mưa) & Mây ${cloud}%`
-          };
-        } else {
-          finalWeatherCode = 3; // Trời nhiều mây, không mưa
-          radarStatus = {
-            isRainObserved: false,
-            calibrated: true,
-            note: "Radar đối chiếu 0 dBZ: Điều chỉnh thành trời nhiều mây, không mưa"
+            note: "Hiệu chỉnh theo Radar: Ghi nhận có mưa thực tế"
           };
         }
+      }
+    } else {
+      // Radar xác nhận 0 dBZ (Không có mưa tại cấp độ Phường)
+      if (isRainCode) {
+        // Sai lệch giữa mô hình số trị diện rộng và thực tế mặt đất!
+        if (cloud <= 20) {
+          finalWeatherCode = 0; // Trời quang, nắng đẹp
+        } else if (cloud <= 50) {
+          finalWeatherCode = 1; // Hầu như không mây / Đêm ít mây
+        } else {
+          finalWeatherCode = 2; // Mây rải rác
+        }
+        radarStatus = {
+          isRainObserved: false,
+          calibrated: true,
+          note: `Radar đối chiếu 0 dBZ (Không mưa) & Nắng ráo (UV ${uv > 0 ? uv.toFixed(1) : "An toàn"})`
+        };
       } else {
         radarStatus = {
           isRainObserved: false,
@@ -387,8 +403,8 @@ export async function fetchFullWeather(
     }
   } else {
     // Dự phòng khi chưa tải được ảnh Radar (hiệu chỉnh theo trường quang học và mây)
-    if (isRainCode && (uv >= 3.0 || (precip <= 0.1 && cloud <= 45))) {
-      finalWeatherCode = cloud <= 35 ? 1 : 2;
+    if (isRainCode && (isPhysicallySunny || (precip <= 0.2 && cloud <= 55))) {
+      finalWeatherCode = cloud <= 25 ? 0 : cloud <= 50 ? 1 : 2;
       radarStatus = {
         isRainObserved: false,
         calibrated: true,
