@@ -387,7 +387,7 @@ export default function SettingsDialog({
                     Weather 24h & Lịch Âm Việt Nam
                   </div>
                   <div className={`text-[11px] font-semibold mt-0.5 ${isDarkTheme ? "text-amber-400" : "text-amber-700 font-bold"}`}>
-                    Phiên bản Web • Đồng bộ v1.0.62 APK
+                    Phiên bản Web • Đồng bộ v1.0.63 APK
                   </div>
                 </div>
 

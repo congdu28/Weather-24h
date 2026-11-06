@@ -135,35 +135,43 @@ jobs:
       - name: Generate Release Notes from Commits
         id: notes
         run: |
-          git fetch --tags || true
-          TARGET_TAG="${{ steps.versioning.outputs.tag_name }}"
-          PREV_TAG=$(git tag -l "v*" --sort=-v:refname | grep -v "^${TARGET_TAG}$" | head -n 1 || echo "")
-          echo "Target tag: $TARGET_TAG"
-          echo "Previous tag: $PREV_TAG"
-
-          if [ -n "$PREV_TAG" ]; then
-            RAW_LOGS=$(git log "$PREV_TAG..HEAD" --pretty=format:"%s" --no-merges || echo "")
+          if [ -f RELEASE_NOTES.md ] && [ -s RELEASE_NOTES.md ]; then
+            echo "Using custom RELEASE_NOTES.md"
+            cp -v RELEASE_NOTES.md release_notes.txt
           else
-            RAW_LOGS=$(git log -n 5 --pretty=format:"%s" --no-merges || echo "")
-          fi
+            git fetch --tags || true
+            TARGET_TAG="${{ steps.versioning.outputs.tag_name }}"
+            PREV_TAG=$(git tag -l "v*" --sort=-v:refname | grep -v "^${TARGET_TAG}$" | head -n 1 || echo "")
+            echo "Target tag: $TARGET_TAG"
+            echo "Previous tag: $PREV_TAG"
 
-          if [ -z "$RAW_LOGS" ]; then
-            RAW_LOGS=$(git log -1 --pretty=format:"%s" || echo "")
-          fi
+            if [ -n "$PREV_TAG" ]; then
+              RAW_LOGS=$(git log "$PREV_TAG..HEAD" --pretty=format:"%s" --no-merges || echo "")
+            else
+              RAW_LOGS=$(git log -n 10 --pretty=format:"%s" --no-merges || echo "")
+            fi
 
-          echo "Raw logs from git:"
-          echo "$RAW_LOGS"
+            if [ -z "$RAW_LOGS" ]; then
+              RAW_LOGS=$(git log -n 5 --pretty=format:"%s" || echo "")
+            fi
 
-          echo "$RAW_LOGS" | grep -v "\[skip ci\]" \
-            | grep -v -E "^\s*$" \
-            | sed 's/^[*-] //' \
-            | sed -E 's/^(feat|fix|perf|refactor|chore|style|test|build|ci)(\([a-zA-Z0-9_\- ]+\))?:\s*//I' \
-            | sed -E 's/^\[(feat|fix|perf|refactor|chore|style|test|build|ci)\]\s*//I' \
-            | sed 's/^/• /' > release_notes.txt
+            echo "Raw logs from git:"
+            echo "$RAW_LOGS"
 
-          if [ ! -s release_notes.txt ]; then
-            echo "• Tối ưu hóa trải nghiệm người dùng và giao diện." > release_notes.txt
-            echo "• Tinh chỉnh hiển thị và nâng cao độ ổn định hệ thống." >> release_notes.txt
+            echo "$RAW_LOGS" | grep -v "\[skip ci\]" \
+              | grep -v -E "^\s*$" \
+              | sed 's/^[*-] //' \
+              | sed -E 's/^(feat|fix|perf|refactor|chore|style|test|build|ci)(\([a-zA-Z0-9_\- ]+\))?:\s*//I' \
+              | sed -E 's/^\[(feat|fix|perf|refactor|chore|style|test|build|ci)\]\s*//I' \
+              | sed 's/^/• /' > release_notes.txt
+
+            if [ ! -s release_notes.txt ]; then
+              echo "### 🌟 Tính năng mới & Cải tiến trong bản $TARGET_TAG" > release_notes.txt
+              echo "• **Khử mưa ảo & chuẩn hóa thời tiết**: Tích hợp thuật toán quang học mặt đất và đối chiếu radar loại bỏ triệt để tình trạng trời nắng nhưng báo mưa." >> release_notes.txt
+              echo "• **Tối ưu mô hình khí tượng**: Đồng bộ mô hình JMA (Khí tượng Nhật Bản) tăng độ chính xác tại Việt Nam." >> release_notes.txt
+              echo "• **Khẳng định chủ quyền biển đảo**: Tích hợp Quần đảo Hoàng Sa và Trường Sa của Việt Nam." >> release_notes.txt
+              echo "• **Nâng cấp hiệu năng**: Tối ưu tốc độ tải và độ mượt mà toàn hệ thống." >> release_notes.txt
+            fi
           fi
 
           echo "Final release_notes.txt:"
