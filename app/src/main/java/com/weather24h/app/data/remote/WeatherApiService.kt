@@ -32,7 +32,7 @@ class WeatherApiService {
             val url = "https://api.open-meteo.com/v1/forecast?" +
                     "latitude=${location.latitude}&" +
                     "longitude=${location.longitude}&" +
-                    "current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,uv_index,visibility&" +
+                    "current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m,uv_index,visibility,cloud_cover&" +
                     "hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,is_day&" +
                     "daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max,precipitation_sum&" +
                     "timezone=auto&" +
@@ -565,7 +565,8 @@ class WeatherApiService {
             visibilityKm = currentObj.get("visibility")?.takeUnless { it.isJsonNull }?.asDouble?.div(1000.0) ?: 10.0,
             precipitation = currentObj.get("precipitation").asDouble,
             isDay = currentObj.get("is_day").asInt == 1,
-            time = currentObj.get("time").asString
+            time = currentObj.get("time").asString,
+            cloudCover = currentObj.get("cloud_cover")?.takeUnless { it.isJsonNull }?.asDouble ?: 50.0
         )
 
         // Parse Hourly 24h chuẩn xác theo giờ hiện tại

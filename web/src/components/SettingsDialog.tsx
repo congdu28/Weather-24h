@@ -127,8 +127,8 @@ export default function SettingsDialog({
                   </label>
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {[
-                      { id: "dark", label: "Tối (Mặc định)" },
-                      { id: "light", label: "Sáng" },
+                      { id: "light", label: "Sáng (Mặc định)" },
+                      { id: "dark", label: "Tối" },
                       { id: "system", label: "Theo hệ thống" }
                     ].map((th) => {
                       const isSelected = settings.theme === th.id;

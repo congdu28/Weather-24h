@@ -13,11 +13,41 @@ data class CurrentWeather(
     val precipitation: Double,
     val isDay: Boolean,
     val time: String,
-    val sourceCondition: WeatherCondition? = null
+    val sourceCondition: WeatherCondition? = null,
+    val cloudCover: Double = 50.0
 ) {
     val condition: WeatherCondition
         get() {
             val base = sourceCondition ?: WeatherCondition.fromWmoCode(weatherCode)
+            val isRainCode = base.type == WeatherType.DRIZZLE || base.type == WeatherType.RAIN || base.type == WeatherType.THUNDERSTORM
+
+            // 0. Bức xạ mặt trời / UV quang học mặt đất & Mây phủ:
+            // Nếu có nắng rõ (UV >= 2.0 và mây <= 60%, hoặc UV >= 1.5 và mây <= 45%) hoặc lượng mưa vi lượng <= 0.25mm
+            // và nhiệt độ ấm áp (>= 26°C hoặc UV >= 1.8):
+            // Theo định luật vật lý quang học khí quyển, bức xạ mặt trời đang chiếu trực tiếp xuống đất,
+            // mưa mô phỏng vi lượng trong ô lưới 13-25km (<= 0.25mm) chỉ là mây đối lưu ở xa hoặc bốc hơi tầng cao (virga).
+            // Triệt để loại bỏ báo mưa giả!
+            val isPhysicallySunny = isDay && (
+                (uvIndex >= 2.0 && cloudCover <= 60.0) ||
+                (uvIndex >= 1.5 && cloudCover <= 45.0) ||
+                (precipitation <= 0.25 && (uvIndex >= 1.8 || cloudCover <= 55.0 || temperature >= 26.0))
+            )
+            if (isRainCode && isPhysicallySunny) {
+                return when {
+                    cloudCover <= 20.0 -> WeatherCondition("Trời quang đãng, nắng đẹp", WeatherType.CLEAR)
+                    cloudCover <= 50.0 -> WeatherCondition(if (temperature >= 33.0) "Trời nắng nóng" else "Trời nắng, ít mây", WeatherType.CLEAR)
+                    else -> WeatherCondition("Nắng xen mây", WeatherType.PARTLY_CLOUDY)
+                }
+            }
+
+            // Đêm khô ráo không mưa khi lượng mưa mô phỏng vi lượng
+            if (!isDay && isRainCode && precipitation <= 0.15) {
+                return if (cloudCover <= 50.0) {
+                    WeatherCondition("Đêm ít mây", WeatherType.CLEAR)
+                } else {
+                    WeatherCondition("Đêm nhiều mây, khô ráo", WeatherType.CLOUDY)
+                }
+            }
 
             // 1. Khi lượng mưa thực tế = 0.0mm (<= 0.05mm):
             // Tuyệt đối không bao giờ báo "Mưa rào vừa đến to", "Mưa nhẹ", "Mưa phùn" hay "Dông bão đang diễn ra"
@@ -51,13 +81,14 @@ data class CurrentWeather(
 
             // 2. Khi lượng mưa chỉ ở mức vi lượng (0.06 - 0.25mm):
             if (precipitation <= 0.25) {
-                if ((base.type == WeatherType.DRIZZLE || base.type == WeatherType.RAIN || base.type == WeatherType.THUNDERSTORM) &&
-                    isDay && (temperature >= 28.0 || feelsLike >= 33.0)
-                ) {
-                    return if (temperature >= 32.0 || feelsLike >= 36.0) {
-                        WeatherCondition("Trời nắng, mây thay đổi", WeatherType.PARTLY_CLOUDY)
-                    } else {
-                        WeatherCondition("Nắng xen mây", WeatherType.PARTLY_CLOUDY)
+                if (isRainCode && isDay) {
+                    return when {
+                        temperature >= 32.0 || feelsLike >= 36.0 ->
+                            WeatherCondition("Trời nắng, mây thay đổi", WeatherType.PARTLY_CLOUDY)
+                        cloudCover <= 50.0 ->
+                            WeatherCondition("Nắng xen mây", WeatherType.PARTLY_CLOUDY)
+                        else ->
+                            WeatherCondition("Trời nhiều mây, không mưa", WeatherType.CLOUDY)
                     }
                 }
                 if (base.type == WeatherType.RAIN || base.type == WeatherType.THUNDERSTORM) {

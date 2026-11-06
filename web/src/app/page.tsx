@@ -27,7 +27,7 @@ import {
 import { RefreshCw, AlertCircle } from "lucide-react";
 
 const DEFAULT_SETTINGS: SettingsState = {
-  theme: "dark",
+  theme: "light",
   atmosphereEnabled: true,
   atmospherePerformance: "high",
   showLunar: true,
@@ -53,7 +53,7 @@ export default function Home() {
     [VIETNAM_MAJOR_CITIES[0], VIETNAM_MAJOR_CITIES[1], VIETNAM_MAJOR_CITIES[2]]
   );
 
-  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(true);
+  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(false);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
