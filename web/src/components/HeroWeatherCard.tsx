@@ -75,10 +75,10 @@ export default function HeroWeatherCard({
 
   return (
     <div
-      className={`w-full rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 backdrop-blur-2xl border transition-all shadow-2xl ${
+      className={`w-full rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border transition-all ${
         isDarkTheme
-          ? "bg-slate-900/40 border-white/15 text-white"
-          : "bg-white/70 border-white/80 text-slate-900 shadow-sky-500/10"
+          ? "bg-slate-900/85 border-white/10 text-white shadow-2xl"
+          : "bg-white/90 border-slate-200/90 text-slate-900 shadow-xl shadow-sky-500/5"
       }`}
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-center">
@@ -90,10 +90,10 @@ export default function HeroWeatherCard({
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={onLocationClick}
-              className={`group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border backdrop-blur-md transition-all active:scale-95 ${
+              className={`group flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border transition-all active:scale-95 ${
                 isDarkTheme
                   ? "bg-white/10 hover:bg-white/15 border-white/15 text-white"
-                  : "bg-white/90 hover:bg-white border-slate-200/80 text-slate-900 shadow-sm"
+                  : "bg-white hover:bg-slate-50 border-slate-200 text-slate-900 shadow-xs"
               }`}
               title="Nhấn để tìm kiếm hoặc đổi địa điểm"
             >
@@ -113,10 +113,10 @@ export default function HeroWeatherCard({
             {/* Nút Yêu Thích ⭐ */}
             <button
               onClick={onToggleFavorite}
-              className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border backdrop-blur-md transition-all active:scale-90 ${
+              className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all active:scale-90 ${
                 isDarkTheme
                   ? "bg-white/10 hover:bg-white/15 border-white/15 text-white"
-                  : "bg-white/90 hover:bg-white border-slate-200/80 text-slate-900 shadow-sm"
+                  : "bg-white hover:bg-slate-50 border-slate-200 text-slate-900 shadow-xs"
               }`}
               title={isFavorite ? "Bỏ yêu thích" : "Lưu vào yêu thích"}
             >
@@ -146,10 +146,10 @@ export default function HeroWeatherCard({
           {showLunar && (
             <button
               onClick={onLunarClick}
-              className={`w-full sm:w-auto inline-flex items-center justify-between gap-2.5 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border backdrop-blur-md transition-all active:scale-[0.98] group ${
+              className={`w-full sm:w-auto inline-flex items-center justify-between gap-2.5 sm:gap-3 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border transition-all active:scale-[0.98] group ${
                 isDarkTheme
                   ? "bg-black/30 hover:bg-black/40 border-amber-400/40 text-white"
-                  : "bg-amber-50/90 hover:bg-amber-100/90 border-amber-300 text-slate-900 shadow-sm"
+                  : "bg-amber-50/90 hover:bg-amber-100/90 border-amber-300 text-slate-900 shadow-xs"
               }`}
             >
               <div className="text-left">

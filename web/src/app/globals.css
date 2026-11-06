@@ -61,21 +61,22 @@ html, body, button, input, select, textarea, [class*="font-sans"] {
   will-change: transform;
 }
 
-/* Thẻ kính mờ cao cấp tối ưu mượt mà 60/120fps */
+/* Tối ưu scroll mượt mà trên di động & desktop */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Thẻ kính mờ tối ưu hiệu năng không gây giật lag khi cuộn */
 .glass-panel-dark {
-  background-color: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  background-color: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
 }
 
 .glass-panel-light {
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background-color: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(226, 232, 240, 0.9);
-  box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.06), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
 }
 
 /* Custom scrollbars */

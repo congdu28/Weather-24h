@@ -11,6 +11,7 @@ interface Props {
 
 export default function WeatherRadarCard({ location, isDarkTheme = true }: Props) {
   const [layer, setLayer] = useState<"radar" | "clouds" | "wind">("radar");
+  const [isInteractive, setIsInteractive] = useState(false);
 
   // Windy embed URL with responsive parameter and overlay
   const windyOverlay = layer === "radar" ? "radar" : layer === "clouds" ? "clouds" : "wind";
@@ -18,10 +19,10 @@ export default function WeatherRadarCard({ location, isDarkTheme = true }: Props
 
   return (
     <div
-      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 backdrop-blur-xl border transition-all shadow-xl ${
+      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 border transition-all ${
         isDarkTheme
-          ? "bg-slate-900/50 border-white/10 text-white"
-          : "bg-white/75 border-white/60 text-slate-900 shadow-sky-500/10"
+          ? "bg-slate-900/85 border-white/10 text-white shadow-xl"
+          : "bg-white/90 border-slate-200/90 text-slate-900 shadow-xl shadow-sky-500/5"
       }`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-black/5 dark:border-white/10">
@@ -75,22 +76,43 @@ export default function WeatherRadarCard({ location, isDarkTheme = true }: Props
         </div>
       </div>
 
-      {/* Radar Map Container */}
+      {/* Radar Map Container (with scroll protection) */}
       <div className="relative mt-3 sm:mt-4 w-full h-[320px] sm:h-[400px] md:h-[460px] rounded-2xl overflow-hidden border border-white/15 shadow-inner bg-slate-950">
         <iframe
           src={embedUrl}
           title="Windy Weather Radar"
-          className="w-full h-full border-0"
+          className={`w-full h-full border-0 transition-opacity ${isInteractive ? "pointer-events-auto" : "pointer-events-none"}`}
           loading="lazy"
           allow="geolocation"
         />
+
+        {/* Scroll overlay: Prevents iframe from intercepting mouse wheel / touch scroll */}
+        {!isInteractive && (
+          <div
+            onClick={() => setIsInteractive(true)}
+            className="absolute inset-0 bg-transparent cursor-pointer flex items-center justify-center group"
+          >
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity px-4 py-2 rounded-xl bg-slate-900/85 text-white text-xs font-semibold border border-white/20 shadow-lg">
+              👆 Nhấp để tương tác bản đồ
+            </span>
+          </div>
+        )}
+
+        {isInteractive && (
+          <button
+            onClick={() => setIsInteractive(false)}
+            className="absolute top-3 left-3 px-3 py-1.5 rounded-xl bg-slate-900/90 text-white text-xs font-semibold border border-white/20 shadow-lg z-10 hover:bg-slate-800 transition-all"
+          >
+            🔒 Khóa bản đồ để cuộn trang
+          </button>
+        )}
 
         {/* Open in full Windy badge */}
         <a
           href={`https://www.windy.com/?${location.latitude},${location.longitude},8`}
           target="_blank"
           rel="noopener noreferrer"
-          className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white text-xs font-medium border border-white/20 shadow-lg flex items-center gap-1.5 transition-all backdrop-blur-md"
+          className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white text-xs font-medium border border-white/20 shadow-lg flex items-center gap-1.5 transition-all"
         >
           <span>Mở toàn màn hình</span>
           <ExternalLink className="w-3.5 h-3.5 text-slate-300" />

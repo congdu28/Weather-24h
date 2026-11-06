@@ -23,10 +23,10 @@ export default function VietnameseLunarCard({ onOpenDetailedAlmanac, isDarkTheme
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 backdrop-blur-xl border shadow-xl transition-all ${
+      className={`relative overflow-hidden rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 border shadow-xl transition-all ${
         isDarkTheme
-          ? "bg-gradient-to-br from-amber-950/40 via-slate-900/60 to-slate-950/80 border-amber-500/25 text-white"
-          : "bg-gradient-to-br from-amber-50/95 via-white/95 to-amber-100/70 border-amber-200/90 text-slate-900 shadow-amber-500/5"
+          ? "bg-gradient-to-br from-amber-950/40 via-slate-900/80 to-slate-950/90 border-amber-500/25 text-white"
+          : "bg-gradient-to-br from-amber-50/95 via-white/95 to-amber-100/80 border-amber-200/90 text-slate-900 shadow-amber-500/5"
       }`}
     >
       {/* Decorative Gold Glow */}
