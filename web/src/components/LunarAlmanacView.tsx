@@ -351,39 +351,104 @@ export default function LunarAlmanacView({ isDarkTheme = true }: Props) {
               isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900 shadow-md"
             }`}
           >
-            <h3 className={`text-sm font-bold flex items-center gap-2 mb-4 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
-              <Clock className="w-4 h-4 text-amber-500" />
-              12 Canh Giờ Hoàng Đạo & Xuất Hành Lý Thuần Phong
-            </h3>
+            <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+              <h3 className={`text-base sm:text-lg font-bold flex items-center gap-2 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                <Clock className="w-5 h-5 text-amber-500" />
+                12 Canh Giờ Hoàng Đạo & Xuất Hành Lý Thuần Phong
+              </h3>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-amber-300/40"></span>
+                  Giờ Hoàng Đạo
+                </span>
+                <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                  <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                  Giờ Hắc Đạo
+                </span>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-3.5">
               {almanac.hours.map((h, i) => (
                 <div
                   key={i}
-                  className={`p-3 rounded-2xl border transition-all ${
-                    h.isBest
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
+                    h.isHoangDao
                       ? isDarkTheme
-                        ? "bg-amber-500/20 border-amber-400/40 text-amber-200 shadow-md shadow-amber-500/20"
-                        : "bg-amber-100 border-amber-300 text-amber-950 font-medium shadow-xs"
-                      : h.isHoangDao
-                      ? isDarkTheme
-                        ? "bg-blue-600/15 border-blue-400/30 text-blue-200"
-                        : "bg-blue-50 border-blue-200 text-blue-900"
+                        ? h.isBest
+                          ? "bg-gradient-to-br from-amber-500/25 via-amber-900/35 to-slate-900/90 border-amber-400/60 text-amber-100 shadow-md shadow-amber-500/15 ring-1 ring-amber-400/50"
+                          : "bg-gradient-to-br from-amber-500/15 via-amber-950/25 to-slate-900/80 border-amber-400/40 text-amber-100 shadow-xs ring-1 ring-amber-400/25"
+                        : h.isBest
+                          ? "bg-gradient-to-br from-amber-100 via-amber-50 to-orange-50 border-amber-300/90 text-amber-950 shadow-sm ring-1 ring-amber-300"
+                          : "bg-gradient-to-br from-amber-50/90 via-yellow-50/50 to-amber-100/40 border-amber-200/90 text-amber-950 shadow-2xs ring-1 ring-amber-200/60"
                       : isDarkTheme
-                      ? "bg-white/5 border-white/10 text-slate-300"
-                      : "bg-slate-50 border-slate-200 text-slate-700"
+                        ? "bg-white/5 border-white/10 text-slate-300 opacity-80 hover:opacity-100"
+                        : "bg-slate-50/90 border-slate-200/80 text-slate-700 opacity-85 hover:opacity-100"
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>Giờ {h.chi}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${isDarkTheme ? "bg-white/10" : "bg-slate-200/80 text-slate-700"}`}>
+                  <div className="flex items-center justify-between gap-1">
+                    <span
+                      className={`text-sm sm:text-base font-extrabold ${
+                        h.isHoangDao
+                          ? isDarkTheme ? "text-amber-200" : "text-amber-950"
+                          : isDarkTheme ? "text-white" : "text-slate-900"
+                      }`}
+                    >
+                      Giờ {h.chi}
+                    </span>
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                        h.isHoangDao
+                          ? isDarkTheme
+                            ? "bg-amber-400/20 text-amber-200 border border-amber-400/30"
+                            : "bg-amber-200/60 text-amber-900 border border-amber-300/60"
+                          : isDarkTheme
+                            ? "bg-white/10 text-slate-300"
+                            : "bg-slate-200/70 text-slate-700"
+                      }`}
+                    >
                       {h.range}
                     </span>
                   </div>
-                  <div className="text-[11px] font-semibold mt-1">
-                    {h.isHoangDao ? "🌟 Hoàng đạo" : "Hắc đạo"} • {h.lyThuanPhong.name}
+
+                  <div className="text-xs sm:text-[13px] font-bold mt-2 flex items-center gap-1.5 flex-wrap">
+                    {h.isHoangDao ? (
+                      <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-300 font-extrabold">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-500 fill-amber-400/30" />
+                        {h.isBest ? "Hoàng đạo (Đại cát)" : "Hoàng đạo"}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 dark:text-slate-400 font-medium">
+                        Hắc đạo
+                      </span>
+                    )}
+                    <span className="text-slate-300 dark:text-slate-600">•</span>
+                    <span
+                      className={
+                        h.lyThuanPhong.isGood
+                          ? isDarkTheme
+                            ? "text-emerald-300 font-bold"
+                            : "text-emerald-700 font-bold"
+                          : isDarkTheme
+                            ? "text-slate-300 font-medium"
+                            : "text-slate-600 font-medium"
+                      }
+                    >
+                      {h.lyThuanPhong.name}
+                    </span>
                   </div>
-                  <p className={`text-[10px] line-clamp-2 mt-1 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+
+                  <p
+                    className={`text-xs leading-relaxed line-clamp-3 mt-1.5 ${
+                      h.isHoangDao
+                        ? isDarkTheme
+                          ? "text-amber-100/75"
+                          : "text-amber-900/80"
+                        : isDarkTheme
+                          ? "text-slate-400"
+                          : "text-slate-600"
+                    }`}
+                  >
                     {h.lyThuanPhong.description}
                   </p>
                 </div>
