@@ -50,15 +50,33 @@ export default function Home() {
 
   // Merge settings với fallback an toàn tuyệt đối
   const settings: SettingsState = useMemo(() => {
-    const baseOrder = rawSettings?.widgetOrder || DEFAULT_WIDGET_ORDER;
+    // Nếu widgetOrder chưa có hoặc vẫn là thứ tự cũ (bắt đầu bằng hero, astronomy) -> tự động chuyển sang thứ tự chuẩn mới
+    const isOldOrder =
+      rawSettings?.widgetOrder &&
+      rawSettings.widgetOrder[0] === "hero" &&
+      rawSettings.widgetOrder[1] === "astronomy";
+
+    const baseOrder =
+      !rawSettings?.widgetOrder || isOldOrder
+        ? DEFAULT_WIDGET_ORDER
+        : rawSettings.widgetOrder;
+
     const validOrder = baseOrder.filter((id) => DEFAULT_WIDGET_ORDER.includes(id));
     DEFAULT_WIDGET_ORDER.forEach((id) => {
       if (!validOrder.includes(id)) validOrder.push(id);
     });
 
+    // Nếu người dùng đang ở cấu hình mặc định cũ (opacity 88, depth soft) -> chuyển sang chuẩn mặc định mới (opacity 65, depth glow, glass ultra)
+    const isOldDefaultAppearance =
+      rawSettings && rawSettings.customOpacity === 88 && rawSettings.depthLevel === "soft";
+
+    const baseSettings = isOldDefaultAppearance
+      ? { ...rawSettings, customOpacity: 65, depthLevel: "glow" as const, glassStyle: "ultra" as const }
+      : rawSettings;
+
     return {
       ...DEFAULT_APP_SETTINGS,
-      ...rawSettings,
+      ...baseSettings,
       widgets: {
         ...DEFAULT_WIDGET_LAYOUT,
         ...(rawSettings?.widgets || {})
