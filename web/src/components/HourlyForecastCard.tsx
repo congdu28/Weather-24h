@@ -100,12 +100,12 @@ export default function HourlyForecastCard({ hourly, isDarkTheme = true }: Props
       </div>
 
       {/* Horizontal Scroll Area */}
-      <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-1 scrollbar-thin">
+      <div className="flex items-stretch gap-3 overflow-x-auto pb-3 pt-3 px-1 scrollbar-thin">
         {hourly.map((h, i) => {
           const cond = getWeatherCondition(h.weatherCode, h.isDay);
           const isCurrent = i === 0;
-          const isMax = h.temperature === maxTemp;
-          const isMin = h.temperature === minTemp;
+          const isMax = range >= 2 && h.temperature === maxTemp;
+          const isMin = range >= 2 && h.temperature === minTemp;
 
           // Tính độ cao tương đối cho thanh mini biểu đồ (chiều cao từ 8px đến 42px)
           const barHeight = Math.round(8 + ((h.temperature - minTemp) / range) * 34);
@@ -113,7 +113,7 @@ export default function HourlyForecastCard({ hourly, isDarkTheme = true }: Props
           return (
             <div
               key={i}
-              className={`flex flex-col items-center justify-between p-3.5 rounded-2xl min-w-[92px] sm:min-w-[102px] transition-all border shrink-0 relative group hover:scale-[1.03] ${
+              className={`flex flex-col items-center justify-between p-3.5 rounded-2xl min-w-[92px] sm:min-w-[102px] transition-all border shrink-0 relative group hover:scale-[1.02] ${
                 isCurrent
                   ? isDarkTheme
                     ? "bg-blue-600/30 border-blue-400/60 shadow-lg shadow-blue-500/20 ring-1 ring-blue-400/40"
@@ -123,17 +123,24 @@ export default function HourlyForecastCard({ hourly, isDarkTheme = true }: Props
                   : "bg-white/80 border-slate-200/80 hover:bg-white shadow-xs"
               }`}
             >
-              {/* Badge đỉnh/đáy nhiệt */}
-              {isMax && !isCurrent && (
-                <span className="absolute -top-2 px-1.5 py-0.2 rounded-full bg-rose-500 text-white text-[9px] font-black shadow-xs">
-                  Max
-                </span>
-              )}
-              {isMin && !isCurrent && (
-                <span className="absolute -top-2 px-1.5 py-0.2 rounded-full bg-sky-500 text-white text-[9px] font-black shadow-xs">
-                  Min
-                </span>
-              )}
+              {/* Badge Top Indicator: MAX / MIN / Hiện tại (đặt an toàn bên trong thẻ, không bị che khuất) */}
+              <div className="h-5 flex items-center justify-center mb-1 w-full">
+                {isCurrent ? (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 text-[9px] font-black tracking-wider uppercase leading-none shadow-2xs">
+                    Hiện tại
+                  </span>
+                ) : isMax ? (
+                  <span className="px-2 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black tracking-wider uppercase leading-none shadow-xs">
+                    Max
+                  </span>
+                ) : isMin ? (
+                  <span className="px-2 py-0.5 rounded-full bg-sky-500 text-white text-[9px] font-black tracking-wider uppercase leading-none shadow-xs">
+                    Min
+                  </span>
+                ) : (
+                  <span className="h-2" />
+                )}
+              </div>
 
               {/* Giờ */}
               <span
