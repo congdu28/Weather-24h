@@ -216,3 +216,63 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .animate-pulse-subtle {
   animation: pulse-subtle 3s ease-in-out infinite;
 }
+
+/* Hiệu ứng biểu tượng thời tiết sinh động (Vivid Weather Icons) */
+@keyframes weather-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes weather-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes weather-rain-fall {
+  0% { transform: translateY(-4px); opacity: 0; }
+  35% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(6px); opacity: 0; }
+}
+
+@keyframes weather-flash {
+  0%, 100% { opacity: 0.95; filter: drop-shadow(0 0 2px rgba(250, 204, 21, 0.6)); }
+  22% { opacity: 1; filter: drop-shadow(0 0 8px rgba(254, 240, 138, 0.9)); }
+  25% { opacity: 0.35; filter: none; }
+  28% { opacity: 1; filter: drop-shadow(0 0 10px rgba(254, 240, 138, 1)); }
+}
+
+@keyframes weather-twinkle {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.animate-weather-spin {
+  animation: weather-spin-slow 22s linear infinite;
+  transform-origin: 32px 32px;
+}
+
+.animate-weather-float {
+  animation: weather-float 4.5s ease-in-out infinite;
+}
+
+.animate-weather-rain-1 {
+  animation: weather-rain-fall 1.3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-weather-rain-2 {
+  animation: weather-rain-fall 1.3s cubic-bezier(0.4, 0, 0.6, 1) 0.45s infinite;
+}
+
+.animate-weather-rain-3 {
+  animation: weather-rain-fall 1.3s cubic-bezier(0.4, 0, 0.6, 1) 0.9s infinite;
+}
+
+.animate-weather-flash {
+  animation: weather-flash 4s ease-in-out infinite;
+}
+
+.animate-weather-twinkle {
+  animation: weather-twinkle 2.5s ease-in-out infinite;
+}
+

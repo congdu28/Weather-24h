@@ -20,7 +20,9 @@ import {
   Sunrise,
   Sunset,
   Gauge,
-  Thermometer
+  Thermometer,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 
 interface Props {
@@ -204,113 +206,115 @@ export default function HeroWeatherCard({
             </button>
           )}
 
-          {/* 3. Nhiệt độ khổng lồ + Icon thời tiết động + Mô tả & Cảm giác như */}
-          <div className="pt-2 flex flex-row items-center gap-3 sm:gap-6 flex-wrap sm:flex-nowrap">
-            <div className="flex items-baseline shrink-0">
-              <span className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-light tracking-tighter leading-none select-none">
-                {current.temperature}°
-              </span>
-            </div>
+          {/* 3. Khối thời tiết trung tâm: Icon sống động, Nhiệt độ lớn và Thẻ chỉ số đồng đều */}
+          <div className="pt-2 w-full space-y-3.5">
+            {/* Hàng chính: Icon sống động lớn, Nhiệt độ và Tình trạng thời tiết */}
+            <div className="flex items-center gap-4 sm:gap-6 flex-wrap sm:flex-nowrap">
+              {/* Biểu tượng thời tiết sống động tự nhiên không còn viền hộp thô cứng */}
+              <div className="relative shrink-0 flex items-center justify-center p-1">
+                <div
+                  className={`absolute -inset-1 rounded-full blur-2xl opacity-45 transition-all duration-700 pointer-events-none ${
+                    cond.type === "sunny"
+                      ? "bg-amber-400/60"
+                      : cond.type === "rainy"
+                      ? "bg-sky-400/60"
+                      : cond.type === "thunder"
+                      ? "bg-purple-500/60"
+                      : "bg-teal-400/50"
+                  }`}
+                />
+                <WeatherIcon
+                  name={cond.icon}
+                  className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-22 lg:h-22 drop-shadow-md transition-transform duration-300 hover:scale-105"
+                />
+              </div>
 
-            <div className="space-y-2.5 min-w-0 flex-1">
-              {/* Icon thời tiết có hiệu ứng quầng sáng động (Dynamic Glow) */}
-              <div className="flex items-center gap-3">
-                <div className="relative group/icon shrink-0">
-                  <div
-                    className={`absolute -inset-1 rounded-2xl blur-md opacity-45 group-hover/icon:opacity-80 transition-all duration-500 ${
-                      cond.type === "sunny"
-                        ? "bg-amber-400"
-                        : cond.type === "rainy"
-                        ? "bg-sky-400"
-                        : cond.type === "thunder"
-                        ? "bg-purple-500"
-                        : "bg-teal-400"
-                    }`}
-                  />
-                  <div
-                    className={`relative p-2.5 sm:p-3 rounded-2xl border transition-all duration-300 group-hover/icon:scale-105 ${
-                      isDarkTheme
-                        ? "bg-slate-900/80 border-white/20 shadow-lg"
-                        : "bg-white/95 border-slate-200/90 shadow-md"
-                    }`}
-                  >
-                    <WeatherIcon name={cond.icon} className="w-9 h-9 sm:w-12 sm:h-12" />
-                  </div>
+              {/* Nhiệt độ lớn thanh thoát & Mô tả trạng thái thời tiết */}
+              <div className="flex flex-col justify-center min-w-0">
+                <div className="flex items-baseline">
+                  <span className="text-6xl sm:text-7xl lg:text-8xl font-light tracking-tighter leading-none select-none">
+                    {current.temperature}°
+                  </span>
                 </div>
-                <div className={`text-base sm:text-xl lg:text-2xl font-black tracking-tight ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                <div className={`text-lg sm:text-xl lg:text-2xl font-bold tracking-tight mt-1 ${
+                  isDarkTheme ? "text-white" : "text-slate-900"
+                }`}>
                   {cond.description}
                 </div>
               </div>
+            </div>
 
-              {/* Phần "Cảm giác như" nổi bật & Biên độ ngày */}
-              <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                <div
-                  className={`inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl border transition-all shadow-xs ${
-                    isDarkTheme
-                      ? "bg-amber-500/15 border-amber-400/40 text-amber-200 shadow-amber-950/20"
-                      : "bg-gradient-to-r from-amber-50 to-orange-50/90 border-amber-300/80 text-amber-950 shadow-amber-100/50"
-                  }`}
-                >
-                  <div className="p-1 rounded-lg bg-amber-500/20 text-amber-500 shrink-0">
-                    <Thermometer className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500 animate-pulse" />
-                  </div>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-xs sm:text-sm font-medium opacity-85">Cảm giác như:</span>
-                    <span className="text-base sm:text-lg lg:text-xl font-black text-amber-600 dark:text-amber-300 tracking-tight">
-                      {current.apparentTemperature}°C
-                    </span>
-                  </div>
-                </div>
-
-                <div
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-semibold ${
-                    isDarkTheme
-                      ? "bg-white/5 border-white/10 text-slate-300"
-                      : "bg-white/90 border-slate-200 text-slate-700 shadow-2xs"
-                  }`}
-                >
-                  <span className="opacity-75">Biên độ:</span>
-                  <span className="text-rose-500 font-extrabold">{maxTemp}°</span>
-                  <span className="opacity-40">/</span>
-                  <span className="text-sky-500 font-extrabold">{minTemp}°</span>
-                </div>
+            {/* Dải thẻ thông số phụ đồng bộ & cân đối (Cảm giác như + Cao nhất / Thấp nhất) */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {/* Thẻ Cảm giác như */}
+              <div
+                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-medium transition-all shadow-xs ${
+                  isDarkTheme
+                    ? "bg-amber-500/15 border-amber-400/35 text-amber-200"
+                    : "bg-amber-50/90 border-amber-300/80 text-amber-950 shadow-amber-100/40"
+                }`}
+              >
+                <Thermometer className="w-4 h-4 text-amber-500 shrink-0 animate-pulse" />
+                <span className="opacity-80">Cảm giác như:</span>
+                <strong className="text-sm sm:text-base font-bold text-amber-600 dark:text-amber-300">
+                  {current.apparentTemperature}°C
+                </strong>
               </div>
 
-              {/* Huy hiệu đối chiếu & chuẩn hóa Radar thực tế */}
-              {current.radarStatus && (
-                <div
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all mt-1 ${
-                    current.radarStatus.calibrated
-                      ? isDarkTheme
-                        ? "bg-emerald-500/15 border-emerald-400/40 text-emerald-300"
-                        : "bg-emerald-50 border-emerald-400 text-emerald-800 shadow-xs"
-                      : current.radarStatus.isRainObserved
-                        ? isDarkTheme
-                          ? "bg-sky-500/15 border-sky-400/40 text-sky-300"
-                          : "bg-sky-50 border-sky-400 text-sky-800 shadow-xs"
-                        : isDarkTheme
-                          ? "bg-white/5 border-white/10 text-slate-300"
-                          : "bg-slate-100 border-slate-300 text-slate-700"
-                  }`}
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full shrink-0 ${
-                      current.radarStatus.calibrated
-                        ? "bg-emerald-400 animate-pulse"
-                        : current.radarStatus.isRainObserved
-                          ? "bg-sky-400 animate-pulse"
-                          : "bg-slate-400"
-                    }`}
-                  />
-                  <span className="truncate max-w-[280px] sm:max-w-none">
-                    {current.radarStatus.note ||
-                      (current.radarStatus.calibrated
-                        ? "Đã hiệu chỉnh theo Radar thực tế (0 dBZ)"
-                        : "Khớp quan trắc Radar thực tế")}
-                  </span>
-                </div>
-              )}
+              {/* Thẻ Cao nhất & Thấp nhất (ghi rõ ràng thay vì chữ "Biên độ") */}
+              <div
+                className={`inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-medium transition-all shadow-xs ${
+                  isDarkTheme
+                    ? "bg-white/5 border-white/10 text-slate-300"
+                    : "bg-white/95 border-slate-200 text-slate-700 shadow-2xs"
+                }`}
+              >
+                <span className="inline-flex items-center gap-1 font-semibold text-rose-500">
+                  <ArrowUp className="w-3.5 h-3.5 stroke-[2.5]" />
+                  Cao nhất <strong className="font-bold">{maxTemp}°</strong>
+                </span>
+                <span className="h-3.5 w-px bg-slate-300 dark:bg-white/20" />
+                <span className="inline-flex items-center gap-1 font-semibold text-sky-500">
+                  <ArrowDown className="w-3.5 h-3.5 stroke-[2.5]" />
+                  Thấp nhất <strong className="font-bold">{minTemp}°</strong>
+                </span>
+              </div>
             </div>
+
+            {/* Huy hiệu đối chiếu & chuẩn hóa Radar thực tế */}
+            {current.radarStatus && (
+              <div
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                  current.radarStatus.calibrated
+                    ? isDarkTheme
+                      ? "bg-emerald-500/15 border-emerald-400/40 text-emerald-300"
+                      : "bg-emerald-50 border-emerald-400 text-emerald-800 shadow-xs"
+                    : current.radarStatus.isRainObserved
+                      ? isDarkTheme
+                        ? "bg-sky-500/15 border-sky-400/40 text-sky-300"
+                        : "bg-sky-50 border-sky-400 text-sky-800 shadow-xs"
+                      : isDarkTheme
+                        ? "bg-white/5 border-white/10 text-slate-300"
+                        : "bg-slate-100/90 border-slate-300 text-slate-700"
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full shrink-0 ${
+                    current.radarStatus.calibrated
+                      ? "bg-emerald-400 animate-pulse"
+                      : current.radarStatus.isRainObserved
+                        ? "bg-sky-400 animate-pulse"
+                        : "bg-slate-400"
+                  }`}
+                />
+                <span className="truncate max-w-[280px] sm:max-w-none">
+                  {current.radarStatus.note ||
+                    (current.radarStatus.calibrated
+                      ? "Đã hiệu chỉnh theo Radar thực tế (0 dBZ)"
+                      : "Khớp quan trắc Radar thực tế")}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -434,7 +438,7 @@ export default function HeroWeatherCard({
                   } ${uvColor}`}>{uvLabel}</span>
                 </div>
                 <div className={`text-lg sm:text-xl font-bold mt-1 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
-                  {current.uvIndex}{" "}
+                  {typeof current.uvIndex === "number" ? Math.round(current.uvIndex * 10) / 10 : current.uvIndex}{" "}
                   <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
                     / 11+
                   </span>
