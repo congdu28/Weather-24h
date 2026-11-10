@@ -13,7 +13,10 @@ import {
   Key,
   Info,
   Sliders,
-  LayoutGrid
+  LayoutGrid,
+  ChevronUp,
+  ChevronDown,
+  RotateCcw
 } from "lucide-react";
 import {
   CityLocation,
@@ -24,6 +27,8 @@ import {
   RadiusPreset,
   AccentPreset,
   WidgetLayoutState,
+  WidgetId,
+  DEFAULT_WIDGET_ORDER,
   AtmosphereParticlesState,
   ACCENT_THEMES
 } from "../types/weather";
@@ -54,8 +59,6 @@ export default function SettingsDialog({
   >("general");
   const [apiKeyInput, setApiKeyInput] = useState(settings.geminiApiKey || "");
 
-  if (!isOpen) return null;
-
   // Helpers cập nhật state an toàn
   const update = (partial: Partial<SettingsState>) => {
     onUpdateSettings({ ...settings, ...partial });
@@ -81,7 +84,47 @@ export default function SettingsDialog({
     });
   };
 
+  const WIDGET_DEF_MAP: Record<WidgetId, { label: string; desc: string }> = {
+    hero: { label: "Khối thời tiết chính (Hero)", desc: "Nhiệt độ lớn, vị trí, icon động & tóm tắt" },
+    astronomy: { label: "Quỹ đạo Mặt Trời & Tuần Trăng", desc: "Vòng cung mặt trời, giờ vàng & hình trăng" },
+    insights: { label: "Phân tích & Cảnh báo thông minh", desc: "Độ chênh nhiệt, cửa sổ mưa, chỉ số UV" },
+    cityCompare: { label: "So sánh thời tiết đa thành phố", desc: "Xem nhanh thời tiết các thành phố yêu thích" },
+    hourly: { label: "Dự báo 24 giờ tới (Hourly)", desc: "Biểu đồ xu hướng nhiệt độ, lượng mưa, gió" },
+    radar: { label: "Bản đồ Radar Mây Mưa trực tiếp", desc: "Theo dõi mưa thực tế từ vệ tinh & radar" },
+    lunar: { label: "Lịch Âm & Lịch Vạn Niên", desc: "Giờ hoàng đạo, can chi, việc nên làm" },
+    daily: { label: "Dự báo 7 ngày tới (Daily)", desc: "Chi tiết nhiệt độ tuần & dự báo mở rộng" },
+    aiStylist: { label: "AI Smart Stylist", desc: "Tư vấn phối đồ thông minh theo thời tiết" },
+    airQuality: { label: "Chất lượng không khí (AQI)", desc: "Chỉ số ô nhiễm bụi mịn PM2.5, PM10" },
+    lifestyle: { label: "Chỉ số Sinh hoạt & Đời sống", desc: "Rửa xe, giặt phơi, hoạt động thể thao" },
+    metrics: { label: "Lưới thông số khí tượng chi tiết", desc: "Áp suất, tầm nhìn, độ ẩm, gió giật" }
+  };
+
+  const currentOrder: WidgetId[] = React.useMemo(() => {
+    const base = settings.widgetOrder || DEFAULT_WIDGET_ORDER;
+    const valid = base.filter((id) => DEFAULT_WIDGET_ORDER.includes(id));
+    DEFAULT_WIDGET_ORDER.forEach((id) => {
+      if (!valid.includes(id)) valid.push(id);
+    });
+    return valid;
+  }, [settings.widgetOrder]);
+
+  const moveWidget = (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentOrder.length) return;
+    const newOrder = [...currentOrder];
+    const temp = newOrder[index];
+    newOrder[index] = newOrder[targetIndex];
+    newOrder[targetIndex] = temp;
+    update({ widgetOrder: newOrder });
+  };
+
+  const resetWidgetOrder = () => {
+    update({ widgetOrder: DEFAULT_WIDGET_ORDER });
+  };
+
   const currentAccent = ACCENT_THEMES[settings.accentColor] || ACCENT_THEMES.amber;
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
@@ -503,76 +546,138 @@ export default function SettingsDialog({
               </div>
             )}
 
-            {/* 2. BỐ CỤC & KHỐI HIỂN THỊ (LAYOUT WIDGETS MANAGER) */}
+            {/* 2. BỐ CỤC & THỨ TỰ KHỐI HIỂN THỊ (REORDER & VISIBILITY) */}
             {activeTab === "layout" && (
               <div className="space-y-4 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                   <div>
                     <h3 className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
-                      Tùy biến hiển thị các khối tính năng
+                      Tùy biến vị trí trên dưới & hiển thị
                     </h3>
                     <p className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
-                      Bật/tắt các khối để giao diện gọn gàng hoặc đầy đủ theo ý thích của bạn
+                      Nhấn nút mũi tên ⬆️ / ⬇️ để thay đổi thứ tự ưu tiên các khối trên trang chủ
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      const allEnabled = Object.keys(settings.widgets).reduce((acc, k) => {
-                        acc[k as keyof WidgetLayoutState] = true;
-                        return acc;
-                      }, {} as WidgetLayoutState);
-                      update({ widgets: allEnabled });
-                    }}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
-                  >
-                    Bật tất cả
-                  </button>
+                  <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                    <button
+                      onClick={resetWidgetOrder}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-colors ${
+                        isDarkTheme
+                          ? "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                          : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
+                      }`}
+                      title="Đặt lại thứ tự ban đầu"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Thứ tự mặc định</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        const allEnabled = Object.keys(settings.widgets).reduce((acc, k) => {
+                          acc[k as keyof WidgetLayoutState] = true;
+                          return acc;
+                        }, {} as WidgetLayoutState);
+                        update({ widgets: allEnabled });
+                      }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400 transition-colors shadow-xs"
+                    >
+                      Bật tất cả
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  {[
-                    { id: "hero", label: "Khối thời tiết chính (Hero)", desc: "Nhiệt độ lớn, vị trí, icon động & tóm tắt" },
-                    { id: "astronomy", label: "Quỹ đạo Mặt Trời & Tuần Trăng", desc: "Vòng cung mặt trời, giờ vàng & hình trăng" },
-                    { id: "insights", label: "Phân tích & Cảnh báo thông minh", desc: "Độ chênh nhiệt, cửa sổ mưa, chỉ số UV" },
-                    { id: "cityCompare", label: "So sánh thời tiết đa thành phố", desc: "Xem nhanh thời tiết các thành phố yêu thích" },
-                    { id: "hourly", label: "Dự báo 24 giờ tới (Hourly)", desc: "Biểu đồ xu hướng nhiệt độ, lượng mưa, gió" },
-                    { id: "radar", label: "Bản đồ Radar Mây Mưa trực tiếp", desc: "Theo dõi mưa thực tế từ vệ tinh & radar" },
-                    { id: "lunar", label: "Lịch Âm & Lịch Vạn Niên", desc: "Giờ hoàng đạo, can chi, việc nên làm" },
-                    { id: "daily", label: "Dự báo 7 ngày tới (Daily)", desc: "Chi tiết nhiệt độ tuần & dự báo mở rộng" },
-                    { id: "aiStylist", label: "AI Smart Stylist", desc: "Tư vấn phối đồ thông minh theo thời tiết" },
-                    { id: "airQuality", label: "Chất lượng không khí (AQI)", desc: "Chỉ số ô nhiễm bụi mịn PM2.5, PM10" },
-                    { id: "lifestyle", label: "Chỉ số Sinh hoạt & Đời sống", desc: "Rửa xe, giặt phơi, hoạt động thể thao" },
-                    { id: "metrics", label: "Lưới thông số khí tượng chi tiết", desc: "Áp suất, tầm nhìn, độ ẩm, gió giật" }
-                  ].map((widget) => {
-                    const isChecked = settings.widgets[widget.id as keyof WidgetLayoutState] ?? true;
+                {/* Ordered Widgets List */}
+                <div className="space-y-2 pt-1">
+                  {currentOrder.map((widgetId, idx) => {
+                    const meta = WIDGET_DEF_MAP[widgetId] || {
+                      label: widgetId,
+                      desc: "Khối chức năng"
+                    };
+                    const isChecked = settings.widgets[widgetId] ?? true;
+                    const isFirst = idx === 0;
+                    const isLast = idx === currentOrder.length - 1;
+
                     return (
-                      <label
-                        key={widget.id}
-                        className={`flex items-start justify-between p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                      <div
+                        key={widgetId}
+                        className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border transition-all ${
                           isChecked
                             ? isDarkTheme
                               ? "bg-white/5 border-white/15"
                               : "bg-slate-50 border-slate-300 shadow-xs"
                             : isDarkTheme
-                            ? "bg-white/[0.02] border-white/5 opacity-60"
-                            : "bg-slate-100/50 border-slate-200 opacity-60"
+                            ? "bg-white/[0.02] border-white/5 opacity-50"
+                            : "bg-slate-100/50 border-slate-200 opacity-50"
                         }`}
                       >
-                        <div className="pr-3">
-                          <div className={`text-xs font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
-                            {widget.label}
-                          </div>
-                          <div className={`text-[11px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
-                            {widget.desc}
+                        {/* Left: Position number + Name + Desc */}
+                        <div className="flex items-center gap-3 min-w-0 mr-3">
+                          <span
+                            className="w-7 h-7 rounded-xl flex items-center justify-center text-xs font-black shrink-0 shadow-xs"
+                            style={{
+                              backgroundColor: `rgba(${currentAccent.rgb}, ${isDarkTheme ? 0.25 : 0.15})`,
+                              color: currentAccent.hex
+                            }}
+                          >
+                            #{idx + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <div className={`text-xs font-bold truncate ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                              {meta.label}
+                            </div>
+                            <div className={`text-[11px] truncate ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                              {meta.desc}
+                            </div>
                           </div>
                         </div>
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => updateWidget(widget.id as keyof WidgetLayoutState, e.target.checked)}
-                          className="w-5 h-5 accent-amber-500 rounded cursor-pointer mt-0.5 shrink-0"
-                        />
-                      </label>
+
+                        {/* Right: Up / Down Reorder buttons + Enable/Disable checkbox */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {/* Move Up */}
+                          <button
+                            type="button"
+                            onClick={() => moveWidget(idx, "up")}
+                            disabled={isFirst}
+                            className={`p-1.5 rounded-xl border transition-colors ${
+                              isFirst
+                                ? "opacity-25 cursor-not-allowed border-transparent text-slate-500"
+                                : isDarkTheme
+                                ? "bg-white/5 border-white/10 hover:bg-white/15 text-slate-200"
+                                : "bg-white border-slate-200 hover:bg-slate-100 text-slate-700 shadow-xs"
+                            }`}
+                            title="Di chuyển lên trên"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </button>
+
+                          {/* Move Down */}
+                          <button
+                            type="button"
+                            onClick={() => moveWidget(idx, "down")}
+                            disabled={isLast}
+                            className={`p-1.5 rounded-xl border transition-colors ${
+                              isLast
+                                ? "opacity-25 cursor-not-allowed border-transparent text-slate-500"
+                                : isDarkTheme
+                                ? "bg-white/5 border-white/10 hover:bg-white/15 text-slate-200"
+                                : "bg-white border-slate-200 hover:bg-slate-100 text-slate-700 shadow-xs"
+                            }`}
+                            title="Di chuyển xuống dưới"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+
+                          {/* Visibility Checkbox */}
+                          <label className="ml-2 cursor-pointer p-1" title="Bật/Tắt khối này">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => updateWidget(widgetId, e.target.checked)}
+                              className="w-5 h-5 accent-amber-500 rounded cursor-pointer block"
+                            />
+                          </label>
+                        </div>
+                      </div>
                     );
                   })}
                 </div>

@@ -89,6 +89,35 @@ export type BlurPreset = "none" | "low" | "medium" | "heavy";
 export type RadiusPreset = "compact" | "smooth" | "curvy";
 export type AccentPreset = "amber" | "ocean" | "violet" | "emerald" | "rose" | "adaptive";
 
+export type WidgetId =
+  | "hero"
+  | "astronomy"
+  | "insights"
+  | "cityCompare"
+  | "hourly"
+  | "radar"
+  | "lunar"
+  | "daily"
+  | "aiStylist"
+  | "airQuality"
+  | "lifestyle"
+  | "metrics";
+
+export const DEFAULT_WIDGET_ORDER: WidgetId[] = [
+  "hero",
+  "astronomy",
+  "insights",
+  "cityCompare",
+  "hourly",
+  "radar",
+  "lunar",
+  "daily",
+  "aiStylist",
+  "airQuality",
+  "lifestyle",
+  "metrics"
+];
+
 export interface WidgetLayoutState {
   hero: boolean;
   astronomy: boolean; // Quỹ đạo Mặt trời & Tuần trăng
@@ -123,6 +152,7 @@ export interface AppSettings {
   blurLevel: BlurPreset;
   borderRadius: RadiusPreset;
   widgets: WidgetLayoutState;
+  widgetOrder: WidgetId[];
   atmosphereEnabled: boolean;
   atmospherePerformance: "high" | "saver";
   atmosphereParticles: AtmosphereParticlesState;
@@ -167,6 +197,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   blurLevel: "medium",
   borderRadius: "smooth",
   widgets: DEFAULT_WIDGET_LAYOUT,
+  widgetOrder: DEFAULT_WIDGET_ORDER,
   atmosphereEnabled: true,
   atmospherePerformance: "high",
   atmosphereParticles: DEFAULT_ATMOSPHERE_PARTICLES,

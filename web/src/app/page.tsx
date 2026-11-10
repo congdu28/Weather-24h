@@ -24,6 +24,7 @@ import {
   WeatherData,
   DEFAULT_APP_SETTINGS,
   DEFAULT_WIDGET_LAYOUT,
+  DEFAULT_WIDGET_ORDER,
   DEFAULT_ATMOSPHERE_PARTICLES,
   ACCENT_THEMES
 } from "../types/weather";
@@ -49,6 +50,12 @@ export default function Home() {
 
   // Merge settings với fallback an toàn tuyệt đối
   const settings: SettingsState = useMemo(() => {
+    const baseOrder = rawSettings?.widgetOrder || DEFAULT_WIDGET_ORDER;
+    const validOrder = baseOrder.filter((id) => DEFAULT_WIDGET_ORDER.includes(id));
+    DEFAULT_WIDGET_ORDER.forEach((id) => {
+      if (!validOrder.includes(id)) validOrder.push(id);
+    });
+
     return {
       ...DEFAULT_APP_SETTINGS,
       ...rawSettings,
@@ -56,6 +63,7 @@ export default function Home() {
         ...DEFAULT_WIDGET_LAYOUT,
         ...(rawSettings?.widgets || {})
       },
+      widgetOrder: validOrder,
       atmosphereParticles: {
         ...DEFAULT_ATMOSPHERE_PARTICLES,
         ...(rawSettings?.atmosphereParticles || {})
@@ -422,109 +430,129 @@ export default function Home() {
           </div>
         )}
 
-        {/* TAB 1: THỜI TIẾT CHÍNH (ĐỒNG BỘ APK & ĐẦY ĐỦ CÁC KHỐI TÙY BIẾN) */}
+        {/* TAB 1: THỜI TIẾT CHÍNH (ĐỒNG BỘ APK & THEO THỨ TỰ TÙY BIẾN CỦA NGƯỜI DÙNG) */}
         {activeTab === "weather" && weatherData && (
           <div className="space-y-5 sm:space-y-6 animate-in fade-in duration-300">
-            {/* 1. SEAMLESS HERO DISPLAY */}
-            {widgets.hero && (
-              <HeroWeatherCard
-                current={weatherData.current}
-                todayForecast={weatherData.daily[0]}
-                location={weatherData.location}
-                airQuality={weatherData.airQuality}
-                isFavorite={isFavorite}
-                onToggleFavorite={toggleFavorite}
-                onLocationClick={() => setIsSearchOpen(true)}
-                onLunarClick={() => setActiveTab("lunar")}
-                showLunar={settings.showLunar}
-                isDarkTheme={isDarkTheme}
-              />
-            )}
-
-            {/* 2. QUỸ ĐẠO MẶT TRỜI & TUẦN TRĂNG THIÊN VĂN (TÍNH NĂNG MỚI) */}
-            {widgets.astronomy && (
-              <AstronomyArcCard
-                current={weatherData.current}
-                todayForecast={weatherData.daily[0]}
-                isDarkTheme={isDarkTheme}
-              />
-            )}
-
-            {/* 3. PHÂN TÍCH & CẢNH BÁO THÔNG MINH (TÍNH NĂNG MỚI) */}
-            {widgets.insights && (
-              <SmartInsightsCard
-                current={weatherData.current}
-                todayForecast={weatherData.daily[0]}
-                hourly={weatherData.hourly}
-                isDarkTheme={isDarkTheme}
-              />
-            )}
-
-            {/* 4. SO SÁNH THỜI TIẾT ĐA THÀNH PHỐ (TÍNH NĂNG MỚI) */}
-            {widgets.cityCompare && (
-              <CityCompareCard
-                currentCity={location}
-                favoriteCities={favoriteCities}
-                onSelectCity={handleSelectLocation}
-                onOpenSearch={() => setIsSearchOpen(true)}
-                isDarkTheme={isDarkTheme}
-              />
-            )}
-
-            {/* 5. DỰ BÁO 24 GIỜ TỚI (HOURLY NÂNG CẤP XU HƯỚNG) */}
-            {widgets.hourly && (
-              <HourlyForecastCard hourly={weatherData.hourly} isDarkTheme={isDarkTheme} />
-            )}
-
-            {/* 6. BẢN ĐỒ RADAR MÂY MƯA TRỰC TIẾP */}
-            {widgets.radar && (
-              <WeatherRadarCard location={weatherData.location} isDarkTheme={isDarkTheme} />
-            )}
-
-            {/* 7. KHỐI ÂM LỊCH & LỊCH VẠN NIÊN VIỆT NAM */}
-            {widgets.lunar && settings.showLunar && (
-              <VietnameseLunarCard
-                onOpenDetailedAlmanac={() => setActiveTab("lunar")}
-                isDarkTheme={isDarkTheme}
-              />
-            )}
-
-            {/* 8. DỰ BÁO 7 NGÀY TỚI */}
-            {widgets.daily && (
-              <DailyForecastCard
-                daily={weatherData.daily}
-                showLunar={settings.showLunar}
-                isDarkTheme={isDarkTheme}
-              />
-            )}
-
-            {/* 9. AI SMART STYLIST (TƯ VẤN TRANG PHỤC THÔNG MINH) */}
-            {widgets.aiStylist && (
-              <AiStylistCard
-                current={weatherData.current}
-                todayForecast={weatherData.daily[0]}
-                isDarkTheme={isDarkTheme}
-              />
-            )}
-
-            {/* 10. CHẤT LƯỢNG KHÔNG KHÍ (AIR QUALITY AQI, PM2.5, PM10) */}
-            {widgets.airQuality && (
-              <AirQualityCard airQuality={weatherData.airQuality} isDarkTheme={isDarkTheme} />
-            )}
-
-            {/* 11. CHỈ SỐ SINH HOẠT & ĐỜI SỐNG */}
-            {widgets.lifestyle && (
-              <LifestyleCard items={weatherData.lifestyles} isDarkTheme={isDarkTheme} />
-            )}
-
-            {/* 12. LƯỚI CHỈ SỐ THỜI TIẾT CHI TIẾT */}
-            {widgets.metrics && (
-              <WeatherMetricsGrid
-                current={weatherData.current}
-                todayForecast={weatherData.daily[0]}
-                isDarkTheme={isDarkTheme}
-              />
-            )}
+            {settings.widgetOrder.map((widgetId) => {
+              if (!widgets[widgetId]) return null;
+              switch (widgetId) {
+                case "hero":
+                  return (
+                    <HeroWeatherCard
+                      key="hero"
+                      current={weatherData.current}
+                      todayForecast={weatherData.daily[0]}
+                      location={weatherData.location}
+                      airQuality={weatherData.airQuality}
+                      isFavorite={isFavorite}
+                      onToggleFavorite={toggleFavorite}
+                      onLocationClick={() => setIsSearchOpen(true)}
+                      onLunarClick={() => setActiveTab("lunar")}
+                      showLunar={settings.showLunar}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "astronomy":
+                  return (
+                    <AstronomyArcCard
+                      key="astronomy"
+                      current={weatherData.current}
+                      todayForecast={weatherData.daily[0]}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "insights":
+                  return (
+                    <SmartInsightsCard
+                      key="insights"
+                      current={weatherData.current}
+                      todayForecast={weatherData.daily[0]}
+                      hourly={weatherData.hourly}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "cityCompare":
+                  return (
+                    <CityCompareCard
+                      key="cityCompare"
+                      currentCity={location}
+                      favoriteCities={favoriteCities}
+                      onSelectCity={handleSelectLocation}
+                      onOpenSearch={() => setIsSearchOpen(true)}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "hourly":
+                  return (
+                    <HourlyForecastCard
+                      key="hourly"
+                      hourly={weatherData.hourly}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "radar":
+                  return (
+                    <WeatherRadarCard
+                      key="radar"
+                      location={weatherData.location}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "lunar":
+                  return settings.showLunar ? (
+                    <VietnameseLunarCard
+                      key="lunar"
+                      onOpenDetailedAlmanac={() => setActiveTab("lunar")}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  ) : null;
+                case "daily":
+                  return (
+                    <DailyForecastCard
+                      key="daily"
+                      daily={weatherData.daily}
+                      showLunar={settings.showLunar}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "aiStylist":
+                  return (
+                    <AiStylistCard
+                      key="aiStylist"
+                      current={weatherData.current}
+                      todayForecast={weatherData.daily[0]}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "airQuality":
+                  return (
+                    <AirQualityCard
+                      key="airQuality"
+                      airQuality={weatherData.airQuality}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "lifestyle":
+                  return (
+                    <LifestyleCard
+                      key="lifestyle"
+                      items={weatherData.lifestyles}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                case "metrics":
+                  return (
+                    <WeatherMetricsGrid
+                      key="metrics"
+                      current={weatherData.current}
+                      todayForecast={weatherData.daily[0]}
+                      isDarkTheme={isDarkTheme}
+                    />
+                  );
+                default:
+                  return null;
+              }
+            })}
           </div>
         )}
 
