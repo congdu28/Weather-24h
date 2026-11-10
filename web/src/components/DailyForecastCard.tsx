@@ -91,18 +91,29 @@ export default function DailyForecastCard({
                 {/* Weather Icon & Rain */}
                 <div className="flex items-center gap-2 shrink-0 w-24 sm:w-28">
                   <WeatherIcon name={cond.icon} className="w-6 h-6" />
-                  {day.precipitationProbabilityMax > 0 ? (
+                  {day.precipitationProbabilityMax >= 20 ? (
                     <div
-                      className={`flex items-center gap-0.5 text-[11px] sm:text-xs font-medium ${
+                      className={`flex items-center gap-0.5 text-[11px] sm:text-xs font-semibold ${
                         isDarkTheme ? "text-blue-300" : "text-blue-600"
                       }`}
+                      title={`Lượng mưa dự báo: ${day.precipitationSum} mm`}
                     >
-                      <Droplets className="w-3 h-3 text-blue-500" />
+                      <Droplets className="w-3 h-3 text-blue-500 shrink-0" />
                       <span>{day.precipitationProbabilityMax}%</span>
                     </div>
+                  ) : day.precipitationProbabilityMax > 0 ? (
+                    <span
+                      className={`text-[11px] sm:text-xs flex items-center gap-0.5 ${
+                        isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"
+                      }`}
+                      title={`Xác suất mưa thấp (${day.precipitationProbabilityMax}%), lượng mưa ${day.precipitationSum} mm`}
+                    >
+                      <Droplets className="w-2.5 h-2.5 opacity-50 shrink-0" />
+                      <span>{day.precipitationProbabilityMax}%</span>
+                    </span>
                   ) : (
                     <span className={`text-[11px] sm:text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
-                      Ít mưa
+                      Khô ráo
                     </span>
                   )}
                 </div>
@@ -220,7 +231,13 @@ export default function DailyForecastCard({
                   Xác suất mưa
                 </div>
                 <div className={`text-sm font-bold mt-1 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
-                  {selectedDay.precipitationProbabilityMax}% ({selectedDay.precipitationSum} mm)
+                  {selectedDay.precipitationProbabilityMax}% ({selectedDay.precipitationSum} mm{
+                    selectedDay.precipitationSum <= 0.5 && selectedDay.precipitationSum > 0
+                      ? " • Vết mưa không đáng kể"
+                      : selectedDay.precipitationSum === 0
+                      ? " • Khô ráo"
+                      : ""
+                  })
                 </div>
               </div>
 

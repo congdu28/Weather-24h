@@ -76,7 +76,7 @@ export function getWeatherCondition(code: number, isDay = true): {
       };
     case 2:
       return {
-        description: "Mây rải rác",
+        description: isDay ? "Mây rải rác, hửng nắng" : "Đêm mây rải rác",
         icon: isDay ? "CloudSun" : "CloudMoon",
         gradient: "from-sky-700/30 via-slate-800/40 to-slate-950",
         type: "cloudy"
@@ -115,17 +115,23 @@ export function getWeatherCondition(code: number, isDay = true): {
     case 63:
     case 65:
       return {
-        description: "Mưa rào to",
+        description: "Mưa to diện rộng",
         icon: "CloudRain",
         gradient: "from-blue-950/70 via-slate-900 to-black",
         type: "rainy"
       };
     case 80:
+      return {
+        description: isDay ? "Nắng xen mưa rào thoáng qua" : "Mưa rào nhẹ thoáng qua",
+        icon: isDay ? "CloudSunRain" : "CloudRain",
+        gradient: "from-blue-700/30 via-slate-800/40 to-slate-950",
+        type: "rainy"
+      };
     case 81:
     case 82:
       return {
         description: "Mưa rào từng đợt",
-        icon: "CloudLightning",
+        icon: "CloudRain",
         gradient: "from-indigo-950/60 via-slate-900 to-black",
         type: "rainy"
       };
@@ -133,8 +139,8 @@ export function getWeatherCondition(code: number, isDay = true): {
     case 96:
     case 99:
       return {
-        description: "Dông, có sấm sét nguy hiểm",
-        icon: "Zap",
+        description: "Mưa dông, có sấm sét",
+        icon: "CloudLightning",
         gradient: "from-purple-950/60 via-indigo-950 to-black",
         type: "thunder"
       };
@@ -146,6 +152,103 @@ export function getWeatherCondition(code: number, isDay = true): {
         type: "rainy"
       };
   }
+}
+
+/**
+ * Hiệu chuẩn thông minh mã thời tiết cho từng ngày trong chuỗi dự báo 7 ngày.
+ * Khắc phục triệt để nhược điểm của Open-Meteo khi chỉ lấy MAX(weather_code) của 24h,
+ * khiến những ngày nắng ấm (UV cao 6-8, 25-32°C) hoặc chỉ có vết ẩm 0.1-0.3mm ban đêm
+ * bị gán nhầm thành ngày "Mưa" (CloudRain) làm người dùng lầm tưởng tỉ lệ mưa rất cao.
+ */
+export function calibrateDailyWeatherCode(params: {
+  rawCode: number;
+  rainMm: number;
+  rainProb: number;
+  maxTemp: number;
+  minTemp: number;
+  uvMax: number;
+  isToday?: boolean;
+  currentWeatherCode?: number;
+  hourlyList?: HourlyForecast[];
+}): number {
+  const { rawCode, rainMm, rainProb, maxTemp, uvMax, isToday, currentWeatherCode, hourlyList } = params;
+
+  // 1. Đối với "Hôm nay" (Ngày 0):
+  // Đồng bộ với trạng thái thời tiết thực tế ban ngày đã qua chuẩn hóa
+  if (isToday && currentWeatherCode !== undefined) {
+    const isCurrentDry = [0, 1, 2, 3].includes(currentWeatherCode);
+    if (isCurrentDry && rainMm <= 0.5 && rainProb < 50) {
+      return currentWeatherCode;
+    }
+  }
+
+  // 2. Thống kê dữ liệu các giờ ban ngày
+  let daytimeRainHours = 0;
+  let daytimeThunderHours = 0;
+  if (hourlyList && hourlyList.length > 0) {
+    const dayHours = hourlyList.filter(h => h.isDay);
+    for (const h of dayHours) {
+      if (h.weatherCode >= 95 && (h.precipitation >= 0.4 || h.precipitationProbability >= 45)) {
+        daytimeThunderHours++;
+      }
+      if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(h.weatherCode) && (h.precipitation >= 0.25 || h.precipitationProbability >= 45)) {
+        daytimeRainHours++;
+      }
+    }
+  }
+
+  const isRainCode = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(rawCode);
+  const isThunderCode = [95, 96, 99].includes(rawCode);
+  const isFogCode = [45, 48].includes(rawCode);
+
+  // 3. Khử sương mù ảo vào ban ngày khi trời nắng/nhiệt độ cao
+  if (isFogCode && (maxTemp >= 24 || uvMax >= 4 || rainProb < 20)) {
+    return uvMax >= 6 ? 1 : 2;
+  }
+
+  // 4. Khử mã sấm sét ảo khi không có mưa dông thực tế vào ban ngày
+  if (isThunderCode) {
+    if (daytimeThunderHours === 0 && (rainMm < 1.5 || rainProb < 45)) {
+      return rainProb >= 40 && rainMm >= 0.8 ? 80 : 2;
+    }
+    return rawCode;
+  }
+
+  // 5. TRƯỜNG HỢP CỐT LÕI: Lượng mưa không đáng kể (Vết mưa <= 0.5mm)
+  // Khắc phục triệt để trường hợp 0.3mm mưa, UV cao 6 nhưng icon báo mưa
+  if (rainMm <= 0.5) {
+    if (rainProb < 50 || daytimeRainHours === 0) {
+      if (uvMax >= 6 || maxTemp >= 30) {
+        return 1; // Trời hầu như không mây (Nắng đẹp)
+      } else if (uvMax >= 3 || maxTemp >= 23) {
+        return 2; // Mây rải rác, hửng nắng
+      } else {
+        return 3; // Trời nhiều mây
+      }
+    }
+    return uvMax >= 5 ? 80 : 51;
+  }
+
+  // 6. Lượng mưa nhỏ (0.5mm < rainMm < 1.5mm)
+  if (rainMm < 1.5) {
+    if (rainProb < 40 && uvMax >= 5) {
+      return 2; // Mây rải rác, hửng nắng
+    }
+    if (uvMax >= 5) {
+      return 80; // Nắng xen mưa rào thoáng qua (CloudSunRain)
+    }
+    return 51; // Mưa phùn nhẹ
+  }
+
+  // 7. Lượng mưa đo được (>= 1.5mm)
+  if (isRainCode) {
+    if (uvMax >= 6 && rainProb < 50) {
+      return 80; // Nắng xen mưa rào (CloudSunRain)
+    }
+    return rawCode;
+  }
+
+  return rawCode;
 }
 
 function calculateLifestyles(current: CurrentWeather, daily: DailyForecast[]): LifestyleItem[] {
@@ -437,13 +540,22 @@ export async function fetchFullWeather(
   for (let i = 0; i < times.length && hourly.length < 24; i++) {
     const itemDate = new Date(times[i]);
     if (itemDate.getTime() >= Date.now() - 3600000) {
+      let hCode = hourlyData.weather_code[i];
+      const hPrecip = hourlyData.precipitation[i] ?? 0;
+      const hProb = hourlyData.precipitation_probability[i] ?? 0;
+
+      // Khử mã mưa ảo cho giờ khô ráo (lượng mưa < 0.15mm và xác suất mưa rất thấp < 30%)
+      if ([51, 53, 55, 61, 80].includes(hCode) && hPrecip < 0.15 && hProb < 30) {
+        hCode = 2; // Mây rải rác
+      }
+
       hourly.push({
         time: times[i],
         hour: `${itemDate.getHours().toString().padStart(2, "0")}:00`,
         temperature: Math.round(hourlyData.temperature_2m[i]),
-        weatherCode: hourlyData.weather_code[i],
-        precipitationProbability: hourlyData.precipitation_probability[i] ?? 0,
-        precipitation: hourlyData.precipitation[i] ?? 0,
+        weatherCode: hCode,
+        precipitationProbability: hProb,
+        precipitation: hPrecip,
         windSpeed: Math.round(hourlyData.wind_speed_10m[i]),
         relativeHumidity: hourlyData.relative_humidity_2m[i],
         isDay: hourlyData.is_day ? hourlyData.is_day[i] === 1 : (itemDate.getHours() >= 6 && itemDate.getHours() < 18)
@@ -456,7 +568,7 @@ export async function fetchFullWeather(
     hourly[0].weatherCode = finalWeatherCode;
   }
 
-  // Daily 7 days
+  // Daily 7 days - Hiệu chuẩn thông minh trạng thái từng ngày
   const dailyData = weatherRes.daily;
   const daily: DailyForecast[] = [];
   const dTimes: string[] = dailyData.time || [];
@@ -464,15 +576,55 @@ export async function fetchFullWeather(
 
   for (let i = 0; i < dTimes.length; i++) {
     const d = new Date(dTimes[i]);
+    const rawCode = dailyData.weather_code[i];
+    const rainSum = Math.round((dailyData.precipitation_sum[i] ?? 0) * 10) / 10;
+    const rainProb = dailyData.precipitation_probability_max[i] ?? 0;
+    const maxTemp = Math.round(dailyData.temperature_2m_max[i]);
+    const minTemp = Math.round(dailyData.temperature_2m_min[i]);
+    const uvMax = dailyData.uv_index_max ? Math.round(dailyData.uv_index_max[i]) : 0;
+
+    // Trích xuất các giờ thuộc ngày này để phân tích chuyên sâu
+    const dayHours: HourlyForecast[] = [];
+    if (hourlyData.time) {
+      for (let h = 0; h < hourlyData.time.length; h++) {
+        if (hourlyData.time[h].startsWith(dTimes[i])) {
+          const itemDate = new Date(hourlyData.time[h]);
+          dayHours.push({
+            time: hourlyData.time[h],
+            hour: `${itemDate.getHours().toString().padStart(2, "0")}:00`,
+            temperature: Math.round(hourlyData.temperature_2m[h]),
+            weatherCode: hourlyData.weather_code[h],
+            precipitationProbability: hourlyData.precipitation_probability[h] ?? 0,
+            precipitation: hourlyData.precipitation[h] ?? 0,
+            windSpeed: Math.round(hourlyData.wind_speed_10m[h]),
+            relativeHumidity: hourlyData.relative_humidity_2m[h],
+            isDay: hourlyData.is_day ? hourlyData.is_day[h] === 1 : (itemDate.getHours() >= 6 && itemDate.getHours() < 18)
+          });
+        }
+      }
+    }
+
+    const calibratedCode = calibrateDailyWeatherCode({
+      rawCode,
+      rainMm: rainSum,
+      rainProb,
+      maxTemp,
+      minTemp,
+      uvMax,
+      isToday: i === 0,
+      currentWeatherCode: finalWeatherCode,
+      hourlyList: dayHours
+    });
+
     daily.push({
       date: dTimes[i],
       dayOfWeek: i === 0 ? "Hôm nay" : daysOfWeek[d.getDay()],
-      weatherCode: dailyData.weather_code[i],
-      tempMax: Math.round(dailyData.temperature_2m_max[i]),
-      tempMin: Math.round(dailyData.temperature_2m_min[i]),
-      precipitationProbabilityMax: dailyData.precipitation_probability_max[i] ?? 0,
-      precipitationSum: dailyData.precipitation_sum[i] ?? 0,
-      uvIndexMax: dailyData.uv_index_max ? Math.round(dailyData.uv_index_max[i]) : 0,
+      weatherCode: calibratedCode,
+      tempMax: maxTemp,
+      tempMin: minTemp,
+      precipitationProbabilityMax: rainProb,
+      precipitationSum: rainSum,
+      uvIndexMax: uvMax,
       sunrise: dailyData.sunrise ? dailyData.sunrise[i].split("T")[1] : "06:00",
       sunset: dailyData.sunset ? dailyData.sunset[i].split("T")[1] : "18:00"
     });
