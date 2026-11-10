@@ -19,10 +19,8 @@ export default function WeatherRadarCard({ location, isDarkTheme = true }: Props
 
   return (
     <div
-      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 border transition-all ${
-        isDarkTheme
-          ? "bg-slate-900/85 border-white/10 text-white shadow-xl"
-          : "bg-white/90 border-slate-200/90 text-slate-900 shadow-xl shadow-sky-500/5"
+      className={`weather-card glass-specular p-4 sm:p-6 ${
+        isDarkTheme ? "text-white" : "text-slate-900"
       }`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 sm:pb-4 border-b border-black/5 dark:border-white/10">

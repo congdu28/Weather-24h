@@ -75,10 +75,8 @@ export default function HeroWeatherCard({
 
   return (
     <div
-      className={`w-full rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border transition-all ${
-        isDarkTheme
-          ? "bg-slate-900/85 border-white/10 text-white shadow-2xl"
-          : "bg-white/90 border-slate-200/90 text-slate-900 shadow-xl shadow-sky-500/5"
+      className={`weather-card glass-specular w-full p-4 sm:p-6 lg:p-8 ${
+        isDarkTheme ? "text-white" : "text-slate-900"
       }`}
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 items-center">

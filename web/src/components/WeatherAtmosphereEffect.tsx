@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { AtmosphereParticlesState } from "../types/weather";
 
 interface Props {
   weatherCode: number;
@@ -8,6 +9,8 @@ interface Props {
   enabled?: boolean;
   isDarkTheme?: boolean;
   windSpeed?: number; // km/h
+  particles?: AtmosphereParticlesState;
+  performanceMode?: "high" | "saver";
 }
 
 interface RainParticle {
@@ -70,7 +73,9 @@ export default function WeatherAtmosphereEffect({
   isDay,
   enabled = true,
   isDarkTheme = true,
-  windSpeed = 12
+  windSpeed = 12,
+  particles,
+  performanceMode = "high"
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -87,13 +92,23 @@ export default function WeatherAtmosphereEffect({
     let width = (canvas.width = window.innerWidth);
     let height = (canvas.height = window.innerHeight);
 
-    // Weather condition flags
-    const isRain = (weatherCode >= 51 && weatherCode <= 67) || (weatherCode >= 80 && weatherCode <= 82);
-    const isThunder = weatherCode >= 95;
-    const isFog = weatherCode === 45 || weatherCode === 48;
-    const isSunny = (weatherCode === 0 || weatherCode === 1) && isDay;
-    const isClearNight = (weatherCode === 0 || weatherCode === 1) && !isDay;
-    const isCloudy = weatherCode === 2 || weatherCode === 3 || isFog;
+    // Dynamic Density Multiplier
+    const isSaver = performanceMode === "saver";
+    const densityMult = (particles?.density === "low" ? 0.5 : particles?.density === "high" ? 1.6 : 1.0) * (isSaver ? 0.55 : 1.0);
+
+    // Particle feature toggles
+    const allowRain = (particles?.rain ?? true) && ((weatherCode >= 51 && weatherCode <= 67) || (weatherCode >= 80 && weatherCode <= 82));
+    const allowLightning = (particles?.lightning ?? true) && weatherCode >= 95;
+    const allowClouds = (particles?.clouds ?? true) && (weatherCode === 2 || weatherCode === 3 || weatherCode === 45 || weatherCode === 48);
+    const allowSunBeams = (particles?.sunBeams ?? true) && (weatherCode === 0 || weatherCode === 1) && isDay;
+    const allowStars = (particles?.shootingStars ?? true) && (weatherCode === 0 || weatherCode === 1) && !isDay;
+    const allowLeaves = (particles?.leaves ?? true);
+
+    const isRain = allowRain;
+    const isThunder = allowLightning;
+    const isSunny = allowSunBeams;
+    const isClearNight = allowStars;
+    const isCloudy = allowClouds;
 
     // Wind dynamics
     const effectiveWindKmh = Math.max(5, Math.min(45, windSpeed));
@@ -127,7 +142,9 @@ export default function WeatherAtmosphereEffect({
     let clouds: Cloud[] = [];
     const initClouds = () => {
       clouds = [];
-      const cloudCount = weatherCode === 3 ? 5 : isCloudy ? 4 : isSunny ? 2 : 3;
+      if (!isCloudy) return;
+      const baseCount = weatherCode === 3 ? 5 : isCloudy ? 4 : isSunny ? 2 : 3;
+      const cloudCount = Math.max(1, Math.round(baseCount * densityMult));
       for (let i = 0; i < cloudCount; i++) {
         const layer = (i % 2) + 1;
         const speed = (0.2 + layer * 0.2) * windSpeedNorm;
@@ -160,7 +177,8 @@ export default function WeatherAtmosphereEffect({
     // 2. RAIN (Optimized drop count for crisp performance)
     const rainDrops: RainParticle[] = [];
     if (isRain || isThunder) {
-      const dropCount = isThunder ? 90 : weatherCode >= 63 ? 80 : 55;
+      const baseDrop = isThunder ? 90 : weatherCode >= 63 ? 80 : 55;
+      const dropCount = Math.max(15, Math.round(baseDrop * densityMult));
       for (let i = 0; i < dropCount; i++) {
         rainDrops.push({
           x: Math.random() * (width + 250) - 100,
@@ -174,42 +192,48 @@ export default function WeatherAtmosphereEffect({
 
     // 3. WIND STREAMS & LEAVES (Clean vector strokes)
     const windStreams: WindStream[] = [];
-    const windStreamCount = Math.max(3, Math.min(6, Math.floor(effectiveWindKmh / 6)));
-    for (let i = 0; i < windStreamCount; i++) {
-      windStreams.push({
-        x: Math.random() * (width + 300) - 150,
-        y: Math.random() * (height * 0.85),
-        speed: (5 + Math.random() * 5) * windSpeedNorm,
-        length: 100 + Math.random() * 140,
-        amplitude: 10 + Math.random() * 12,
-        phase: Math.random() * Math.PI * 2,
-        opacity: isDarkTheme ? 0.15 : 0.28
-      });
+    if (allowLeaves) {
+      const windStreamCount = Math.max(2, Math.round(Math.min(6, Math.floor(effectiveWindKmh / 6)) * densityMult));
+      for (let i = 0; i < windStreamCount; i++) {
+        windStreams.push({
+          x: Math.random() * (width + 300) - 150,
+          y: Math.random() * (height * 0.85),
+          speed: (5 + Math.random() * 5) * windSpeedNorm,
+          length: 100 + Math.random() * 140,
+          amplitude: 10 + Math.random() * 12,
+          phase: Math.random() * Math.PI * 2,
+          opacity: isDarkTheme ? 0.15 : 0.28
+        });
+      }
     }
 
     const windLeaves: WindLeaf[] = [];
-    const leafCount = Math.min(14, Math.floor(6 + effectiveWindKmh * 0.3));
-    const leafColors = isDarkTheme
-      ? ["#f59e0b", "#d97706", "#10b981", "#fbbf24"]
-      : ["#d97706", "#b45309", "#059669", "#f59e0b"];
+    if (allowLeaves && effectiveWindKmh >= 8) {
+      const baseLeaf = Math.min(14, Math.floor(6 + effectiveWindKmh * 0.3));
+      const leafCount = Math.max(2, Math.round(baseLeaf * densityMult));
+      const leafColors = isDarkTheme
+        ? ["#f59e0b", "#d97706", "#10b981", "#fbbf24"]
+        : ["#d97706", "#b45309", "#059669", "#f59e0b"];
 
-    for (let i = 0; i < leafCount; i++) {
-      windLeaves.push({
-        x: Math.random() * (width + 100) - 50,
-        y: Math.random() * height,
-        vx: (2.5 + Math.random() * 3.5) * windSpeedNorm,
-        vy: 0.6 + Math.random() * 1.2,
-        size: 6 + Math.random() * 5,
-        rotZ: Math.random() * Math.PI * 2,
-        vRotZ: (Math.random() - 0.5) * 0.06,
-        color: leafColors[Math.floor(Math.random() * leafColors.length)]
-      });
+      for (let i = 0; i < leafCount; i++) {
+        windLeaves.push({
+          x: Math.random() * (width + 100) - 50,
+          y: Math.random() * height,
+          vx: (2.5 + Math.random() * 3.5) * windSpeedNorm,
+          vy: 0.6 + Math.random() * 1.2,
+          size: 6 + Math.random() * 5,
+          rotZ: Math.random() * Math.PI * 2,
+          vRotZ: (Math.random() - 0.5) * 0.06,
+          color: leafColors[Math.floor(Math.random() * leafColors.length)]
+        });
+      }
     }
 
     // 4. SUN (Volumetric rays & motes)
     const solarMotes: SolarMote[] = [];
     if (isSunny) {
-      for (let i = 0; i < 24; i++) {
+      const moteCount = Math.round(24 * densityMult);
+      for (let i = 0; i < moteCount; i++) {
         solarMotes.push({
           x: Math.random() * width,
           y: Math.random() * height,
@@ -224,7 +248,8 @@ export default function WeatherAtmosphereEffect({
     // 5. NIGHT (Stars & Meteor)
     const stars: StarParticle[] = [];
     if (isClearNight) {
-      for (let i = 0; i < 50; i++) {
+      const starCount = Math.round(50 * densityMult);
+      for (let i = 0; i < starCount; i++) {
         stars.push({
           x: Math.random() * width,
           y: Math.random() * (height * 0.6),
@@ -438,7 +463,7 @@ export default function WeatherAtmosphereEffect({
       window.removeEventListener("scroll", handleScroll);
       if (scrollTimeout) clearTimeout(scrollTimeout);
     };
-  }, [weatherCode, isDay, enabled, isDarkTheme, windSpeed]);
+  }, [weatherCode, isDay, enabled, isDarkTheme, windSpeed, particles, performanceMode]);
 
   if (!enabled) return null;
 

@@ -63,10 +63,10 @@ export default function AiStylistCard({ current, todayForecast, isDarkTheme = tr
 
   return (
     <div
-      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 border transition-all ${
+      className={`weather-card glass-specular p-4 sm:p-6 ${
         isDarkTheme
-          ? "bg-gradient-to-br from-indigo-950/40 via-purple-950/40 to-slate-900/80 border-purple-500/25 text-white shadow-xl"
-          : "bg-gradient-to-br from-purple-50/90 via-indigo-50/70 to-white/95 border-purple-200/90 text-slate-900 shadow-xl shadow-purple-500/5"
+          ? "bg-gradient-to-br from-indigo-950/40 via-purple-950/40 to-slate-900/80 border-purple-500/25 text-white"
+          : "bg-gradient-to-br from-purple-50/90 via-indigo-50/70 to-white/95 border-purple-200/90 text-slate-900"
       }`}
     >
       <div className="flex items-center justify-between pb-3 border-b border-purple-500/20">

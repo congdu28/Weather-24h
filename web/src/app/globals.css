@@ -9,16 +9,40 @@
 :root {
   --background: #020617;
   --foreground: #f8fafc;
+  
+  /* Unified Dynamic Card Properties */
+  --card-bg: rgba(15, 23, 42, 0.85);
+  --card-border: rgba(255, 255, 255, 0.12);
+  --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.35);
+  --card-blur: 16px;
+  --card-radius: 24px;
+  --card-hover-y: -2px;
+  --card-hover-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+
+  /* Accent Color Tokens */
+  --accent-color: #f59e0b;
+  --accent-rgb: 245, 158, 11;
+  --accent-light: rgba(245, 158, 11, 0.15);
+  --accent-border: rgba(245, 158, 11, 0.35);
+  --accent-glow: rgba(245, 158, 11, 0.25);
 }
 
 html.light {
   --background: #e0f2fe;
   --foreground: #0f172a;
+  --card-bg: rgba(255, 255, 255, 0.90);
+  --card-border: rgba(226, 232, 240, 0.9);
+  --card-shadow: 0 10px 25px -5px rgba(14, 165, 233, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.02);
+  --card-hover-shadow: 0 20px 35px -8px rgba(14, 165, 233, 0.15), 0 8px 12px -4px rgba(0, 0, 0, 0.05);
 }
 
 html.dark {
   --background: #020617;
   --foreground: #f8fafc;
+  --card-bg: rgba(15, 23, 42, 0.85);
+  --card-border: rgba(255, 255, 255, 0.12);
+  --card-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  --card-hover-shadow: 0 22px 45px -12px rgba(0, 0, 0, 0.7);
 }
 
 html {
@@ -98,6 +122,70 @@ html, body, button, input, select, textarea, [class*="font-sans"] {
   background: rgba(148, 163, 184, 0.45);
 }
 
+/* Thẻ thời tiết sinh động chuẩn hóa với hiệu ứng chiều sâu & phản quang kính */
+.weather-card {
+  background-color: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--card-shadow) !important;
+  backdrop-filter: blur(var(--card-blur));
+  -webkit-backdrop-filter: blur(var(--card-blur));
+  border-radius: var(--card-radius) !important;
+  position: relative;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.weather-card:hover {
+  transform: translateY(var(--card-hover-y, -2px));
+  box-shadow: var(--card-hover-shadow) !important;
+}
+
+/* Tia phản chiếu ánh sáng kính ở mép trên card */
+.glass-specular {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-specular::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Tùy chỉnh thanh trượt slider cao cấp */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+  outline: none;
+  transition: background 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent-color, #f59e0b);
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(var(--accent-rgb, 245, 158, 11), 0.5);
+  border: 2px solid #ffffff;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 14px rgba(var(--accent-rgb, 245, 158, 11), 0.8);
+}
+
 /* Hiệu ứng sấm sét chớp sáng nền */
 @keyframes lightning-flash {
   0%, 100% { opacity: 0; }
@@ -107,4 +195,24 @@ html, body, button, input, select, textarea, [class*="font-sans"] {
 
 .animate-lightning {
   animation: lightning-flash 5s infinite ease-in-out;
+}
+
+/* Hiệu ứng nhịp đập mặt trời & vầng hào quang */
+@keyframes sun-glow {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+.animate-sun-glow {
+  animation: sun-glow 4s ease-in-out infinite;
+}
+
+/* Làn sóng gradient nhẹ */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 0.75; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
 }

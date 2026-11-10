@@ -12,20 +12,23 @@ import {
   Check,
   Key,
   Info,
-  Sliders
+  Sliders,
+  LayoutGrid
 } from "lucide-react";
-import { CityLocation } from "../types/weather";
+import {
+  CityLocation,
+  AppSettings as SettingsState,
+  GlassPreset,
+  DepthPreset,
+  BlurPreset,
+  RadiusPreset,
+  AccentPreset,
+  WidgetLayoutState,
+  AtmosphereParticlesState,
+  ACCENT_THEMES
+} from "../types/weather";
 
-export interface SettingsState {
-  theme: "dark" | "light" | "system";
-  atmosphereEnabled: boolean;
-  atmospherePerformance: "high" | "saver";
-  showLunar: boolean;
-  tempUnit: "c" | "f";
-  windUnit: "kmh" | "ms";
-  forecastModel: string;
-  geminiApiKey: string;
-}
+export type { SettingsState };
 
 interface Props {
   isOpen: boolean;
@@ -46,27 +49,60 @@ export default function SettingsDialog({
   onRemoveFavorite,
   isDarkTheme = true
 }: Props) {
-  const [activeTab, setActiveTab] = useState<"general" | "atmosphere" | "forecast" | "favorites" | "ai" | "about">("general");
+  const [activeTab, setActiveTab] = useState<
+    "general" | "layout" | "atmosphere" | "forecast" | "favorites" | "ai" | "about"
+  >("general");
   const [apiKeyInput, setApiKeyInput] = useState(settings.geminiApiKey || "");
 
   if (!isOpen) return null;
 
+  // Helpers cập nhật state an toàn
+  const update = (partial: Partial<SettingsState>) => {
+    onUpdateSettings({ ...settings, ...partial });
+  };
+
+  const updateWidget = (key: keyof WidgetLayoutState, val: boolean) => {
+    onUpdateSettings({
+      ...settings,
+      widgets: {
+        ...settings.widgets,
+        [key]: val
+      }
+    });
+  };
+
+  const updateParticle = (key: keyof AtmosphereParticlesState, val: unknown) => {
+    onUpdateSettings({
+      ...settings,
+      atmosphereParticles: {
+        ...settings.atmosphereParticles,
+        [key]: val
+      }
+    });
+  };
+
+  const currentAccent = ACCENT_THEMES[settings.accentColor] || ACCENT_THEMES.amber;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
       <div
-        className={`w-full max-w-2xl border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-colors ${
-          isDarkTheme ? "bg-slate-900 border-white/15 text-white" : "bg-white border-slate-200 text-slate-900"
+        className={`w-full max-w-3xl border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] transition-colors ${
+          isDarkTheme ? "bg-slate-900/95 border-white/15 text-white" : "bg-white/95 border-slate-200 text-slate-900"
         }`}
       >
         {/* Header */}
-        <div className={`flex items-center justify-between p-5 border-b ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
-          <div className="flex items-center gap-2.5">
-            <div className={`p-2 rounded-xl ${isDarkTheme ? "bg-amber-500/20 text-amber-500" : "bg-amber-100 text-amber-700"}`}>
+        <div className={`flex items-center justify-between p-4 sm:p-5 border-b ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-2xl ${isDarkTheme ? "bg-amber-500/20 text-amber-400" : "bg-amber-100 text-amber-700"}`}>
               <Sliders className="w-5 h-5" />
             </div>
             <div>
-              <h2 className={`text-base font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>Cài đặt Weather 24h</h2>
-              <p className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Tùy biến giao diện, hiệu ứng & tính năng</p>
+              <h2 className={`text-base font-extrabold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                Cài đặt Weather 24h
+              </h2>
+              <p className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>
+                Tùy biến chiều sâu, độ đậm nhạt, hiệu ứng & tính năng mở rộng
+              </p>
             </div>
           </div>
 
@@ -84,11 +120,12 @@ export default function SettingsDialog({
         {/* Content Body: Sidebar tabs + Content area */}
         <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
           {/* Tabs Navigation */}
-          <div className={`w-full sm:w-48 border-b sm:border-b-0 sm:border-r p-2 sm:p-3 flex sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible shrink-0 ${
+          <div className={`w-full sm:w-52 border-b sm:border-b-0 sm:border-r p-2 sm:p-3 flex sm:flex-col gap-1 overflow-x-auto sm:overflow-x-visible shrink-0 ${
             isDarkTheme ? "border-white/10 bg-white/[0.02]" : "border-slate-200 bg-slate-50/80"
           }`}>
             {[
-              { id: "general", label: "Giao diện & Đơn vị", icon: Palette },
+              { id: "general", label: "Giao diện & Chiều sâu", icon: Palette },
+              { id: "layout", label: "Bố cục & Khối hiển thị", icon: LayoutGrid },
               { id: "atmosphere", label: "Hiệu ứng khí quyển", icon: Sparkles },
               { id: "forecast", label: "Mô hình dự báo", icon: CloudSun },
               { id: "favorites", label: "Địa điểm đã lưu", icon: Shield },
@@ -117,11 +154,62 @@ export default function SettingsDialog({
           </div>
 
           {/* Tab Panel Content */}
-          <div className="flex-1 p-5 overflow-y-auto space-y-5 text-sm">
-            {/* 1. GIAO DIỆN & ĐƠN VỊ */}
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6 text-sm">
+            {/* 1. GIAO DIỆN & CHIỀU SÂU THẨM MỸ */}
             {activeTab === "general" && (
-              <div className="space-y-4">
+              <div className="space-y-5 animate-in fade-in duration-200">
+                {/* Live Preview Box */}
                 <div>
+                  <label className={`text-xs font-bold uppercase tracking-wider block mb-2 ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                    Xem trước khối hiển thị (Live Preview)
+                  </label>
+                  <div
+                    className="p-4 rounded-2xl border transition-all duration-300 flex items-center justify-between"
+                    style={{
+                      backgroundColor: isDarkTheme
+                        ? `rgba(15, 23, 42, ${settings.customOpacity / 100})`
+                        : `rgba(255, 255, 255, ${settings.customOpacity / 100})`,
+                      boxShadow: settings.depthLevel === "flat"
+                        ? "none"
+                        : settings.depthLevel === "soft"
+                        ? "0 10px 25px -5px rgba(0, 0, 0, 0.2)"
+                        : settings.depthLevel === "deep"
+                        ? "0 20px 40px -10px rgba(0, 0, 0, 0.4)"
+                        : `0 12px 35px -5px rgba(${currentAccent.rgb}, 0.35)`,
+                      borderColor: settings.depthLevel === "glow"
+                        ? `rgba(${currentAccent.rgb}, 0.5)`
+                        : isDarkTheme ? "rgba(255, 255, 255, 0.15)" : "rgba(226, 232, 240, 0.9)",
+                      borderRadius: settings.borderRadius === "compact" ? "14px" : settings.borderRadius === "smooth" ? "22px" : "30px"
+                    }}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black">Hà Nội • Mẫu Thẻ Thời Tiết</span>
+                        <span
+                          className="text-[10px] px-2 py-0.5 rounded-full font-bold"
+                          style={{
+                            backgroundColor: `rgba(${currentAccent.rgb}, 0.15)`,
+                            color: currentAccent.hex
+                          }}
+                        >
+                          Đậm nhạt: {settings.customOpacity}%
+                        </span>
+                      </div>
+                      <p className={`text-xs mt-1 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                        28°C • Trời quang, nắng đẹp • Gió 14 km/h
+                      </p>
+                    </div>
+                    <div
+                      className="p-2.5 rounded-xl text-white font-bold text-xs shadow-xs"
+                      style={{ backgroundColor: currentAccent.hex }}
+                    >
+                      Weather 24h
+                    </div>
+                  </div>
+                </div>
+
+                {/* Theme Mode */}
+                <div className={`pt-4 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
                   <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                     Chủ đề hiển thị
                   </label>
@@ -135,15 +223,15 @@ export default function SettingsDialog({
                       return (
                         <button
                           key={th.id}
-                          onClick={() => onUpdateSettings({ ...settings, theme: th.id as SettingsState["theme"] })}
+                          onClick={() => update({ theme: th.id as SettingsState["theme"] })}
                           className={`p-2.5 rounded-xl border text-xs font-semibold transition-all ${
                             isSelected
                               ? isDarkTheme
                                 ? "bg-amber-500/20 border-amber-400 text-amber-300 font-bold shadow-xs"
                                 : "bg-amber-100 border-amber-500 text-amber-950 font-bold shadow-xs"
                               : isDarkTheme
-                                ? "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white"
-                                : "bg-slate-100/80 border-slate-300/80 text-slate-700 hover:bg-slate-200/80 hover:text-slate-950"
+                                ? "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                                : "bg-slate-100/80 border-slate-300/80 text-slate-700 hover:bg-slate-200/80"
                           }`}
                         >
                           {th.label}
@@ -153,51 +241,261 @@ export default function SettingsDialog({
                   </div>
                 </div>
 
-                <div className={`pt-3 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                {/* Accent Color Palette */}
+                <div className={`pt-4 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
                   <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
-                    Đơn vị nhiệt độ
+                    Màu sắc điểm nhấn (Accent Theme)
                   </label>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {[
-                      { id: "c", label: "Độ C (°C)" },
-                      { id: "f", label: "Độ F (°F)" }
-                    ].map((u) => {
-                      const isSelected = settings.tempUnit === u.id;
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                    {(Object.keys(ACCENT_THEMES) as AccentPreset[]).map((key) => {
+                      const item = ACCENT_THEMES[key];
+                      const isSelected = settings.accentColor === key;
                       return (
                         <button
-                          key={u.id}
-                          onClick={() => onUpdateSettings({ ...settings, tempUnit: u.id as "c" | "f" })}
-                          className={`p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                          key={key}
+                          onClick={() => update({ accentColor: key })}
+                          className={`flex items-center gap-2.5 p-2.5 rounded-xl border text-xs font-bold transition-all text-left ${
                             isSelected
                               ? isDarkTheme
-                                ? "bg-amber-500/20 border-amber-400 text-amber-300 font-bold shadow-xs"
-                                : "bg-amber-100 border-amber-500 text-amber-950 font-bold shadow-xs"
+                                ? "bg-white/15 border-white/40 ring-1 ring-white/30"
+                                : "bg-slate-100 border-slate-400 ring-1 ring-slate-400"
                               : isDarkTheme
-                                ? "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white"
-                                : "bg-slate-100/80 border-slate-300/80 text-slate-700 hover:bg-slate-200/80 hover:text-slate-950"
+                                ? "bg-white/5 border-white/10 hover:bg-white/10"
+                                : "bg-slate-50 border-slate-200 hover:bg-slate-100"
                           }`}
                         >
-                          {u.label}
+                          <span
+                            className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs"
+                            style={{ backgroundColor: item.hex }}
+                          />
+                          <span className="truncate">{item.name}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                <div className={`pt-3 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                {/* Opacity & Glass Sliders */}
+                <div className={`pt-4 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                        Độ đậm nhạt & Trong suốt các khối
+                      </label>
+                      <p className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                        Kính siêu trong nhìn thấy nền động thời tiết hoặc khối đặc chống chói
+                      </p>
+                    </div>
+                    <span className="text-sm font-black text-amber-500 font-mono px-2 py-0.5 rounded-lg bg-amber-500/10">
+                      {settings.customOpacity}%
+                    </span>
+                  </div>
+
+                  {/* Range Slider */}
+                  <div className="mt-3">
+                    <input
+                      type="range"
+                      min={50}
+                      max={100}
+                      step={2}
+                      value={settings.customOpacity}
+                      onChange={(e) => update({ customOpacity: Number(e.target.value) })}
+                      className="w-full cursor-pointer"
+                    />
+                  </div>
+
+                  {/* Preset Buttons */}
+                  <div className="grid grid-cols-4 gap-2 mt-3">
+                    {[
+                      { label: "Siêu trong", val: 65, preset: "ultra" },
+                      { label: "Kính mờ", val: 80, preset: "frosted" },
+                      { label: "Cân bằng", val: 90, preset: "balanced" },
+                      { label: "Khối đặc", val: 98, preset: "solid" }
+                    ].map((item) => (
+                      <button
+                        key={item.val}
+                        onClick={() => update({ customOpacity: item.val, glassStyle: item.preset as GlassPreset })}
+                        className={`py-2 px-1 rounded-xl text-center text-xs font-bold border transition-all ${
+                          settings.customOpacity === item.val
+                            ? "bg-amber-500 text-slate-950 font-black shadow-xs"
+                            : isDarkTheme
+                            ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                            : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Depth & Elevation (Chiều Sâu & Đổ Bóng) */}
+                <div className={`pt-4 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                  <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                    Chiều sâu & Đổ bóng (Depth & 3D Elevation)
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                    {[
+                      { id: "flat", label: "Phẳng (Tối giản)", desc: "Không bóng đổ" },
+                      { id: "soft", label: "Nổi mềm mại", desc: "Bóng nhẹ tự nhiên" },
+                      { id: "deep", label: "Nổi sâu 3D", desc: "Bóng đa tầng" },
+                      { id: "glow", label: "Hào quang sáng", desc: "Phát sáng viền" }
+                    ].map((item) => {
+                      const isSelected = settings.depthLevel === item.id;
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => update({ depthLevel: item.id as DepthPreset })}
+                          className={`p-3 rounded-2xl border text-left transition-all ${
+                            isSelected
+                              ? isDarkTheme
+                                ? "bg-amber-500/20 border-amber-400 text-amber-300 font-bold shadow-xs"
+                                : "bg-amber-100 border-amber-500 text-amber-950 font-bold shadow-xs"
+                              : isDarkTheme
+                                ? "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                                : "bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
+                          }`}
+                        >
+                          <div className="text-xs font-bold">{item.label}</div>
+                          <div className={`text-[10px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                            {item.desc}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Backdrop Blur & Corner Radius */}
+                <div className={`pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                  {/* Blur Level */}
+                  <div>
+                    <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                      Độ mờ kính (Backdrop Blur)
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {[
+                        { id: "none", label: "Tắt mờ (0px)" },
+                        { id: "low", label: "Mờ nhẹ (8px)" },
+                        { id: "medium", label: "Chuẩn kính (16px)" },
+                        { id: "heavy", label: "Siêu mờ (24px)" }
+                      ].map((b) => (
+                        <button
+                          key={b.id}
+                          onClick={() => update({ blurLevel: b.id as BlurPreset })}
+                          className={`p-2 rounded-xl border text-xs font-semibold transition-all ${
+                            settings.blurLevel === b.id
+                              ? "bg-amber-500 text-slate-950 font-bold"
+                              : isDarkTheme
+                              ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                              : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          {b.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Border Radius */}
+                  <div>
+                    <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                      Kiểu bo góc khối (Corner Radius)
+                    </label>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {[
+                        { id: "compact", label: "Góc 14px" },
+                        { id: "smooth", label: "Góc 22px" },
+                        { id: "curvy", label: "Góc 28px" }
+                      ].map((r) => (
+                        <button
+                          key={r.id}
+                          onClick={() => update({ borderRadius: r.id as RadiusPreset })}
+                          className={`p-2 rounded-xl border text-xs font-semibold transition-all ${
+                            settings.borderRadius === r.id
+                              ? "bg-amber-500 text-slate-950 font-bold"
+                              : isDarkTheme
+                              ? "bg-white/5 border-white/10 hover:bg-white/10 text-slate-300"
+                              : "bg-slate-100 border-slate-200 hover:bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          {r.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Units & Lunar */}
+                <div className={`pt-4 border-t grid grid-cols-1 sm:grid-cols-2 gap-4 ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                  <div>
+                    <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                      Đơn vị nhiệt độ
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {[
+                        { id: "c", label: "Độ C (°C)" },
+                        { id: "f", label: "Độ F (°F)" }
+                      ].map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => update({ tempUnit: u.id as "c" | "f" })}
+                          className={`p-2 rounded-xl border text-xs font-bold transition-all ${
+                            settings.tempUnit === u.id
+                              ? "bg-amber-500 text-slate-950 font-black"
+                              : isDarkTheme
+                              ? "bg-white/5 border-white/10 text-slate-300"
+                              : "bg-slate-100 border-slate-200 text-slate-700"
+                          }`}
+                        >
+                          {u.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                      Đơn vị tốc độ gió
+                    </label>
+                    <div className="grid grid-cols-3 gap-2 mt-2">
+                      {[
+                        { id: "kmh", label: "km/h" },
+                        { id: "ms", label: "m/s" },
+                        { id: "mph", label: "mph" }
+                      ].map((w) => (
+                        <button
+                          key={w.id}
+                          onClick={() => update({ windUnit: w.id as "kmh" | "ms" | "mph" })}
+                          className={`p-2 rounded-xl border text-xs font-bold transition-all ${
+                            settings.windUnit === w.id
+                              ? "bg-amber-500 text-slate-950 font-black"
+                              : isDarkTheme
+                              ? "bg-white/5 border-white/10 text-slate-300"
+                              : "bg-slate-100 border-slate-200 text-slate-700"
+                          }`}
+                        >
+                          {w.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`pt-4 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
                   <label className="flex items-center justify-between cursor-pointer group">
                     <div>
-                      <div className={`text-sm font-semibold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                      <div className={`text-sm font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                         Hiển thị Lịch Âm Việt Nam
                       </div>
                       <div className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
-                        Hiển thị ngày Âm lịch, Can Chi & Tiết khí trên màn hình chính
+                        Hiển thị ngày Âm lịch, Can Chi & Tiết khí chính xác theo múi giờ GMT+7
                       </div>
                     </div>
                     <input
                       type="checkbox"
                       checked={settings.showLunar}
-                      onChange={(e) => onUpdateSettings({ ...settings, showLunar: e.target.checked })}
+                      onChange={(e) => update({ showLunar: e.target.checked })}
                       className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
                     />
                   </label>
@@ -205,52 +503,201 @@ export default function SettingsDialog({
               </div>
             )}
 
-            {/* 2. HIỆU ỨNG KHÍ QUYỂN */}
+            {/* 2. BỐ CỤC & KHỐI HIỂN THỊ (LAYOUT WIDGETS MANAGER) */}
+            {activeTab === "layout" && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                      Tùy biến hiển thị các khối tính năng
+                    </h3>
+                    <p className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                      Bật/tắt các khối để giao diện gọn gàng hoặc đầy đủ theo ý thích của bạn
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const allEnabled = Object.keys(settings.widgets).reduce((acc, k) => {
+                        acc[k as keyof WidgetLayoutState] = true;
+                        return acc;
+                      }, {} as WidgetLayoutState);
+                      update({ widgets: allEnabled });
+                    }}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-500 border border-amber-500/30 hover:bg-amber-500/30 transition-colors"
+                  >
+                    Bật tất cả
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  {[
+                    { id: "hero", label: "Khối thời tiết chính (Hero)", desc: "Nhiệt độ lớn, vị trí, icon động & tóm tắt" },
+                    { id: "astronomy", label: "Quỹ đạo Mặt Trời & Tuần Trăng", desc: "Vòng cung mặt trời, giờ vàng & hình trăng" },
+                    { id: "insights", label: "Phân tích & Cảnh báo thông minh", desc: "Độ chênh nhiệt, cửa sổ mưa, chỉ số UV" },
+                    { id: "cityCompare", label: "So sánh thời tiết đa thành phố", desc: "Xem nhanh thời tiết các thành phố yêu thích" },
+                    { id: "hourly", label: "Dự báo 24 giờ tới (Hourly)", desc: "Biểu đồ xu hướng nhiệt độ, lượng mưa, gió" },
+                    { id: "radar", label: "Bản đồ Radar Mây Mưa trực tiếp", desc: "Theo dõi mưa thực tế từ vệ tinh & radar" },
+                    { id: "lunar", label: "Lịch Âm & Lịch Vạn Niên", desc: "Giờ hoàng đạo, can chi, việc nên làm" },
+                    { id: "daily", label: "Dự báo 7 ngày tới (Daily)", desc: "Chi tiết nhiệt độ tuần & dự báo mở rộng" },
+                    { id: "aiStylist", label: "AI Smart Stylist", desc: "Tư vấn phối đồ thông minh theo thời tiết" },
+                    { id: "airQuality", label: "Chất lượng không khí (AQI)", desc: "Chỉ số ô nhiễm bụi mịn PM2.5, PM10" },
+                    { id: "lifestyle", label: "Chỉ số Sinh hoạt & Đời sống", desc: "Rửa xe, giặt phơi, hoạt động thể thao" },
+                    { id: "metrics", label: "Lưới thông số khí tượng chi tiết", desc: "Áp suất, tầm nhìn, độ ẩm, gió giật" }
+                  ].map((widget) => {
+                    const isChecked = settings.widgets[widget.id as keyof WidgetLayoutState] ?? true;
+                    return (
+                      <label
+                        key={widget.id}
+                        className={`flex items-start justify-between p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                          isChecked
+                            ? isDarkTheme
+                              ? "bg-white/5 border-white/15"
+                              : "bg-slate-50 border-slate-300 shadow-xs"
+                            : isDarkTheme
+                            ? "bg-white/[0.02] border-white/5 opacity-60"
+                            : "bg-slate-100/50 border-slate-200 opacity-60"
+                        }`}
+                      >
+                        <div className="pr-3">
+                          <div className={`text-xs font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                            {widget.label}
+                          </div>
+                          <div className={`text-[11px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                            {widget.desc}
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => updateWidget(widget.id as keyof WidgetLayoutState, e.target.checked)}
+                          className="w-5 h-5 accent-amber-500 rounded cursor-pointer mt-0.5 shrink-0"
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 3. HIỆU ỨNG KHÍ QUYỂN (ATMOSPHERE EFFECTS) */}
             {activeTab === "atmosphere" && (
-              <div className="space-y-4">
+              <div className="space-y-5 animate-in fade-in duration-200">
+                {/* Main toggle */}
                 <label className="flex items-center justify-between cursor-pointer group">
                   <div>
-                    <div className={`text-sm font-semibold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                    <div className={`text-sm font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                       Hiệu ứng thời tiết sống động
                     </div>
                     <div className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
-                      Hạt mưa rơi, sao băng, tia nắng mặt trời, sấm sét toàn màn hình
+                      Mưa rơi, sao băng đêm, tia nắng mặt trời, sấm sét chớp sáng nền
                     </div>
                   </div>
                   <input
                     type="checkbox"
                     checked={settings.atmosphereEnabled}
-                    onChange={(e) => onUpdateSettings({ ...settings, atmosphereEnabled: e.target.checked })}
+                    onChange={(e) => update({ atmosphereEnabled: e.target.checked })}
                     className="w-5 h-5 accent-amber-500 rounded cursor-pointer"
                   />
                 </label>
 
+                {/* Performance mode */}
                 <div className={`pt-3 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
                   <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                     Chế độ hiệu năng
                   </label>
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     {[
-                      { id: "high", label: "Mượt mà (60-120 FPS)" },
-                      { id: "saver", label: "Tiết kiệm Pin / Máy yếu" }
+                      { id: "high", label: "Mượt mà (60-120 FPS)", desc: "Hình ảnh điện ảnh sống động" },
+                      { id: "saver", label: "Tiết kiệm Pin / Máy yếu", desc: "Tối ưu phần cứng tối đa" }
                     ].map((p) => {
                       const isSelected = settings.atmospherePerformance === p.id;
                       return (
                         <button
                           key={p.id}
-                          onClick={() => onUpdateSettings({ ...settings, atmospherePerformance: p.id as "high" | "saver" })}
-                          className={`p-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                          onClick={() => update({ atmospherePerformance: p.id as "high" | "saver" })}
+                          className={`p-3 rounded-2xl border text-left text-xs font-bold transition-all ${
                             isSelected
                               ? isDarkTheme
                                 ? "bg-amber-500/20 border-amber-400 text-amber-300 font-bold shadow-xs"
                                 : "bg-amber-100 border-amber-500 text-amber-950 font-bold shadow-xs"
                               : isDarkTheme
-                                ? "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10 hover:text-white"
-                                : "bg-slate-100/80 border-slate-300/80 text-slate-700 hover:bg-slate-200/80 hover:text-slate-950"
+                                ? "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                                : "bg-slate-100/80 border-slate-300/80 text-slate-700 hover:bg-slate-200/80"
                           }`}
                         >
-                          {p.label}
+                          <div>{p.label}</div>
+                          <div className={`text-[10px] font-normal mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                            {p.desc}
+                          </div>
                         </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Particle density */}
+                <div className={`pt-3 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                  <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                    Mật độ hạt hiệu ứng
+                  </label>
+                  <div className="grid grid-cols-3 gap-2 mt-2">
+                    {[
+                      { id: "low", label: "Thưa thớt (Nhẹ)" },
+                      { id: "medium", label: "Vừa phải (Chuẩn)" },
+                      { id: "high", label: "Dày đặc (Sinh động)" }
+                    ].map((d) => (
+                      <button
+                        key={d.id}
+                        onClick={() => updateParticle("density", d.id)}
+                        className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                          settings.atmosphereParticles?.density === d.id
+                            ? "bg-amber-500 text-slate-950 font-black shadow-xs"
+                            : isDarkTheme
+                            ? "bg-white/5 border-white/10 text-slate-300"
+                            : "bg-slate-100 border-slate-200 text-slate-700"
+                        }`}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Granular particle toggles */}
+                <div className={`pt-3 border-t ${isDarkTheme ? "border-white/10" : "border-slate-200"}`}>
+                  <label className={`text-xs font-bold uppercase tracking-wider block mb-2 ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                    Tùy chọn từng hiệu ứng chi tiết
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {[
+                      { id: "rain", label: "🌧️ Hạt mưa rơi & giọt bắn" },
+                      { id: "lightning", label: "⚡ Sấm sét chớp sáng nền" },
+                      { id: "shootingStars", label: "🌠 Sao băng đêm & tinh tú" },
+                      { id: "sunBeams", label: "☀️ Tia nắng & bụi ánh sáng mặt trời" },
+                      { id: "leaves", label: "🍃 Lá bay cuốn theo chiều gió" },
+                      { id: "clouds", label: "☁️ Mây trôi khí quyển bề mặt" }
+                    ].map((item) => {
+                      const key = item.id as keyof AtmosphereParticlesState;
+                      const enabled = (settings.atmosphereParticles as unknown as Record<string, boolean>)?.[key] ?? true;
+                      return (
+                        <label
+                          key={item.id}
+                          className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
+                            enabled
+                              ? isDarkTheme ? "bg-white/5 border-white/15" : "bg-slate-50 border-slate-300"
+                              : isDarkTheme ? "bg-white/[0.02] border-white/5 opacity-50" : "bg-slate-100 opacity-50"
+                          }`}
+                        >
+                          <span className={`text-xs font-semibold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                            {item.label}
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={enabled}
+                            onChange={(e) => updateParticle(key, e.target.checked)}
+                            className="w-4 h-4 accent-amber-500 rounded cursor-pointer"
+                          />
+                        </label>
                       );
                     })}
                   </div>
@@ -258,9 +705,9 @@ export default function SettingsDialog({
               </div>
             )}
 
-            {/* 3. MÔ HÌNH DỰ BÁO */}
+            {/* 4. MÔ HÌNH DỰ BÁO */}
             {activeTab === "forecast" && (
-              <div className="space-y-3">
+              <div className="space-y-3 animate-in fade-in duration-200">
                 <div className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                   Chọn mô hình dự báo AI & Khí tượng
                 </div>
@@ -275,8 +722,8 @@ export default function SettingsDialog({
                   return (
                     <button
                       key={m.id}
-                      onClick={() => onUpdateSettings({ ...settings, forecastModel: m.id })}
-                      className={`w-full text-left p-3 rounded-2xl border transition-all ${
+                      onClick={() => update({ forecastModel: m.id })}
+                      className={`w-full text-left p-3.5 rounded-2xl border transition-all ${
                         isSelected
                           ? isDarkTheme
                             ? "bg-amber-500/20 border-amber-400"
@@ -297,9 +744,9 @@ export default function SettingsDialog({
               </div>
             )}
 
-            {/* 4. ĐỊA ĐIỂM ĐÃ LƯU */}
+            {/* 5. ĐỊA ĐIỂM ĐÃ LƯU */}
             {activeTab === "favorites" && (
-              <div className="space-y-3">
+              <div className="space-y-3 animate-in fade-in duration-200">
                 <div className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                   Danh sách thành phố yêu thích
                 </div>
@@ -311,7 +758,7 @@ export default function SettingsDialog({
                   favoriteCities.map((city, idx) => (
                     <div
                       key={idx}
-                      className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${
+                      className={`flex items-center justify-between p-3.5 rounded-2xl border transition-colors ${
                         isDarkTheme ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"
                       }`}
                     >
@@ -321,7 +768,7 @@ export default function SettingsDialog({
                       </div>
                       <button
                         onClick={() => onRemoveFavorite(city)}
-                        className={`p-1.5 rounded-lg transition-colors ${
+                        className={`p-2 rounded-xl transition-colors ${
                           isDarkTheme ? "text-rose-400 hover:bg-rose-500/20" : "text-rose-600 hover:bg-rose-100"
                         }`}
                         title="Xóa khỏi yêu thích"
@@ -334,9 +781,9 @@ export default function SettingsDialog({
               </div>
             )}
 
-            {/* 5. GEMINI AI KEY */}
+            {/* 6. GEMINI AI KEY */}
             {activeTab === "ai" && (
-              <div className="space-y-3">
+              <div className="space-y-3 animate-in fade-in duration-200">
                 <div className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                   Google Gemini API Key
                 </div>
@@ -348,7 +795,7 @@ export default function SettingsDialog({
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
                   placeholder="AIzaSy..."
-                  className={`w-full p-2.5 rounded-xl border text-xs font-mono transition-colors ${
+                  className={`w-full p-3 rounded-2xl border text-xs font-mono transition-colors ${
                     isDarkTheme
                       ? "bg-white/10 border-white/20 text-white placeholder-slate-500"
                       : "bg-slate-50 border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:border-amber-500"
@@ -356,21 +803,21 @@ export default function SettingsDialog({
                 />
                 <button
                   onClick={() => {
-                    onUpdateSettings({ ...settings, geminiApiKey: apiKeyInput.trim() });
+                    update({ geminiApiKey: apiKeyInput.trim() });
                     alert("Đã lưu khóa API Gemini thành công!");
                   }}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-colors shadow-xs"
+                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-colors shadow-xs"
                 >
                   Lưu khóa API
                 </button>
               </div>
             )}
 
-            {/* 6. GIỚI THIỆU */}
+            {/* 7. GIỚI THIỆU */}
             {activeTab === "about" && (
-              <div className={`space-y-3 text-xs leading-relaxed ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+              <div className={`space-y-4 text-xs leading-relaxed animate-in fade-in duration-200 ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                 <div
-                  className={`p-4 rounded-2xl border text-center flex flex-col items-center justify-center ${
+                  className={`p-5 rounded-3xl border text-center flex flex-col items-center justify-center ${
                     isDarkTheme ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"
                   }`}
                 >

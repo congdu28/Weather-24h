@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Header from "../components/Header";
 import AtmosphereBackground from "../components/AtmosphereBackground";
 import WeatherAtmosphereEffect from "../components/WeatherAtmosphereEffect";
@@ -15,8 +15,18 @@ import AirQualityCard from "../components/AirQualityCard";
 import LifestyleCard from "../components/LifestyleCard";
 import WeatherMetricsGrid from "../components/WeatherMetricsGrid";
 import LunarAlmanacView from "../components/LunarAlmanacView";
+import AstronomyArcCard from "../components/AstronomyArcCard";
+import SmartInsightsCard from "../components/SmartInsightsCard";
+import CityCompareCard from "../components/CityCompareCard";
 import SettingsDialog, { SettingsState } from "../components/SettingsDialog";
-import { CityLocation, WeatherData } from "../types/weather";
+import {
+  CityLocation,
+  WeatherData,
+  DEFAULT_APP_SETTINGS,
+  DEFAULT_WIDGET_LAYOUT,
+  DEFAULT_ATMOSPHERE_PARTICLES,
+  ACCENT_THEMES
+} from "../types/weather";
 import { usePersistentState } from "../utils/usePersistentState";
 import {
   DEFAULT_LOCATION,
@@ -26,27 +36,32 @@ import {
 } from "../services/weatherApi";
 import { RefreshCw, AlertCircle } from "lucide-react";
 
-const DEFAULT_SETTINGS: SettingsState = {
-  theme: "light",
-  atmosphereEnabled: true,
-  atmospherePerformance: "high",
-  showLunar: true,
-  tempUnit: "c",
-  windUnit: "kmh",
-  forecastModel: "best_match",
-  geminiApiKey: ""
-};
-
 export default function Home() {
   const [location, setLocation] = usePersistentState<CityLocation>(
     "weather24h_last_loc",
     DEFAULT_LOCATION
   );
 
-  const [settings, setSettings] = usePersistentState<SettingsState>(
+  const [rawSettings, setSettings] = usePersistentState<SettingsState>(
     "weather24h_settings",
-    DEFAULT_SETTINGS
+    DEFAULT_APP_SETTINGS
   );
+
+  // Merge settings với fallback an toàn tuyệt đối
+  const settings: SettingsState = useMemo(() => {
+    return {
+      ...DEFAULT_APP_SETTINGS,
+      ...rawSettings,
+      widgets: {
+        ...DEFAULT_WIDGET_LAYOUT,
+        ...(rawSettings?.widgets || {})
+      },
+      atmosphereParticles: {
+        ...DEFAULT_ATMOSPHERE_PARTICLES,
+        ...(rawSettings?.atmosphereParticles || {})
+      }
+    };
+  }, [rawSettings]);
 
   const [favoriteCities, setFavoriteCities] = usePersistentState<CityLocation[]>(
     "weather24h_favs",
@@ -92,6 +107,100 @@ export default function Home() {
       return () => media.removeEventListener("change", handler);
     }
   }, [settings.theme]);
+
+  // Cập nhật động hệ thống CSS Variables: Card Opacity, Blur, Radius, Shadow Depth, Accent Color
+  useEffect(() => {
+    const root = document.documentElement;
+    const isDark = isDarkTheme;
+
+    // 1. Màu điểm nhấn (Accent Theme)
+    let accentHex = "#f59e0b";
+    let accentRgb = "245, 158, 11";
+    if (settings.accentColor === "adaptive" && weatherData) {
+      const code = weatherData.current.weatherCode;
+      if (code >= 95) {
+        accentHex = "#8b5cf6"; accentRgb = "139, 92, 246"; // Dông sét: Tím điện
+      } else if (code >= 51 && code <= 82) {
+        accentHex = "#0ea5e9"; accentRgb = "14, 165, 233"; // Mưa: Xanh đại dương
+      } else if (code === 0 || code === 1) {
+        accentHex = "#f59e0b"; accentRgb = "245, 158, 11"; // Nắng: Vàng hổ phách
+      } else {
+        accentHex = "#10b981"; accentRgb = "16, 185, 129"; // Mây/Sương mù: Lục bảo
+      }
+    } else {
+      const themeObj = ACCENT_THEMES[settings.accentColor] || ACCENT_THEMES.amber;
+      accentHex = themeObj.hex;
+      accentRgb = themeObj.rgb;
+    }
+
+    root.style.setProperty("--accent-color", accentHex);
+    root.style.setProperty("--accent-rgb", accentRgb);
+    root.style.setProperty("--accent-light", `rgba(${accentRgb}, 0.15)`);
+    root.style.setProperty("--accent-border", `rgba(${accentRgb}, 0.35)`);
+    root.style.setProperty("--accent-glow", `rgba(${accentRgb}, 0.25)`);
+
+    // 2. Độ đậm nhạt & Trong suốt các khối (Card Opacity)
+    const opacityVal = (settings.customOpacity || 88) / 100;
+    if (isDark) {
+      root.style.setProperty("--card-bg", `rgba(15, 23, 42, ${opacityVal})`);
+    } else {
+      root.style.setProperty("--card-bg", `rgba(255, 255, 255, ${opacityVal})`);
+    }
+
+    // 3. Độ mờ kính (Backdrop Blur)
+    let blurPx = "16px";
+    if (settings.blurLevel === "none") blurPx = "0px";
+    else if (settings.blurLevel === "low") blurPx = "8px";
+    else if (settings.blurLevel === "heavy") blurPx = "24px";
+    root.style.setProperty("--card-blur", blurPx);
+
+    // 4. Độ bo tròn góc (Border Radius)
+    let radiusPx = "24px";
+    if (settings.borderRadius === "compact") radiusPx = "14px";
+    else if (settings.borderRadius === "curvy") radiusPx = "32px";
+    root.style.setProperty("--card-radius", radiusPx);
+
+    // 5. Chiều sâu & Đổ bóng (Depth & 3D Shadows)
+    if (settings.depthLevel === "flat") {
+      root.style.setProperty("--card-shadow", "none");
+      root.style.setProperty("--card-hover-shadow", isDark ? "0 4px 12px rgba(0,0,0,0.4)" : "0 4px 12px rgba(0,0,0,0.06)");
+      root.style.setProperty("--card-border", isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(226, 232, 240, 0.8)");
+      root.style.setProperty("--card-hover-y", "0px");
+    } else if (settings.depthLevel === "soft") {
+      root.style.setProperty(
+        "--card-shadow",
+        isDark ? "0 10px 30px -10px rgba(0, 0, 0, 0.45)" : "0 10px 25px -5px rgba(14, 165, 233, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.02)"
+      );
+      root.style.setProperty(
+        "--card-hover-shadow",
+        isDark ? "0 20px 40px -12px rgba(0, 0, 0, 0.65)" : "0 20px 35px -8px rgba(14, 165, 233, 0.14)"
+      );
+      root.style.setProperty("--card-border", isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(226, 232, 240, 0.9)");
+      root.style.setProperty("--card-hover-y", "-2px");
+    } else if (settings.depthLevel === "deep") {
+      root.style.setProperty(
+        "--card-shadow",
+        isDark ? "0 22px 50px -12px rgba(0, 0, 0, 0.75), 0 8px 16px -4px rgba(0, 0, 0, 0.3)" : "0 20px 35px -10px rgba(15, 23, 42, 0.15), 0 8px 12px -4px rgba(0, 0, 0, 0.05)"
+      );
+      root.style.setProperty(
+        "--card-hover-shadow",
+        isDark ? "0 30px 65px -15px rgba(0, 0, 0, 0.9)" : "0 28px 50px -12px rgba(15, 23, 42, 0.22)"
+      );
+      root.style.setProperty("--card-border", isDark ? "rgba(255, 255, 255, 0.18)" : "rgba(203, 213, 225, 0.95)");
+      root.style.setProperty("--card-hover-y", "-4px");
+    } else if (settings.depthLevel === "glow") {
+      root.style.setProperty(
+        "--card-shadow",
+        `0 12px 35px -5px rgba(${accentRgb}, ${isDark ? 0.35 : 0.2}), 0 0 20px 2px rgba(${accentRgb}, ${isDark ? 0.18 : 0.1})`
+      );
+      root.style.setProperty(
+        "--card-hover-shadow",
+        `0 18px 45px -5px rgba(${accentRgb}, ${isDark ? 0.5 : 0.32}), 0 0 28px 4px rgba(${accentRgb}, ${isDark ? 0.28 : 0.16})`
+      );
+      root.style.setProperty("--card-border", `rgba(${accentRgb}, ${isDark ? 0.45 : 0.35})`);
+      root.style.setProperty("--card-hover-y", "-3px");
+    }
+  }, [settings, isDarkTheme, weatherData]);
 
   const loadWeather = useCallback(async (loc: CityLocation) => {
     setIsLoading(true);
@@ -232,6 +341,8 @@ export default function Home() {
     );
   };
 
+  const widgets = settings.widgets;
+
   return (
     <div
       className={`min-h-screen font-sans pb-16 relative transition-colors duration-500 ${
@@ -252,6 +363,8 @@ export default function Home() {
             enabled={settings.atmosphereEnabled}
             isDarkTheme={isDarkTheme}
             windSpeed={weatherData.current.windSpeed}
+            particles={settings.atmosphereParticles}
+            performanceMode={settings.atmospherePerformance}
           />
         </>
       )}
@@ -309,63 +422,109 @@ export default function Home() {
           </div>
         )}
 
-        {/* TAB 1: THỜI TIẾT (BỐ CỤC CHUẨN APK WEATHER 24H) */}
+        {/* TAB 1: THỜI TIẾT CHÍNH (ĐỒNG BỘ APK & ĐẦY ĐỦ CÁC KHỐI TÙY BIẾN) */}
         {activeTab === "weather" && weatherData && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            {/* 1. SEAMLESS HERO DISPLAY (DẸP TRÁI, PHẢI HIỂN THỊ ĐẦY ĐỦ THÔNG SỐ NHANH) */}
-            <HeroWeatherCard
-              current={weatherData.current}
-              todayForecast={weatherData.daily[0]}
-              location={weatherData.location}
-              airQuality={weatherData.airQuality}
-              isFavorite={isFavorite}
-              onToggleFavorite={toggleFavorite}
-              onLocationClick={() => setIsSearchOpen(true)}
-              onLunarClick={() => setActiveTab("lunar")}
-              showLunar={settings.showLunar}
-              isDarkTheme={isDarkTheme}
-            />
+          <div className="space-y-5 sm:space-y-6 animate-in fade-in duration-300">
+            {/* 1. SEAMLESS HERO DISPLAY */}
+            {widgets.hero && (
+              <HeroWeatherCard
+                current={weatherData.current}
+                todayForecast={weatherData.daily[0]}
+                location={weatherData.location}
+                airQuality={weatherData.airQuality}
+                isFavorite={isFavorite}
+                onToggleFavorite={toggleFavorite}
+                onLocationClick={() => setIsSearchOpen(true)}
+                onLunarClick={() => setActiveTab("lunar")}
+                showLunar={settings.showLunar}
+                isDarkTheme={isDarkTheme}
+              />
+            )}
 
-            {/* 2. Dự báo 24 giờ tới (Hourly 24h) */}
-            <HourlyForecastCard hourly={weatherData.hourly} isDarkTheme={isDarkTheme} />
+            {/* 2. QUỸ ĐẠO MẶT TRỜI & TUẦN TRĂNG THIÊN VĂN (TÍNH NĂNG MỚI) */}
+            {widgets.astronomy && (
+              <AstronomyArcCard
+                current={weatherData.current}
+                todayForecast={weatherData.daily[0]}
+                isDarkTheme={isDarkTheme}
+              />
+            )}
 
-            {/* 3. Bản đồ Radar Mưa & Mây động trực tiếp */}
-            <WeatherRadarCard location={weatherData.location} isDarkTheme={isDarkTheme} />
+            {/* 3. PHÂN TÍCH & CẢNH BÁO THÔNG MINH (TÍNH NĂNG MỚI) */}
+            {widgets.insights && (
+              <SmartInsightsCard
+                current={weatherData.current}
+                todayForecast={weatherData.daily[0]}
+                hourly={weatherData.hourly}
+                isDarkTheme={isDarkTheme}
+              />
+            )}
 
-            {/* 4. Khối Âm lịch Việt Nam & Lịch Vạn Niên chuyên sâu (nếu bật trong cài đặt) */}
-            {settings.showLunar && (
+            {/* 4. SO SÁNH THỜI TIẾT ĐA THÀNH PHỐ (TÍNH NĂNG MỚI) */}
+            {widgets.cityCompare && (
+              <CityCompareCard
+                currentCity={location}
+                favoriteCities={favoriteCities}
+                onSelectCity={handleSelectLocation}
+                onOpenSearch={() => setIsSearchOpen(true)}
+                isDarkTheme={isDarkTheme}
+              />
+            )}
+
+            {/* 5. DỰ BÁO 24 GIỜ TỚI (HOURLY NÂNG CẤP XU HƯỚNG) */}
+            {widgets.hourly && (
+              <HourlyForecastCard hourly={weatherData.hourly} isDarkTheme={isDarkTheme} />
+            )}
+
+            {/* 6. BẢN ĐỒ RADAR MÂY MƯA TRỰC TIẾP */}
+            {widgets.radar && (
+              <WeatherRadarCard location={weatherData.location} isDarkTheme={isDarkTheme} />
+            )}
+
+            {/* 7. KHỐI ÂM LỊCH & LỊCH VẠN NIÊN VIỆT NAM */}
+            {widgets.lunar && settings.showLunar && (
               <VietnameseLunarCard
                 onOpenDetailedAlmanac={() => setActiveTab("lunar")}
                 isDarkTheme={isDarkTheme}
               />
             )}
 
-            {/* 5. Dự báo 7 ngày tới (Daily 7-Day Forecast - xếp trên AI Stylist) */}
-            <DailyForecastCard
-              daily={weatherData.daily}
-              showLunar={settings.showLunar}
-              isDarkTheme={isDarkTheme}
-            />
+            {/* 8. DỰ BÁO 7 NGÀY TỚI */}
+            {widgets.daily && (
+              <DailyForecastCard
+                daily={weatherData.daily}
+                showLunar={settings.showLunar}
+                isDarkTheme={isDarkTheme}
+              />
+            )}
 
-            {/* 6. AI Smart Stylist (Tư vấn trang phục thông minh) */}
-            <AiStylistCard
-              current={weatherData.current}
-              todayForecast={weatherData.daily[0]}
-              isDarkTheme={isDarkTheme}
-            />
+            {/* 9. AI SMART STYLIST (TƯ VẤN TRANG PHỤC THÔNG MINH) */}
+            {widgets.aiStylist && (
+              <AiStylistCard
+                current={weatherData.current}
+                todayForecast={weatherData.daily[0]}
+                isDarkTheme={isDarkTheme}
+              />
+            )}
 
-            {/* 7. Chất lượng không khí (Air Quality AQI, PM2.5, PM10) */}
-            <AirQualityCard airQuality={weatherData.airQuality} isDarkTheme={isDarkTheme} />
+            {/* 10. CHẤT LƯỢNG KHÔNG KHÍ (AIR QUALITY AQI, PM2.5, PM10) */}
+            {widgets.airQuality && (
+              <AirQualityCard airQuality={weatherData.airQuality} isDarkTheme={isDarkTheme} />
+            )}
 
-            {/* 8. Chỉ số Sinh hoạt & Đời sống (Rửa xe, Giặt phơi, Thể thao, UV) */}
-            <LifestyleCard items={weatherData.lifestyles} isDarkTheme={isDarkTheme} />
+            {/* 11. CHỈ SỐ SINH HOẠT & ĐỜI SỐNG */}
+            {widgets.lifestyle && (
+              <LifestyleCard items={weatherData.lifestyles} isDarkTheme={isDarkTheme} />
+            )}
 
-            {/* 9. Lưới chỉ số thời tiết chi tiết (Weather Metrics Grid) */}
-            <WeatherMetricsGrid
-              current={weatherData.current}
-              todayForecast={weatherData.daily[0]}
-              isDarkTheme={isDarkTheme}
-            />
+            {/* 12. LƯỚI CHỈ SỐ THỜI TIẾT CHI TIẾT */}
+            {widgets.metrics && (
+              <WeatherMetricsGrid
+                current={weatherData.current}
+                todayForecast={weatherData.daily[0]}
+                isDarkTheme={isDarkTheme}
+              />
+            )}
           </div>
         )}
 
@@ -398,14 +557,14 @@ export default function Home() {
       {/* Footer */}
       <footer className="relative z-10 mt-16 border-t border-slate-500/20 pt-8 pb-12 text-center text-xs opacity-70 max-w-6xl mx-auto px-4">
         <div className="flex flex-wrap items-center justify-center gap-4 mb-2 font-medium">
-          <span>Weather 24h & Lịch Âm Việt Nam (v1.0.61)</span>
+          <span>Weather 24h & Lịch Âm Việt Nam (v1.0.63)</span>
           <span>•</span>
           <span>Dữ liệu: Open-Meteo & OpenStreetMap</span>
           <span>•</span>
           <span>Thuật toán Âm lịch: TS. Hồ Ngọc Đức</span>
         </div>
         <p className="text-[11px]">
-          Giao diện đồng bộ bản Android APK. Hỗ trợ PWA cài đặt trực tiếp lên điện thoại & PC.
+          Giao diện đồng bộ bản Android APK v1.0.63. Hỗ trợ PWA cài đặt trực tiếp lên điện thoại & PC.
         </p>
       </footer>
     </div>

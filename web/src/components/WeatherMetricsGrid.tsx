@@ -35,10 +35,8 @@ export default function WeatherMetricsGrid({
   const windDirIndex = Math.round(current.windDirection / 45) % 8;
   const windDirName = directions[windDirIndex];
 
-  const cardStyle = `p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border transition-all flex flex-col justify-between ${
-    isDarkTheme
-      ? "bg-slate-900/85 border-white/10 text-white shadow-md"
-      : "bg-white/90 border-slate-200/90 text-slate-900 shadow-md shadow-sky-500/5"
+  const cardStyle = `weather-card glass-specular p-3.5 sm:p-5 flex flex-col justify-between ${
+    isDarkTheme ? "text-white" : "text-slate-900"
   }`;
 
   const labelStyle = `flex items-center justify-between text-xs ${
