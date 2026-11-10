@@ -48,6 +48,7 @@ export default function DailyForecastCard({
         <div className="space-y-2.5">
           {daily.map((day, i) => {
             const cond = getWeatherCondition(day.weatherCode, true);
+            const iconName = day.conditionIcon || cond.icon;
             const leftPercent = Math.max(0, Math.min(100, ((day.tempMin - globalMin) / range) * 100));
             const widthPercent = Math.max(15, Math.min(100 - leftPercent, ((day.tempMax - day.tempMin) / range) * 100));
 
@@ -90,7 +91,7 @@ export default function DailyForecastCard({
 
                 {/* Weather Icon & Rain */}
                 <div className="flex items-center gap-2 shrink-0 w-24 sm:w-28">
-                  <WeatherIcon name={cond.icon} className="w-6 h-6" />
+                  <WeatherIcon name={iconName} className="w-6 h-6" />
                   {day.precipitationProbabilityMax >= 20 ? (
                     <div
                       className={`flex items-center gap-0.5 text-[11px] sm:text-xs font-semibold ${
@@ -213,10 +214,13 @@ export default function DailyForecastCard({
                     isDarkTheme ? "text-amber-300" : "text-amber-700 font-bold"
                   }`}
                 >
-                  {getWeatherCondition(selectedDay.weatherCode, true).description}
+                  {selectedDay.conditionDescription || getWeatherCondition(selectedDay.weatherCode, true).description}
                 </div>
               </div>
-              <WeatherIcon name={getWeatherCondition(selectedDay.weatherCode, true).icon} className="w-12 h-12" />
+              <WeatherIcon
+                name={selectedDay.conditionIcon || getWeatherCondition(selectedDay.weatherCode, true).icon}
+                className="w-12 h-12"
+              />
             </div>
 
             {/* Metrics Grid */}

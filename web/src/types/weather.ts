@@ -51,6 +51,8 @@ export interface DailyForecast {
   uvIndexMax: number;
   sunrise: string;
   sunset: string;
+  conditionDescription?: string;
+  conditionIcon?: string;
 }
 
 export interface AirQuality {
