@@ -570,8 +570,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 Hoàng Đạo (Tốt)
               </span>
               <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
-                Hắc Đạo (Xấu)
+                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500" />
+                Hắc Đạo
               </span>
               <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
                 <span>🌕</span>
@@ -707,17 +707,14 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                           <Sparkles className="w-2.5 h-2.5 text-amber-500 fill-amber-400/30" />
                           <span className="hidden md:inline">H.Đạo</span>
                         </span>
-                      ) : item.isBad ? (
-                        <span
-                          className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
-                          title="Ngày Hắc Đạo / Kiêng việc lớn"
-                        >
-                          <span className="hidden md:inline">Hắc Đạo</span>
-                          <span className="md:hidden">Xấu</span>
-                        </span>
                       ) : (
-                        <span className="text-[9px] text-slate-400 dark:text-slate-500 hidden md:inline">
-                          Bình
+                        <span
+                          className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100/90 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-white/10"
+                          title="Ngày Hắc Đạo"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 shrink-0" />
+                          <span className="hidden md:inline">Hắc Đạo</span>
+                          <span className="md:hidden">Hắc</span>
                         </span>
                       )}
                     </div>
