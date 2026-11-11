@@ -577,7 +577,7 @@ export default function Home() {
         {/* TAB 2: LỊCH VẠN NIÊN & ÂM LỊCH */}
         {activeTab === "lunar" && (
           <div className="animate-in fade-in duration-300">
-            <LunarAlmanacView isDarkTheme={isDarkTheme} />
+            <LunarAlmanacView isDarkTheme={isDarkTheme} dailyForecast={weatherData?.daily} />
           </div>
         )}
 

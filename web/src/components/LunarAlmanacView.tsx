@@ -24,14 +24,20 @@ import {
   ArrowRightLeft,
   CheckCircle2,
   XCircle,
-  Filter
+  Filter,
+  Droplets,
+  RotateCcw
 } from "lucide-react";
+import { DailyForecast } from "../types/weather";
+import { getWeatherCondition } from "../services/weatherApi";
+import WeatherIcon from "./WeatherIcon";
 
 interface Props {
   isDarkTheme?: boolean;
+  dailyForecast?: DailyForecast[];
 }
 
-export default function LunarAlmanacView({ isDarkTheme = true }: Props) {
+export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeSubTab, setActiveSubTab] = useState<"day" | "month" | "converter" | "good_days">("day");
 
@@ -56,6 +62,44 @@ export default function LunarAlmanacView({ isDarkTheme = true }: Props) {
   const monthDays = useMemo(() => {
     return getMonthDays(monthYear.year, monthYear.month);
   }, [monthYear]);
+
+  // Map dự báo thời tiết theo ngày chuẩn "YYYY-MM-DD"
+  const dailyForecastMap = useMemo(() => {
+    const map = new Map<string, DailyForecast>();
+    if (!dailyForecast) return map;
+    dailyForecast.forEach((d) => {
+      if (d.date) {
+        map.set(d.date, d);
+      }
+    });
+    return map;
+  }, [dailyForecast]);
+
+  // Dữ liệu ngày trong tháng được bổ sung thông tin Hoàng đạo, Hắc đạo, Rằm/Mùng 1 & thời tiết
+  const enrichedMonthDays = useMemo(() => {
+    return monthDays.map((item) => {
+      const dateStr = `${item.solarYear}-${String(item.solarMonth).padStart(2, "0")}-${String(item.solarDay).padStart(2, "0")}`;
+      const almanac = getDayAlmanac(item.lunarDate);
+      const forecast = dailyForecastMap.get(dateStr);
+      const isHoangDao = item.lunarDate.isAuspiciousDay;
+      const isVeryGood = almanac.level === DayLevel.EXCELLENT || (isHoangDao && almanac.level === DayLevel.GOOD);
+      const isBad = almanac.level === DayLevel.BAD || almanac.level === DayLevel.VERY_BAD;
+      const isFullMoon = item.lunarDate.day === 15;
+      const isNewMoon = item.lunarDate.day === 1;
+
+      return {
+        ...item,
+        dateStr,
+        almanac,
+        forecast,
+        isHoangDao,
+        isVeryGood,
+        isBad,
+        isFullMoon,
+        isNewMoon
+      };
+    });
+  }, [monthDays, dailyForecastMap]);
 
   // Converter state
   const [convertMode, setConvertMode] = useState<"solar2lunar" | "lunar2solar">("solar2lunar");
@@ -461,60 +505,128 @@ export default function LunarAlmanacView({ isDarkTheme = true }: Props) {
       {/* 2. LỊCH THÁNG ÂM - DƯƠNG */}
       {activeSubTab === "month" && (
         <div
-          className={`p-6 rounded-3xl backdrop-blur-xl border ${
+          className={`p-4 sm:p-6 md:p-8 rounded-3xl backdrop-blur-xl border ${
             isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900 shadow-md"
           }`}
         >
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-amber-500/20">
-            <button
-              onClick={() => {
-                if (monthYear.month === 1) setMonthYear({ month: 12, year: monthYear.year - 1 });
-                else setMonthYear({ month: monthYear.month - 1, year: monthYear.year });
-              }}
-              className={`p-2 rounded-xl transition-all ${
-                isDarkTheme ? "bg-white/10 hover:bg-white/15 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-800"
-              }`}
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
+          {/* Header Tháng & Nút chuyển & Chú thích */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4 pb-4 border-b border-amber-500/20">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (monthYear.month === 1) setMonthYear({ month: 12, year: monthYear.year - 1 });
+                  else setMonthYear({ month: monthYear.month - 1, year: monthYear.year });
+                }}
+                className={`p-2.5 rounded-xl transition-all ${
+                  isDarkTheme ? "bg-white/10 hover:bg-white/15 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                }`}
+                title="Tháng trước"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
 
-            <h3 className={`text-base font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
-              Tháng {monthYear.month} / {monthYear.year}
-            </h3>
+              <h3 className={`text-lg sm:text-xl font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                Tháng {monthYear.month} / {monthYear.year}
+              </h3>
 
-            <button
-              onClick={() => {
-                if (monthYear.month === 12) setMonthYear({ month: 1, year: monthYear.year + 1 });
-                else setMonthYear({ month: monthYear.month + 1, year: monthYear.year });
-              }}
-              className={`p-2 rounded-xl transition-all ${
-                isDarkTheme ? "bg-white/10 hover:bg-white/15 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-800"
-              }`}
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+              <button
+                onClick={() => {
+                  if (monthYear.month === 12) setMonthYear({ month: 1, year: monthYear.year + 1 });
+                  else setMonthYear({ month: monthYear.month + 1, year: monthYear.year });
+                }}
+                className={`p-2.5 rounded-xl transition-all ${
+                  isDarkTheme ? "bg-white/10 hover:bg-white/15 text-white" : "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                }`}
+                title="Tháng sau"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              {/* Nút về hôm nay nếu đang xem tháng khác */}
+              {(monthYear.month !== new Date().getMonth() + 1 || monthYear.year !== new Date().getFullYear()) && (
+                <button
+                  onClick={() => {
+                    setMonthYear({
+                      month: new Date().getMonth() + 1,
+                      year: new Date().getFullYear()
+                    });
+                  }}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all ${
+                    isDarkTheme
+                      ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-400/30"
+                      : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
+                  }`}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  Về hôm nay
+                </button>
+              )}
+            </div>
+
+            {/* Chú thích nhanh các biểu tượng */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-xs font-semibold">
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <Sparkles className="w-3.5 h-3.5" />
+                Hoàng Đạo (Tốt)
+              </span>
+              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
+                <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                Hắc Đạo (Xấu)
+              </span>
+              <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                <span>🌕</span>
+                Rằm & Mùng 1
+              </span>
+              {dailyForecast && dailyForecast.length > 0 && (
+                <span className="flex items-center gap-1 text-sky-600 dark:text-sky-400">
+                  <span>🌦️</span>
+                  Kèm thời tiết
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Days of Week Header */}
-          <div className={`grid grid-cols-7 gap-1 text-center text-xs font-bold mb-2 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
-            <span>CN</span>
-            <span>T2</span>
-            <span>T3</span>
-            <span>T4</span>
-            <span>T5</span>
-            <span>T6</span>
-            <span>T7</span>
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2.5 text-center mb-2">
+            {[
+              { label: "CN", isSunday: true },
+              { label: "T2" },
+              { label: "T3" },
+              { label: "T4" },
+              { label: "T5" },
+              { label: "T6" },
+              { label: "T7", isSaturday: true }
+            ].map((d, i) => (
+              <div
+                key={i}
+                className={`py-2 rounded-xl text-xs sm:text-sm font-extrabold uppercase tracking-wider ${
+                  d.isSunday
+                    ? "text-rose-500 bg-rose-500/10"
+                    : d.isSaturday
+                    ? "text-sky-500 bg-sky-500/10"
+                    : isDarkTheme
+                    ? "text-slate-400 bg-white/5"
+                    : "text-slate-600 bg-slate-100"
+                }`}
+              >
+                {d.label}
+              </div>
+            ))}
           </div>
 
           {/* Grid of days */}
-          <div className="grid grid-cols-7 gap-1.5">
+          <div className="grid grid-cols-7 gap-1.5 sm:gap-2.5">
             {/* Empty slots for first week offset */}
-            {Array.from({ length: monthDays[0]?.dayOfWeek ?? 0 }).map((_, i) => (
-              <div key={`empty-${i}`} className="h-16 rounded-xl bg-transparent" />
+            {Array.from({ length: enrichedMonthDays[0]?.dayOfWeek ?? 0 }).map((_, i) => (
+              <div
+                key={`empty-${i}`}
+                className="min-h-[105px] sm:min-h-[125px] md:min-h-[135px] rounded-2xl bg-black/[0.015] dark:bg-white/[0.02] border border-dashed border-slate-200/50 dark:border-white/5 opacity-40"
+              />
             ))}
 
-            {monthDays.map((item, idx) => {
-              const isWeekend = item.dayOfWeek === 0 || item.dayOfWeek === 6;
+            {enrichedMonthDays.map((item, idx) => {
+              const isSunday = item.dayOfWeek === 0;
+              const isSaturday = item.dayOfWeek === 6;
 
               return (
                 <button
@@ -523,34 +635,168 @@ export default function LunarAlmanacView({ isDarkTheme = true }: Props) {
                     setSelectedDate(new Date(item.solarYear, item.solarMonth - 1, item.solarDay));
                     setActiveSubTab("day");
                   }}
-                  className={`h-16 p-1.5 rounded-xl border flex flex-col justify-between text-left transition-all ${
+                  className={`min-h-[105px] sm:min-h-[125px] md:min-h-[135px] p-2 sm:p-2.5 rounded-2xl border flex flex-col justify-between text-left transition-all duration-200 group active:scale-[0.98] ${
                     item.isToday
-                      ? "bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/20"
+                      ? isDarkTheme
+                        ? "bg-gradient-to-br from-amber-500/25 via-amber-950/40 to-slate-900 border-2 border-amber-400 ring-2 ring-amber-400/40 shadow-lg shadow-amber-500/20 text-white"
+                        : "bg-gradient-to-br from-amber-100/90 via-amber-50/70 to-white border-2 border-amber-500 ring-2 ring-amber-400/50 shadow-md text-slate-900"
+                      : item.isHoangDao
+                      ? isDarkTheme
+                        ? "bg-gradient-to-br from-slate-900/80 via-slate-900/50 to-amber-950/20 border-amber-500/25 hover:border-amber-400/60 hover:bg-white/10 text-white shadow-xs"
+                        : "bg-gradient-to-br from-amber-50/60 via-white to-yellow-50/40 border-amber-200/80 hover:border-amber-300 hover:bg-amber-50/90 text-slate-900 shadow-2xs"
                       : isDarkTheme
-                      ? "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                      : "bg-white border-slate-200 hover:bg-slate-50 text-slate-900 shadow-2xs"
+                      ? "bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/10 text-slate-300"
+                      : "bg-white border-slate-200/80 hover:border-slate-300 hover:bg-slate-50 text-slate-800 shadow-2xs"
                   }`}
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <span
-                      className={`text-xs font-bold ${
-                        item.isToday ? "text-slate-950" : isWeekend ? "text-rose-500" : isDarkTheme ? "text-white" : "text-slate-900"
-                      }`}
-                    >
-                      {item.solarDay}
-                    </span>
-                    {item.lunarDate.day === 1 || item.lunarDate.day === 15 ? (
-                      <span className={`w-2 h-2 rounded-full ${item.isToday ? "bg-slate-950" : "bg-amber-500"}`} />
-                    ) : null}
+                  {/* Top Row: Solar Day + Good/Bad / Festival Badge */}
+                  <div className="flex items-start justify-between w-full gap-1">
+                    <div className="flex items-center gap-1">
+                      <span
+                        className={`text-base sm:text-xl font-black leading-none ${
+                          item.isToday
+                            ? "text-amber-600 dark:text-amber-300"
+                            : isSunday
+                            ? "text-rose-500"
+                            : isSaturday
+                            ? "text-sky-500"
+                            : isDarkTheme
+                            ? "text-white"
+                            : "text-slate-900"
+                        }`}
+                      >
+                        {item.solarDay}
+                      </span>
+                      {item.isToday && (
+                        <span className="hidden sm:inline-block px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase bg-amber-500 text-slate-950 leading-none">
+                          Nay
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Biểu tượng Ngày Tốt / Ngày Xấu / Rằm / Mùng 1 */}
+                    <div className="shrink-0 flex items-center">
+                      {item.isNewMoon ? (
+                        <span
+                          className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
+                          title="Mùng 1 đầu tháng Âm lịch"
+                        >
+                          🌑 <span className="hidden md:inline">M.Một</span>
+                        </span>
+                      ) : item.isFullMoon ? (
+                        <span
+                          className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/40"
+                          title="Ngày Rằm trăng tròn"
+                        >
+                          🌕 <span className="hidden md:inline">Rằm</span>
+                        </span>
+                      ) : item.isVeryGood ? (
+                        <span
+                          className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                          title="Hoàng Đạo (Đại Cát) - Rất tốt lành"
+                        >
+                          <Sparkles className="w-2.5 h-2.5 text-emerald-500 fill-emerald-400/30" />
+                          <span className="hidden md:inline">Đại Cát</span>
+                          <span className="md:hidden">Tốt</span>
+                        </span>
+                      ) : item.isHoangDao ? (
+                        <span
+                          className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-400/30"
+                          title="Ngày Hoàng Đạo - Cát nhật"
+                        >
+                          <Sparkles className="w-2.5 h-2.5 text-amber-500 fill-amber-400/30" />
+                          <span className="hidden md:inline">H.Đạo</span>
+                        </span>
+                      ) : item.isBad ? (
+                        <span
+                          className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                          title="Ngày Hắc Đạo / Kiêng việc lớn"
+                        >
+                          <span className="hidden md:inline">Hắc Đạo</span>
+                          <span className="md:hidden">Xấu</span>
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 hidden md:inline">
+                          Bình
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div
-                    className={`text-[10px] font-semibold truncate ${
-                      item.isToday ? "text-slate-900" : isDarkTheme ? "text-amber-300" : "text-amber-700"
-                    }`}
-                  >
-                    {item.lunarDate.day}/{item.lunarDate.month}
-                    {item.lunarDate.isLeapMonth ? " (N)" : ""}
+                  {/* Middle Row: Biểu tượng Thời tiết dự báo (nếu có dữ liệu) HOẶC Tiết khí / Can chi */}
+                  {item.forecast ? (
+                    <div className="my-1 px-1.5 py-1 rounded-xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.04] dark:border-white/[0.06] flex items-center justify-between gap-1 w-full">
+                      <div className="flex items-center gap-1 min-w-0">
+                        <WeatherIcon
+                          name={
+                            item.forecast.conditionIcon ||
+                            getWeatherCondition(item.forecast.weatherCode, true).icon
+                          }
+                          className="w-5 h-5 sm:w-6 sm:h-6 shrink-0"
+                        />
+                        <div className="flex flex-col leading-none">
+                          <span className="text-[11px] sm:text-xs font-black text-slate-800 dark:text-slate-100">
+                            {Math.round(item.forecast.tempMax)}°
+                          </span>
+                          <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                            {Math.round(item.forecast.tempMin)}°
+                          </span>
+                        </div>
+                      </div>
+
+                      {item.forecast.precipitationProbabilityMax >= 20 ? (
+                        <div
+                          className="flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold text-sky-600 dark:text-sky-400 shrink-0"
+                          title={`Xác suất mưa: ${item.forecast.precipitationProbabilityMax}% - Lượng mưa: ${item.forecast.precipitationSum}mm`}
+                        >
+                          <Droplets className="w-2.5 h-2.5 text-sky-500 shrink-0" />
+                          <span>{item.forecast.precipitationProbabilityMax}%</span>
+                        </div>
+                      ) : (
+                        <span
+                          className="text-[9px] text-slate-400 dark:text-slate-500 hidden lg:inline truncate max-w-[45px]"
+                          title={item.forecast.conditionDescription}
+                        >
+                          {item.forecast.conditionDescription || "Khô ráo"}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="my-1 py-1 px-1 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 w-full min-h-[28px]">
+                      <span className="truncate max-w-[70px] sm:max-w-[90px]">
+                        {item.lunarDate.solarTerm || item.lunarDate.dayCanChi}
+                      </span>
+                      {item.lunarDate.festival && (
+                        <span className="text-rose-500 font-bold truncate max-w-[60px] text-[9px]">
+                          {item.lunarDate.festival}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Bottom Row: Lunar Date & Can Chi */}
+                  <div className="flex items-center justify-between w-full pt-1 border-t border-black/[0.04] dark:border-white/[0.06] text-left">
+                    <div className="flex items-center gap-1">
+                      <span
+                        className={`text-xs sm:text-sm font-extrabold ${
+                          item.isToday
+                            ? "text-amber-600 dark:text-amber-300"
+                            : item.isFullMoon || item.isNewMoon
+                            ? "text-rose-600 dark:text-rose-400"
+                            : isDarkTheme
+                            ? "text-amber-300"
+                            : "text-amber-800"
+                        }`}
+                      >
+                        {item.lunarDate.day}/{item.lunarDate.month}
+                        {item.lunarDate.isLeapMonth ? "N" : ""}
+                      </span>
+                      <span className="text-[9.5px] text-slate-400 font-normal hidden sm:inline">ÂL</span>
+                    </div>
+
+                    <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[60px] sm:max-w-[80px]">
+                      {item.lunarDate.canDay} {item.lunarDate.chiDay}
+                    </span>
                   </div>
                 </button>
               );
