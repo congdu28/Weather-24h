@@ -2,7 +2,8 @@
 
 import React, { useMemo } from "react";
 import { getTodayLunar, LunarDate } from "../utils/lunarCalendar";
-import { getDayAlmanac } from "../utils/lunarAlmanac";
+import { getDayAlmanac, getPersonalProfile } from "../utils/lunarAlmanac";
+import { usePersistentState } from "../utils/usePersistentState";
 import {
   Calendar,
   Compass,
@@ -20,6 +21,10 @@ interface Props {
 export default function VietnameseLunarCard({ onOpenDetailedAlmanac, isDarkTheme = true }: Props) {
   const todayLunar: LunarDate = useMemo(() => getTodayLunar(), []);
   const almanac = useMemo(() => getDayAlmanac(todayLunar), [todayLunar]);
+  const [birthYear] = usePersistentState<number>("weather24h_birth_year", 0);
+  const profile = useMemo(() => {
+    return birthYear >= 1900 && birthYear <= 2100 ? getPersonalProfile(birthYear) : null;
+  }, [birthYear]);
 
   return (
     <div
@@ -45,9 +50,16 @@ export default function VietnameseLunarCard({ onOpenDetailedAlmanac, isDarkTheme
                 GMT+7
               </span>
             </h2>
-            <p className={`text-[11px] sm:text-xs font-medium ${isDarkTheme ? "text-amber-200/70" : "text-amber-800"}`}>
-              Lịch Vạn Niên & Thiên Văn Học Hồ Ngọc Đức
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className={`text-[11px] sm:text-xs font-medium ${isDarkTheme ? "text-amber-200/70" : "text-amber-800"}`}>
+                Lịch Vạn Niên & Thiên Văn Học Hồ Ngọc Đức
+              </p>
+              {profile && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+                  Tuổi {profile.canChi} ({profile.birthYear})
+                </span>
+              )}
+            </div>
           </div>
         </div>
 

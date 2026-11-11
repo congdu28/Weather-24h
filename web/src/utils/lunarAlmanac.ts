@@ -143,6 +143,458 @@ export interface DayAlmanac {
   badActivities: AlmanacActivity[];
 }
 
+export interface PersonalProfile {
+  birthYear: number;
+  canIndex: number;
+  chiIndex: number;
+  canChi: string;
+  zodiacAnimal: string;
+  napAm: string;
+  element: FiveElement;
+  isYang: boolean;
+  yinYangLabel: string;
+  canElement: FiveElement;
+  chiElement: FiveElement;
+  luckyColors: string;
+  unluckyColors: string;
+  luckyNumbers: number[];
+  cungMenh: {
+    menhNam: string;
+    menhNu: string;
+    nhomNam: "Đông Tứ Mệnh" | "Tây Tứ Mệnh";
+    nhomNu: "Đông Tứ Mệnh" | "Tây Tứ Mệnh";
+    huongTotNam: string[];
+    huongTotNu: string[];
+  };
+  tamHop: string[];
+  lucHop: string;
+  tuHanhXung: string[];
+}
+
+export interface PersonalDayMatch {
+  verdict: ActivityVerdict;
+  points: number;
+  scorePercent: number;
+  badgeLabel: string;
+  badgeColor: string;
+  notes: string[];
+  luckyAdvice: string;
+  cautionAdvice: string;
+}
+
+export interface GoodDayResult {
+  date: Date;
+  lunar: LunarDate;
+  almanac: DayAlmanac;
+  score: number;
+  level: DayLevel;
+  activityScore: number;
+  personalMatch?: PersonalDayMatch;
+}
+
+export const ZODIAC_ANIMALS = [
+  "Chuột (Tý)", "Trâu (Sửu)", "Hổ (Dần)", "Mèo (Mão)",
+  "Rồng (Thìn)", "Rắn (Tỵ)", "Ngựa (Ngọ)", "Dê (Mùi)",
+  "Khỉ (Thân)", "Gà (Dậu)", "Chó (Tuất)", "Lợn (Hợi)"
+];
+
+export const ZODIAC_TRAITS: Record<number, { title: string; personality: string; career: string }> = {
+  0: { title: "Túc Trí Đa Mưu", personality: "Nhanh nhẹn, thông minh, thích ứng cao, biết tích lũy và nhìn xa trông rộng.", career: "Kinh doanh, tài chính, quản lý, nghiên cứu chiến lược." },
+  1: { title: "Cần Kiệm Trì Trọng", personality: "Chăm chỉ, kiên định, thực tế, luôn tạo dựng sự nghiệp bằng sự bền bỉ vững chắc.", career: "Bất động sản, xây dựng, kỹ thuật, sản xuất, nông nghiệp công nghệ." },
+  2: { title: "Dũng Cảm Quyết Đoán", personality: "Uy phong, nhiệt huyết, dám nghĩ dám làm, mang tố chất của nhà tiên phong lãnh đạo.", career: "Quản trị doanh nghiệp, quân sự, ngoại giao, chính trị, khởi nghiệp." },
+  3: { title: "Ôn Hòa Tinh Tế", personality: "Khéo léo, chu đáo, mắt thẩm mỹ cao, giỏi đối nhân xử thế và gìn giữ hòa khí.", career: "Nghệ thuật, thiết kế, truyền thông, sư phạm, tâm lý, dịch vụ cao cấp." },
+  4: { title: "Hùng Tâm Tráng Khí", personality: "Khí phách, tham vọng, nhiều hoài bão lớn, luôn khao khát vươn tầm đỉnh cao.", career: "Lãnh đạo, chính khách, doanh nhân đầu tư, công nghệ đột phá." },
+  5: { title: "Thâm Trầm Cơ Trí", personality: "Sâu sắc, nhạy bén, trực giác chuẩn xác, phong thái điềm tĩnh và khó bị đoán định.", career: "Nghiên cứu khoa học, điều tra, tư vấn pháp lý, triết học, đầu tư chứng khoán." },
+  6: { title: "Khoáng Đạt Tự Do", personality: "Năng động, cởi mở, dồi dào năng lượng, thích xê dịch và theo đuổi đam mê.", career: "Du lịch, xuất nhập khẩu, truyền thông, thể thao, biểu diễn, quan hệ công chúng." },
+  7: { title: "Nhân Hậu Lương Thiện", personality: "Thân thiện, giàu lòng trắc ẩn, yêu chuộng hòa bình, đời sống nội tâm phong phú.", career: "Y tế, từ thiện, giáo dục, văn học nghệ thuật, nhân sự." },
+  8: { title: "Thông Tuệ Biến Hóa", personality: "Linh hoạt, hóm hỉnh, đa tài, giỏi xử lý tình huống khó và giao tiếp thuyết phục.", career: "Công nghệ thông tin, ngoại giao, marketing, diễn thuyết, giải trí." },
+  9: { title: "Nguyên Tắc Chu Toàn", personality: "Chính xác, kỷ luật, yêu cầu cao về sự hoàn hảo, trung thực và có trách nhiệm lớn.", career: "Kiểm toán, tài chính, luật sư, quân đội, quản lý chất lượng." },
+  10: { title: "Trung Nghĩa Trực Trực", personality: "Trung thành, khẳng khái, giàu tinh thần bảo vệ lẽ phải, đáng tin cậy tuyệt đối.", career: "An ninh, pháp lý, công tác xã hội, quản lý nhân sự, bảo hiểm." },
+  11: { title: "Phúc Hậu An Nhiên", personality: "Hòa nhã, rộng rãi, hào phóng, có phúc lộc dồi dào và tính cách lạc quan yêu đời.", career: "Ẩm thực, khách sạn, kinh doanh bán lẻ, từ thiện, công nghệ giải trí." }
+};
+
+export function isClash(a: number, b: number): boolean {
+  return (a - b + 12) % 12 === 6;
+}
+
+export function isHarm(a: number, b: number): boolean {
+  return (a + b) % 12 === 7;
+}
+
+export function isSixHarmony(a: number, b: number): boolean {
+  return (a + b) % 12 === 1;
+}
+
+export function isTripleHarmony(a: number, b: number): boolean {
+  return a !== b && a % 4 === b % 4;
+}
+
+const PUNISH_GROUPS = [
+  new Set([0, 3]),
+  new Set([2, 5, 8]),
+  new Set([1, 10, 7])
+];
+const SELF_PUNISH = new Set([4, 6, 9, 11]);
+
+export function isPunish(a: number, b: number): boolean {
+  if (a === b) return SELF_PUNISH.has(a);
+  return PUNISH_GROUPS.some(set => set.has(a) && set.has(b));
+}
+
+const BREAK_PAIRS = new Set([
+  "0,9", "9,0",
+  "3,6", "6,3",
+  "1,4", "4,1",
+  "7,10", "10,7"
+]);
+
+export function isBreak(a: number, b: number): boolean {
+  return BREAK_PAIRS.has(`${a},${b}`);
+}
+
+export function elementOfCan(canIdx: number): FiveElement {
+  switch (canIdx) {
+    case 0:
+    case 1:
+      return FiveElement.MOC;
+    case 2:
+    case 3:
+      return FiveElement.HOA;
+    case 4:
+    case 5:
+      return FiveElement.THO;
+    case 6:
+    case 7:
+      return FiveElement.KIM;
+    default:
+      return FiveElement.THUY;
+  }
+}
+
+export function elementOfChi(chiIdx: number): FiveElement {
+  switch (chiIdx) {
+    case 2:
+    case 3:
+      return FiveElement.MOC;
+    case 5:
+    case 6:
+      return FiveElement.HOA;
+    case 8:
+    case 9:
+      return FiveElement.KIM;
+    case 11:
+    case 0:
+      return FiveElement.THUY;
+    default:
+      return FiveElement.THO;
+  }
+}
+
+export function isCanHarmony(a: number, b: number): boolean {
+  return (a + 5) % 10 === b || (b + 5) % 10 === a;
+}
+
+export function isCanClash(a: number, b: number): boolean {
+  return a % 2 === b % 2 && (((a + 6) % 10 === b) || ((b + 6) % 10 === a)) && (a % 5 !== 2);
+}
+
+export function elementGenerates(source: FiveElement, target: FiveElement): boolean {
+  switch (source) {
+    case FiveElement.KIM: return target === FiveElement.THUY;
+    case FiveElement.THUY: return target === FiveElement.MOC;
+    case FiveElement.MOC: return target === FiveElement.HOA;
+    case FiveElement.HOA: return target === FiveElement.THO;
+    case FiveElement.THO: return target === FiveElement.KIM;
+  }
+}
+
+export function elementOvercomes(source: FiveElement, target: FiveElement): boolean {
+  switch (source) {
+    case FiveElement.KIM: return target === FiveElement.MOC;
+    case FiveElement.MOC: return target === FiveElement.THO;
+    case FiveElement.THO: return target === FiveElement.THUY;
+    case FiveElement.THUY: return target === FiveElement.HOA;
+    case FiveElement.HOA: return target === FiveElement.KIM;
+  }
+}
+
+const CUNG_NAMES = [
+  "", "Khảm (Thủy)", "Khôn (Thổ)", "Chấn (Mộc)", "Tốn (Mộc)",
+  "Trung Cung", "Càn (Kim)", "Đoài (Kim)", "Cấn (Thổ)", "Ly (Hỏa)"
+];
+
+export function calculateCungPhi(year: number): {
+  menhNam: string;
+  menhNu: string;
+  nhomNam: "Đông Tứ Mệnh" | "Tây Tứ Mệnh";
+  nhomNu: "Đông Tứ Mệnh" | "Tây Tứ Mệnh";
+  huongTotNam: string[];
+  huongTotNu: string[];
+} {
+  let sum = String(year).split("").reduce((acc, c) => acc + parseInt(c, 10), 0);
+  while (sum > 9) {
+    sum = String(sum).split("").reduce((acc, c) => acc + parseInt(c, 10), 0);
+  }
+
+  let cungNamIdx: number;
+  let cungNuIdx: number;
+
+  if (year < 2000) {
+    cungNamIdx = (10 - sum) % 9 || 9;
+    cungNuIdx = (sum + 5) % 9 || 9;
+  } else {
+    cungNamIdx = (9 - sum) % 9 || 9;
+    cungNuIdx = (sum + 6) % 9 || 9;
+  }
+
+  if (cungNamIdx === 5) cungNamIdx = 2;
+  if (cungNuIdx === 5) cungNuIdx = 8;
+
+  const isDongTu = (cung: number) => [1, 9, 3, 4].includes(cung);
+  const huongDongTu = ["Đông (Chính Đông)", "Đông Nam", "Nam (Chính Nam)", "Bắc (Chính Bắc)"];
+  const huongTayTu = ["Tây (Chính Tây)", "Tây Bắc", "Tây Nam", "Đông Bắc"];
+
+  return {
+    menhNam: CUNG_NAMES[cungNamIdx] || "Càn (Kim)",
+    menhNu: CUNG_NAMES[cungNuIdx] || "Ly (Hỏa)",
+    nhomNam: isDongTu(cungNamIdx) ? "Đông Tứ Mệnh" : "Tây Tứ Mệnh",
+    nhomNu: isDongTu(cungNuIdx) ? "Đông Tứ Mệnh" : "Tây Tứ Mệnh",
+    huongTotNam: isDongTu(cungNamIdx) ? huongDongTu : huongTayTu,
+    huongTotNu: isDongTu(cungNuIdx) ? huongDongTu : huongTayTu
+  };
+}
+
+const TAM_HOP_MAP: Record<number, string[]> = {
+  0: ["Thân", "Thìn"],
+  1: ["Tỵ", "Dậu"],
+  2: ["Ngọ", "Tuất"],
+  3: ["Hợi", "Mùi"],
+  4: ["Thân", "Tý"],
+  5: ["Dậu", "Sửu"],
+  6: ["Dần", "Tuất"],
+  7: ["Hợi", "Mão"],
+  8: ["Tý", "Thìn"],
+  9: ["Tỵ", "Sửu"],
+  10: ["Dần", "Ngọ"],
+  11: ["Mão", "Mùi"]
+};
+
+const LUC_HOP_MAP: Record<number, string> = {
+  0: "Sửu", 1: "Tý", 2: "Hợi", 3: "Tuất", 4: "Dậu", 5: "Thân",
+  6: "Mùi", 7: "Ngọ", 8: "Tỵ", 9: "Thìn", 10: "Mão", 11: "Dần"
+};
+
+const TU_HANH_XUNG_MAP: Record<number, string[]> = {
+  0: ["Ngọ", "Mão", "Dậu"],
+  6: ["Tý", "Mão", "Dậu"],
+  3: ["Dậu", "Tý", "Ngọ"],
+  9: ["Mão", "Tý", "Ngọ"],
+
+  2: ["Thân", "Tỵ", "Hợi"],
+  8: ["Dần", "Tỵ", "Hợi"],
+  5: ["Hợi", "Dần", "Thân"],
+  11: ["Tỵ", "Dần", "Thân"],
+
+  1: ["Mùi", "Thìn", "Tuất"],
+  7: ["Sửu", "Thìn", "Tuất"],
+  4: ["Tuất", "Sửu", "Mùi"],
+  10: ["Thìn", "Sửu", "Mùi"]
+};
+
+export function getPersonalProfile(birthYear: number): PersonalProfile {
+  const canIdx = ((birthYear + 6) % 10 + 10) % 10;
+  const chiIdx = ((birthYear + 8) % 12 + 12) % 12;
+  const nAm = napAm(canIdx, chiIdx);
+  const elem = elementOfNapAm(nAm);
+  const isYang = canIdx % 2 === 0;
+
+  const luckyColorsMap: Record<FiveElement, string> = {
+    [FiveElement.KIM]: "Trắng, xám, bạc, ánh kim (bản mệnh) • Vàng, nâu đất (Thổ sinh Kim)",
+    [FiveElement.THUY]: "Đen, xanh nước biển (bản mệnh) • Trắng, xám, ánh kim (Kim sinh Thủy)",
+    [FiveElement.MOC]: "Xanh lá cây (bản mệnh) • Đen, xanh nước biển (Thủy sinh Mộc)",
+    [FiveElement.HOA]: "Đỏ, hồng, tím, cam (bản mệnh) • Xanh lá cây (Mộc sinh Hỏa)",
+    [FiveElement.THO]: "Vàng, nâu đất (bản mệnh) • Đỏ, hồng, tím, cam (Hỏa sinh Thổ)"
+  };
+
+  const unluckyColorsMap: Record<FiveElement, string> = {
+    [FiveElement.KIM]: "Đỏ, hồng, tím (Hỏa khắc Kim)",
+    [FiveElement.THUY]: "Vàng, nâu đất (Thổ khắc Thủy)",
+    [FiveElement.MOC]: "Trắng, xám, bạc (Kim khắc Mộc)",
+    [FiveElement.HOA]: "Đen, xanh dương đậm (Thủy khắc Hỏa)",
+    [FiveElement.THO]: "Xanh lá cây (Mộc khắc Thổ)"
+  };
+
+  const luckyNumbersMap: Record<FiveElement, number[]> = {
+    [FiveElement.KIM]: [6, 7, 0, 2, 5, 8],
+    [FiveElement.THUY]: [1, 6, 7],
+    [FiveElement.MOC]: [3, 4, 1],
+    [FiveElement.HOA]: [9, 3, 4],
+    [FiveElement.THO]: [0, 2, 5, 8, 9]
+  };
+
+  return {
+    birthYear,
+    canIndex: canIdx,
+    chiIndex: chiIdx,
+    canChi: `${CAN[canIdx]} ${CHI[chiIdx]}`,
+    zodiacAnimal: ZODIAC_ANIMALS[chiIdx],
+    napAm: nAm,
+    element: elem,
+    isYang,
+    yinYangLabel: isYang ? `Dương (${CAN[canIdx]} ${elementOfCan(canIdx)})` : `Âm (${CAN[canIdx]} ${elementOfCan(canIdx)})`,
+    canElement: elementOfCan(canIdx),
+    chiElement: elementOfChi(chiIdx),
+    luckyColors: luckyColorsMap[elem],
+    unluckyColors: unluckyColorsMap[elem],
+    luckyNumbers: luckyNumbersMap[elem],
+    cungMenh: calculateCungPhi(birthYear),
+    tamHop: TAM_HOP_MAP[chiIdx] || [],
+    lucHop: LUC_HOP_MAP[chiIdx] || "",
+    tuHanhXung: TU_HANH_XUNG_MAP[chiIdx] || []
+  };
+}
+
+export function matchPersonalDay(profile: PersonalProfile, almanac: DayAlmanac): PersonalDayMatch {
+  const jd = almanac.lunar.julianDay > 0 ? almanac.lunar.julianDay : jdFromDate(almanac.lunar.solarDay, almanac.lunar.solarMonth, almanac.lunar.solarYear);
+  const dayCan = (jd + 9) % 10;
+  const dayChi = (jd + 1) % 12;
+
+  const notes: string[] = [];
+  let points = 0;
+  const userCan = profile.canIndex;
+  const userChi = profile.chiIndex;
+  const userAnimal = `tuổi ${CHI[userChi]} (${profile.canChi})`;
+
+  // 1. Địa Chi
+  if (isClash(userChi, dayChi)) {
+    const canClash = elementOvercomes(elementOfCan(dayCan), elementOfCan(userCan)) ||
+                     elementOvercomes(elementOfCan(userCan), elementOfCan(dayCan));
+    if (canClash) {
+      points -= 6;
+      notes.push(`⚠️ Thiên khắc địa xung: Ngày ${CAN[dayCan]} ${CHI[dayChi]} khắc trực diện ${userAnimal} – đại kỵ khởi sự việc trọng đại.`);
+    } else {
+      points -= 4;
+      notes.push(`⚠️ Địa chi lục xung: Ngày ${CHI[dayChi]} xung trực diện với tuổi ${CHI[userChi]}.`);
+    }
+  }
+
+  if (isSixHarmony(userChi, dayChi)) {
+    points += 3;
+    notes.push(`✅ Địa chi lục hợp: Ngày ${CHI[dayChi]} nhị hợp với tuổi ${CHI[userChi]} (cát khí hanh thông).`);
+  }
+
+  if (isTripleHarmony(userChi, dayChi)) {
+    points += 2;
+    notes.push(`✅ Địa chi tam hợp: Ngày ${CHI[dayChi]} tam hợp với tuổi ${CHI[userChi]} (quý nhân trợ giúp).`);
+  }
+
+  if (isHarm(userChi, dayChi)) {
+    points -= 2;
+    notes.push(`⚠️ Địa chi tương hại: Ngày ${CHI[dayChi]} lục hại với tuổi ${CHI[userChi]}.`);
+  }
+
+  if (isPunish(userChi, dayChi)) {
+    points -= 2;
+    notes.push(`⚠️ Địa chi tương hình: Ngày ${CHI[dayChi]} phạm hình với tuổi ${CHI[userChi]}.`);
+  }
+
+  if (isBreak(userChi, dayChi)) {
+    points -= 1;
+    notes.push(`⚠️ Địa chi tương phá: Ngày ${CHI[dayChi]} lục phá với tuổi ${CHI[userChi]}.`);
+  }
+
+  // 2. Thiên Can
+  const dayCanEl = elementOfCan(dayCan);
+  const userCanEl = elementOfCan(userCan);
+
+  if (isCanHarmony(dayCan, userCan)) {
+    points += 2;
+    notes.push(`✅ Thiên can ngũ hợp: Can ngày ${CAN[dayCan]} tương hợp với can tuổi ${CAN[userCan]}.`);
+  } else if (isCanClash(dayCan, userCan)) {
+    points -= 1;
+    notes.push(`⚠️ Thiên can tương xung: Can ngày ${CAN[dayCan]} xung can tuổi ${CAN[userCan]}.`);
+  } else if (elementGenerates(dayCanEl, userCanEl)) {
+    points += 1;
+    notes.push(`✅ Thiên can tương sinh: Can ngày (${dayCanEl}) sinh dưỡng can tuổi (${userCanEl}).`);
+  } else if (elementOvercomes(dayCanEl, userCanEl) && !isClash(userChi, dayChi)) {
+    points -= 1;
+    notes.push(`⚠️ Thiên can khắc: Can ngày ${CAN[dayCan]} khắc can tuổi ${CAN[userCan]}.`);
+  }
+
+  // 3. Ngũ Hành Nạp Âm
+  const dayEl = almanac.napAmElement;
+  const userEl = profile.element;
+
+  if (elementGenerates(dayEl, userEl)) {
+    points += 3;
+    notes.push(`✅ Ngũ hành nạp âm: Ngày ${almanac.napAm} (${dayEl}) tương sinh bản mệnh ${profile.napAm} (${userEl}) – vượng khí đại cát.`);
+  } else if (dayEl === userEl) {
+    points += 1;
+    notes.push(`✅ Ngũ hành nạp âm: Ngày ${almanac.napAm} tỷ hòa cùng hành ${userEl} với bản mệnh – thuận hòa vững bền.`);
+  } else if (elementOvercomes(userEl, dayEl)) {
+    points += 1;
+    notes.push(`✅ Ngũ hành nạp âm: Bản mệnh ${userEl} chế khắc được hành ngày (${dayEl}) – nắm thế chủ động, đắc tài lộc.`);
+  } else if (elementOvercomes(dayEl, userEl)) {
+    points -= 3;
+    notes.push(`⚠️ Ngũ hành nạp âm: Ngày ${almanac.napAm} (${dayEl}) khắc bản mệnh ${profile.napAm} (${userEl}) – hao tổn, nên thận trọng.`);
+  } else {
+    notes.push(`ℹ️ Ngũ hành nạp âm: Bản mệnh ${userEl} sinh xuất cho hành ngày (${dayEl}) – hao khí nhẹ, nên giữ sức khỏe.`);
+  }
+
+  // 4. Âm Dương
+  const isYangDay = ((jd + 9) % 10) % 2 === 0;
+  if (profile.isYang !== isYangDay) {
+    notes.push(`☯️ Âm Dương giao hòa: Tuổi ${profile.isYang ? "Dương" : "Âm"} gặp ngày ${isYangDay ? "Dương" : "Âm"} – cân bằng cát lợi.`);
+  }
+
+  let verdict = ActivityVerdict.NEUTRAL;
+  if (isClash(userChi, dayChi) || points <= -3) {
+    verdict = ActivityVerdict.BAD;
+  } else if (points >= 2) {
+    verdict = ActivityVerdict.GOOD;
+  }
+
+  const scorePercent = Math.max(10, Math.min(99, Math.round(50 + points * 6 + (almanac.score - 50) * 0.25)));
+
+  let badgeLabel = "Bình hòa";
+  let badgeColor = "slate";
+  let luckyAdvice = "Vận khí ngày bình ổn. Mọi việc cứ tuần tự tiến hành, cẩn trọng kiểm tra giấy tờ sẽ gặt hái kết quả tốt.";
+  let cautionAdvice = "Giữ tâm thái bình hòa, tránh nóng nảy trong giao tiếp và cẩn trọng khi điều khiển phương tiện.";
+
+  if (verdict === ActivityVerdict.BAD) {
+    badgeLabel = `Xung tuổi (${points > 0 ? `+${points}` : points})`;
+    badgeColor = "rose";
+    luckyAdvice = "Nên làm việc thiện, an dưỡng tinh thần, hoàn thành các công việc thường nhật dang dở.";
+    cautionAdvice = "Ngày xung tuổi gia chủ. Tránh xuất tiền lớn, ký hợp đồng kinh tế, tránh tranh chấp cãi cọ hay đi xa đêm khuya.";
+  } else if (points >= 5) {
+    badgeLabel = `Rất hợp (+${points})`;
+    badgeColor = "emerald";
+    luckyAdvice = "Thời cơ đại cát hanh thông! Rất thuận lợi để xuất hành, gặp gỡ đối tác, ký kết, mở rộng kinh doanh hay cầu tài.";
+    cautionAdvice = "Tránh tự phụ chủ quan, hãy tận dụng cát khí để giải quyết dứt điểm các kế hoạch quan trọng.";
+  } else if (points > 0) {
+    badgeLabel = `Hợp tuổi (+${points})`;
+    badgeColor = "emerald";
+    luckyAdvice = "Ngày sinh vượng cát tường. Tiến hành công việc làm ăn, trao đổi hợp tác hoặc đi lại đều gặp may mắn.";
+    cautionAdvice = "Hạn chế nhận lời hứa hẹn quá sức và chú ý giờ xuất hành để tối ưu tài lộc.";
+  } else if (points < 0) {
+    badgeLabel = `Hơi khắc (${points})`;
+    badgeColor = "orange";
+    luckyAdvice = "Tập trung giải quyết các việc nội bộ, củng cố gia đạo và chuẩn bị kế hoạch.";
+    cautionAdvice = "Hạn chế quyết định vội vàng, thận trọng lời ăn tiếng nói nơi công sở.";
+  }
+
+  return {
+    verdict,
+    points,
+    scorePercent,
+    badgeLabel,
+    badgeColor,
+    notes,
+    luckyAdvice,
+    cautionAdvice
+  };
+}
+
 const TRUC_RAW = [
   { name: "Kiến", score: 0, goodText: "Xuất hành, cưới hỏi, cầu tài, nhập học", badText: "Động thổ, đào giếng, an táng", g: [AlmanacActivity.TRAVEL, AlmanacActivity.WEDDING, AlmanacActivity.WEALTH, AlmanacActivity.STUDY, AlmanacActivity.CONTRACT], b: [AlmanacActivity.CONSTRUCTION, AlmanacActivity.BURIAL, AlmanacActivity.REPAIR] },
   { name: "Trừ", score: 1, goodText: "Cúng giải hạn, chữa bệnh, dọn dẹp", badText: "Cưới hỏi, xuất hành, khai trương, ký kết", g: [AlmanacActivity.MEDICAL, AlmanacActivity.WORSHIP, AlmanacActivity.REPAIR], b: [AlmanacActivity.WEDDING, AlmanacActivity.TRAVEL, AlmanacActivity.OPENING, AlmanacActivity.CONTRACT, AlmanacActivity.BUY] },
