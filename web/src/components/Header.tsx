@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   MapPin,
@@ -36,6 +37,8 @@ interface Props {
   onToggleFavoriteCity?: (city: CityLocation) => void;
 }
 
+const emptySubscribe = () => () => {};
+
 export default function Header({
   currentLocation,
   onSelectLocation,
@@ -60,6 +63,17 @@ export default function Header({
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<CityLocation[]>(VIETNAM_MAJOR_CITIES.slice(0, 8));
   const [isSearching, setIsSearching] = useState(false);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+
+  // Khóa scroll khi mở modal tìm kiếm tỉnh/thành
+  useEffect(() => {
+    if (isSearchOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "unset";
+      };
+    }
+  }, [isSearchOpen]);
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -290,8 +304,8 @@ export default function Header({
       </header>
 
       {/* City Search Modal */}
-      {isSearchOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+      {isSearchOpen && mounted && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
           <div
             className={`w-full max-w-lg border rounded-3xl shadow-2xl p-5 overflow-hidden flex flex-col max-h-[85vh] ${
               isDarkTheme
@@ -306,7 +320,9 @@ export default function Header({
               </h2>
               <button
                 onClick={() => setIsSearchOpen(false)}
-                className="p-1.5 rounded-full hover:bg-slate-500/10 text-slate-400 hover:text-slate-600 transition-colors"
+                className={`p-1.5 rounded-full transition-colors ${
+                  isDarkTheme ? "hover:bg-white/10 text-slate-300 hover:text-white" : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -340,19 +356,19 @@ export default function Header({
 
             {/* Results list */}
             <div className="mt-4 overflow-y-auto space-y-1.5 flex-1 pr-1">
-              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+              <div className={`text-[11px] font-bold uppercase tracking-wider mb-2 ${isDarkTheme ? "text-slate-200" : "text-slate-600"}`}>
                 {searchQuery ? "Kết quả tìm kiếm" : "Thành phố phổ biến"}
               </div>
 
               {isSearching && (
-                <div className="py-8 text-center text-xs text-slate-400">
+                <div className={`py-8 text-center text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                   <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-amber-500" />
                   Đang tìm kiếm dữ liệu...
                 </div>
               )}
 
               {!isSearching && searchResults.length === 0 && (
-                <div className="py-8 text-center text-xs text-slate-400">
+                <div className={`py-8 text-center text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                   Không tìm thấy địa điểm phù hợp. Hãy thử tên khác!
                 </div>
               )}
@@ -400,7 +416,7 @@ export default function Header({
                             </span>
                           )}
                         </div>
-                        <div className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                        <div className={`text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-600 font-medium"}`}>
                           {city.admin1 ? `${city.admin1}, ` : ""}
                           {city.country}
                         </div>
@@ -417,8 +433,8 @@ export default function Header({
                               isFav
                                 ? "text-amber-400 hover:bg-amber-400/20"
                                 : isDarkTheme
-                                ? "text-slate-400 hover:text-amber-400 hover:bg-white/10"
-                                : "text-slate-400 hover:text-amber-500 hover:bg-slate-200"
+                                ? "text-slate-300 hover:text-amber-400 hover:bg-white/10"
+                                : "text-slate-500 hover:text-amber-500 hover:bg-slate-200"
                             }`}
                             title={isFav ? "Bỏ khỏi yêu thích" : "Thêm vào yêu thích"}
                           >
@@ -430,7 +446,9 @@ export default function Header({
                             onSelectLocation(city);
                             setIsSearchOpen(false);
                           }}
-                          className="p-2 text-slate-400 hover:text-amber-500 transition-colors"
+                          className={`p-2 transition-colors ${
+                            isDarkTheme ? "text-slate-300 hover:text-amber-400" : "text-slate-500 hover:text-amber-500"
+                          }`}
                           title="Chọn vị trí này"
                         >
                           <MapPin className="w-4 h-4" />
@@ -441,7 +459,8 @@ export default function Header({
                 })}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

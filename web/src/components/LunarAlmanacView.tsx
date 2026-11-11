@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import {
   getLunarDate,
   getMonthDays,
@@ -57,6 +58,8 @@ interface Props {
   dailyForecast?: DailyForecast[];
 }
 
+const emptySubscribe = () => () => {};
+
 export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeSubTab, setActiveSubTab] = useState<"day" | "month" | "good_days" | "fortune" | "converter">("day");
@@ -66,6 +69,19 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
   const [birthYear, setBirthYear] = usePersistentState<number>("weather24h_birth_year", 0);
   const [showBirthProfileModal, setShowBirthProfileModal] = useState<boolean>(false);
   const [filterPersonalMatch, setFilterPersonalMatch] = useState<boolean>(true);
+
+  // Client mounted state for createPortal (SSR safe via useSyncExternalStore)
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+
+  // Khóa scroll trang nền khi mở modal thiết lập sinh & tử vi
+  useEffect(() => {
+    if (showBirthProfileModal) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "unset";
+      };
+    }
+  }, [showBirthProfileModal]);
 
   // State tạm thời cho Modal thiết lập ngày sinh & giới tính
   const [tempGender, setTempGender] = useState<"male" | "female">("male");
@@ -352,8 +368,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     Số {detailedFortune.numerology.lifePathNumber}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Cung phi: <strong>{detailedFortune.cungPhi}</strong> ({detailedFortune.cungPhiGroup}) • Tam hợp: <strong>{detailedFortune.personalProfile.tamHop.join(", ")}</strong> • Kỵ xung: <strong className="text-rose-500">{detailedFortune.personalProfile.tuHanhXung[0]}</strong>
+                <p className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 font-medium">
+                  Cung phi: <strong className="text-emerald-600 dark:text-emerald-300 font-bold">{detailedFortune.cungPhi}</strong> ({detailedFortune.cungPhiGroup}) • Tam hợp: <strong className="text-emerald-600 dark:text-emerald-300 font-bold">{detailedFortune.personalProfile.tamHop.join(", ")}</strong> • Kỵ xung: <strong className="text-rose-500 font-bold">{detailedFortune.personalProfile.tuHanhXung[0]}</strong>
                 </p>
               </>
             ) : profile ? (
@@ -365,12 +381,12 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                   <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/40">
                     {profile.element} • {profile.napAm}
                   </span>
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-200">
                     {profile.yinYangLabel}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Cung phi: <strong>{profile.cungMenh.menhNam}</strong> (Nam) / <strong>{profile.cungMenh.menhNu}</strong> (Nữ) • Tam hợp: <strong>{profile.tamHop.join(", ")}</strong> • Kỵ xung: <strong className="text-rose-500">{profile.tuHanhXung[0]}</strong>
+                <p className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 font-medium">
+                  Cung phi: <strong className="text-emerald-600 dark:text-emerald-300 font-bold">{profile.cungMenh.menhNam}</strong> (Nam) / <strong className="text-emerald-600 dark:text-emerald-300 font-bold">{profile.cungMenh.menhNu}</strong> (Nữ) • Tam hợp: <strong className="text-emerald-600 dark:text-emerald-300 font-bold">{profile.tamHop.join(", ")}</strong> • Kỵ xung: <strong className="text-rose-500 font-bold">{profile.tuHanhXung[0]}</strong>
                 </p>
               </>
             ) : (
@@ -381,7 +397,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     Cá nhân hóa
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 font-medium">
                   Nhập giới tính, ngày tháng năm sinh để xem tử vi trọn đời, Bát Trạch phong thủy, thần số học và ngày hợp tuổi!
                 </p>
               </>
@@ -541,30 +557,30 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               </div>
 
               <div className="text-right">
-                <div className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>Đánh giá chung</div>
+                <div className={`text-xs ${isDarkTheme ? "text-slate-300 font-bold" : "text-slate-600 font-bold"}`}>Đánh giá chung</div>
                 <div className={`text-xl font-black ${levelInfo.color} flex items-center gap-1 justify-end mt-0.5`}>
                   {"★".repeat(levelInfo.stars)} {levelInfo.label}
                 </div>
-                <div className={`text-xs mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Điểm ngày: {almanac.score}/100</div>
+                <div className={`text-xs mt-0.5 font-semibold ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>Điểm ngày: {almanac.score}/100</div>
               </div>
             </div>
 
             {/* Badges Info */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6">
               <div className={`p-3 rounded-2xl border ${isDarkTheme ? "bg-white/5 border-white/10" : "bg-white/80 border-slate-200 shadow-xs"}`}>
-                <div className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>12 Trực</div>
+                <div className={`text-[11px] ${isDarkTheme ? "text-slate-300 font-bold" : "text-slate-600 font-bold"}`}>12 Trực</div>
                 <div className={`text-sm font-bold mt-0.5 ${isDarkTheme ? "text-amber-300" : "text-amber-700"}`}>{almanac.truc.fullName}</div>
               </div>
               <div className={`p-3 rounded-2xl border ${isDarkTheme ? "bg-white/5 border-white/10" : "bg-white/80 border-slate-200 shadow-xs"}`}>
-                <div className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>Nhị Thập Bát Tú</div>
+                <div className={`text-[11px] ${isDarkTheme ? "text-slate-300 font-bold" : "text-slate-600 font-bold"}`}>Nhị Thập Bát Tú</div>
                 <div className={`text-sm font-bold mt-0.5 ${isDarkTheme ? "text-purple-300" : "text-purple-700"}`}>Sao {almanac.mansion.name}</div>
               </div>
               <div className={`p-3 rounded-2xl border ${isDarkTheme ? "bg-white/5 border-white/10" : "bg-white/80 border-slate-200 shadow-xs"}`}>
-                <div className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>Ngũ Hành Nạp Âm</div>
+                <div className={`text-[11px] ${isDarkTheme ? "text-slate-300 font-bold" : "text-slate-600 font-bold"}`}>Ngũ Hành Nạp Âm</div>
                 <div className={`text-sm font-bold mt-0.5 ${isDarkTheme ? "text-teal-300" : "text-teal-700"}`}>{almanac.napAm}</div>
               </div>
               <div className={`p-3 rounded-2xl border ${isDarkTheme ? "bg-white/5 border-white/10" : "bg-white/80 border-slate-200 shadow-xs"}`}>
-                <div className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>Tiết Khí</div>
+                <div className={`text-[11px] ${isDarkTheme ? "text-slate-300 font-bold" : "text-slate-600 font-bold"}`}>Tiết Khí</div>
                 <div className={`text-sm font-bold mt-0.5 ${isDarkTheme ? "text-emerald-300" : "text-emerald-700"}`}>{lunarDate.solarTerm}</div>
               </div>
             </div>
@@ -591,7 +607,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       </span>
                     ))
                   ) : (
-                    <span className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Các việc thông thường, không có việc đại cát.</span>
+                    <span className={`text-xs ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600"}`}>Các việc thông thường, không có việc đại cát.</span>
                   )}
                 </div>
               </div>
@@ -616,7 +632,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       </span>
                     ))
                   ) : (
-                    <span className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Không có việc đại kỵ trong ngày.</span>
+                    <span className={`text-xs ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600"}`}>Không có việc đại kỵ trong ngày.</span>
                   )}
                 </div>
               </div>
@@ -670,9 +686,9 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                           {profile.element} • {profile.napAm}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <p className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 font-medium">
                         {profile.yinYangLabel} • {detailedFortune ? (
-                          <>Cung Phi Bát Trạch: <strong>{detailedFortune.cungPhi}</strong> ({detailedFortune.cungPhiGroup})</>
+                          <>Cung Phi Bát Trạch: <strong className="text-emerald-600 dark:text-emerald-300 font-bold">{detailedFortune.cungPhi}</strong> ({detailedFortune.cungPhiGroup})</>
                         ) : (
                           <>Cung {profile.cungMenh.menhNam} (Nam) / {profile.cungMenh.menhNu} (Nữ)</>
                         )}
@@ -725,7 +741,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       <p className="leading-relaxed">
                         <strong className="text-rose-500">Cần phòng:</strong> {personalMatch.cautionAdvice}
                       </p>
-                      <p className="leading-relaxed text-slate-500 dark:text-slate-400 pt-1 border-t border-black/5 dark:border-white/5">
+                      <p className="leading-relaxed text-slate-600 dark:text-slate-200 pt-1 border-t border-black/5 dark:border-white/5 font-medium">
                         🎨 <strong>Màu sắc may mắn:</strong> {profile.luckyColors}
                       </p>
                     </div>
@@ -770,7 +786,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-amber-300/40"></span>
                   Giờ Hoàng Đạo
                 </span>
-                <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+                <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-200 font-medium">
                   <span className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                   Giờ Hắc Đạo
                 </span>
@@ -827,7 +843,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                         {h.isBest ? "Hoàng đạo (Đại cát)" : "Hoàng đạo"}
                       </span>
                     ) : (
-                      <span className="text-slate-500 dark:text-slate-400 font-medium">
+                      <span className="text-slate-600 dark:text-slate-300 font-medium">
                         Hắc đạo
                       </span>
                     )}
@@ -839,7 +855,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                             ? "text-emerald-300 font-bold"
                             : "text-emerald-700 font-bold"
                           : isDarkTheme
-                            ? "text-slate-300 font-medium"
+                            ? "text-slate-200 font-medium"
                             : "text-slate-600 font-medium"
                       }
                     >
@@ -851,10 +867,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     className={`text-xs leading-relaxed line-clamp-3 mt-1.5 ${
                       h.isHoangDao
                         ? isDarkTheme
-                          ? "text-amber-100/75"
+                          ? "text-amber-100/90"
                           : "text-amber-900/80"
                         : isDarkTheme
-                          ? "text-slate-400"
+                          ? "text-slate-300 font-medium"
                           : "text-slate-600"
                     }`}
                   >
@@ -934,8 +950,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 <Sparkles className="w-3.5 h-3.5" />
                 Hoàng Đạo (Tốt)
               </span>
-              <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500" />
+              <span className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-400" />
                 Hắc Đạo
               </span>
               <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
@@ -970,7 +986,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     : d.isSaturday
                     ? "text-sky-500 bg-sky-500/10"
                     : isDarkTheme
-                    ? "text-slate-400 bg-white/5"
+                    ? "text-slate-300 bg-white/5 font-extrabold"
                     : "text-slate-600 bg-slate-100"
                 }`}
               >
@@ -1074,10 +1090,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                         </span>
                       ) : (
                         <span
-                          className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100/90 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200/80 dark:border-white/10"
+                          className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-slate-100/90 dark:bg-white/5 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/10"
                           title="Ngày Hắc Đạo"
                         >
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-400 shrink-0" />
                           <span className="hidden md:inline">Hắc Đạo</span>
                           <span className="md:hidden">Hắc</span>
                         </span>
@@ -1100,7 +1116,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                           <span className="text-[11px] sm:text-xs font-black text-slate-800 dark:text-slate-100">
                             {Math.round(item.forecast.tempMax)}°
                           </span>
-                          <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                          <span className="text-[9px] sm:text-[10px] font-medium text-slate-600 dark:text-slate-300 mt-0.5">
                             {Math.round(item.forecast.tempMin)}°
                           </span>
                         </div>
@@ -1116,7 +1132,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                         </div>
                       ) : (
                         <span
-                          className="text-[9px] text-slate-400 dark:text-slate-500 hidden lg:inline truncate max-w-[45px]"
+                          className="text-[9px] text-slate-500 dark:text-slate-300 hidden lg:inline truncate max-w-[45px]"
                           title={item.forecast.conditionDescription}
                         >
                           {item.forecast.conditionDescription || "Khô ráo"}
@@ -1124,7 +1140,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       )}
                     </div>
                   ) : (
-                    <div className="my-1 py-1 px-1 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 w-full min-h-[28px]">
+                    <div className="my-1 py-1 px-1 flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-200 w-full min-h-[28px] font-medium">
                       <span className="truncate max-w-[70px] sm:max-w-[90px]">
                         {item.lunarDate.solarTerm || item.lunarDate.dayCanChi}
                       </span>
@@ -1153,7 +1169,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                         {item.lunarDate.day}/{item.lunarDate.month}
                         {item.lunarDate.isLeapMonth ? "N" : ""}
                       </span>
-                      <span className="text-[9.5px] text-slate-400 font-normal hidden sm:inline">ÂL</span>
+                      <span className="text-[9.5px] text-slate-500 dark:text-slate-300 font-normal hidden sm:inline">ÂL</span>
                     </div>
 
                     <div className="flex items-center gap-1 min-w-0">
@@ -1172,7 +1188,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                           Hợp
                         </span>
                       ) : null}
-                      <span className="text-[9px] sm:text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate max-w-[55px] sm:max-w-[75px]">
+                      <span className="text-[9px] sm:text-[10px] font-medium text-slate-600 dark:text-slate-200 truncate max-w-[55px] sm:max-w-[75px]">
                         {item.lunarDate.canDay} {item.lunarDate.chiDay}
                       </span>
                     </div>
@@ -1235,7 +1251,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
 
           <div className="grid grid-cols-3 gap-3 mb-4">
             <div>
-              <label className={`text-[11px] font-semibold ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>Ngày</label>
+              <label className={`text-[11px] font-bold ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>Ngày</label>
               <input
                 type="number"
                 min={1}
@@ -1248,7 +1264,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               />
             </div>
             <div>
-              <label className={`text-[11px] font-semibold ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>Tháng</label>
+              <label className={`text-[11px] font-bold ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>Tháng</label>
               <input
                 type="number"
                 min={1}
@@ -1261,7 +1277,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               />
             </div>
             <div>
-              <label className={`text-[11px] font-semibold ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>Năm</label>
+              <label className={`text-[11px] font-bold ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>Năm</label>
               <input
                 type="number"
                 min={1900}
@@ -1399,7 +1415,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       <span>{item.almanac.truc.fullName}</span>
                     </div>
                     {item.personalMatch && (
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                      <p className="text-[11px] text-slate-600 dark:text-slate-200 mt-1 font-medium">
                         👤 {item.personalMatch.notes[0]}
                       </p>
                     )}
@@ -1424,14 +1440,14 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                         {item.lunar.isAuspiciousDay ? "Hoàng Đạo" : "Hắc Đạo"}
                       </span>
                     </div>
-                    <div className={`text-xs font-semibold ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                    <div className={`text-xs font-semibold ${isDarkTheme ? "text-slate-300 font-bold" : "text-slate-600 font-bold"}`}>
                       Điểm ngày: <strong>{item.score}/100</strong>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className={`text-center py-10 text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+              <div className={`text-center py-10 text-xs font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                 Không tìm thấy ngày tốt đặc biệt cho công việc này trong 45 ngày tới hoặc hãy bấm nút Tìm Kiếm.
               </div>
             )}
@@ -1452,7 +1468,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 🔮
               </div>
               <h3 className="text-xl sm:text-2xl font-black mb-2">Bói Tử Vi & Vận Mệnh Cá Nhân Hóa</h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-lg mx-auto mb-6 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-200 max-w-lg mx-auto mb-6 leading-relaxed font-medium">
                 Khám phá bản mệnh toàn diện theo <strong>Giới tính</strong> và <strong>Ngày, Tháng, Năm sinh</strong>:
                 Bát Trạch phong thủy theo giới tính, Tử Vi trọn đời 3 thời kỳ Tiền - Trung - Hậu vận, Thần Số Học Pythagoras số chủ đạo,
                 Cung Hoàng Đạo phương Tây giao thoa 12 con giáp, và dự báo Sao Hạn năm 2026 (Bính Ngọ).
@@ -1466,7 +1482,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               </button>
 
               <div className="mt-8 pt-6 border-t border-black/5 dark:border-white/10">
-                <span className="text-xs font-bold text-slate-400 block mb-3">Hoặc chọn nhanh năm sinh phổ biến:</span>
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-200 block mb-3">Hoặc chọn nhanh năm sinh phổ biến:</span>
                 <div className="flex items-center justify-center gap-2 flex-wrap max-w-xl mx-auto">
                   {[1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003].map((y) => {
                     const p = getPersonalProfile(y);
@@ -1527,7 +1543,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
                         Sinh ngày <strong>{detailedFortune.solarDate.day}/{detailedFortune.solarDate.month}/{detailedFortune.solarDate.year}</strong> (Dương lịch) • Âm lịch: ngày <strong>{detailedFortune.lunarDate.day}/{detailedFortune.lunarDate.month}</strong> năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong>
                       </p>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      <div className="text-[11px] text-slate-600 dark:text-slate-200 mt-0.5 font-medium">
                         Tứ Trụ Can Chi: Năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong> • Tháng <strong>{detailedFortune.lunarDate.monthCanChi}</strong> • Ngày <strong>{detailedFortune.lunarDate.dayCanChi}</strong>
                       </div>
                     </div>
@@ -1545,42 +1561,42 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 {/* 4 Badged Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-6 border-t border-amber-500/20">
                   <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-                    <span className="text-[11px] font-bold text-slate-400 block uppercase">Ngũ Hành Nạp Âm</span>
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-300 block uppercase">Ngũ Hành Nạp Âm</span>
                     <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5">
                       Mệnh {detailedFortune.personalProfile.element}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                    <div className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 truncate font-medium">
                       {detailedFortune.personalProfile.napAm}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-                    <span className="text-[11px] font-bold text-slate-400 block uppercase">Cung Phi ({detailedFortune.profile.gender === "male" ? "Nam" : "Nữ"})</span>
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-300 block uppercase">Cung Phi ({detailedFortune.profile.gender === "male" ? "Nam" : "Nữ"})</span>
                     <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
                       Cung {detailedFortune.cungPhi}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <div className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 font-medium">
                       {detailedFortune.cungPhiGroup}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-                    <span className="text-[11px] font-bold text-slate-400 block uppercase">Cung Hoàng Đạo</span>
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-300 block uppercase">Cung Hoàng Đạo</span>
                     <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-0.5 flex items-center gap-1">
                       <span>{detailedFortune.westernZodiac.symbol}</span>
                       <span>{detailedFortune.westernZodiac.name}</span>
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    <div className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 font-medium">
                       Nguyên tố: {detailedFortune.westernZodiac.element}
                     </div>
                   </div>
 
                   <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-                    <span className="text-[11px] font-bold text-slate-400 block uppercase">Thần Số Học</span>
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-300 block uppercase">Thần Số Học</span>
                     <div className="text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5">
                       Số Chủ Đạo {detailedFortune.numerology.lifePathNumber}
                     </div>
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                    <div className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 truncate font-medium">
                       {detailedFortune.numerology.title.split(" & ")[0]}
                     </div>
                   </div>
@@ -1662,7 +1678,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                               <span className="font-black text-emerald-700 dark:text-emerald-300 text-sm">
                                 {dir.type}: {dir.direction}
                               </span>
-                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-200">
                                 {dir.starName}
                               </span>
                             </div>
@@ -1698,7 +1714,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                               <span className="font-black text-rose-700 dark:text-rose-300 text-sm">
                                 {dir.type}: {dir.direction}
                               </span>
-                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                              <span className="text-[11px] font-bold text-slate-600 dark:text-slate-200">
                                 {dir.starName}
                               </span>
                             </div>
@@ -1798,7 +1814,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                             <span className="font-black text-sm text-amber-600 dark:text-amber-400">
                               {stage.stage} ({stage.ageRange})
                             </span>
-                            <span className="text-[11px] font-bold text-slate-400">
+                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-300">
                               {idx === 0 ? "🌅 Khởi sắc" : idx === 1 ? "☀️ Đỉnh cao" : "🌕 Viên mãn"}
                             </span>
                           </div>
@@ -1993,12 +2009,12 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                             {detailedFortune.westernZodiac.name} ({detailedFortune.westernZodiac.latinName})
                           </h3>
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-3 flex-wrap">
+                        <div className="text-xs text-slate-600 dark:text-slate-200 mt-1 flex items-center gap-3 flex-wrap font-medium">
                           <span>📅 {detailedFortune.westernZodiac.dateRange}</span>
                           <span>•</span>
-                          <span>Nguyên tố: <strong>{detailedFortune.westernZodiac.element}</strong></span>
+                          <span>Nguyên tố: <strong className="text-indigo-600 dark:text-indigo-300 font-bold">{detailedFortune.westernZodiac.element}</strong></span>
                           <span>•</span>
-                          <span>Sao bảo hộ: <strong>{detailedFortune.westernZodiac.rulingPlanet}</strong></span>
+                          <span>Sao bảo hộ: <strong className="text-amber-600 dark:text-amber-300 font-bold">{detailedFortune.westernZodiac.rulingPlanet}</strong></span>
                         </div>
                       </div>
                     </div>
@@ -2058,8 +2074,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                         <h3 className="text-xl sm:text-2xl font-black mt-0.5">
                           {detailedFortune.profile.gender === "male" ? "Nam mạng" : "Nữ mạng"} • {detailedFortune.personalProfile.canChi}
                         </h3>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          Năm 2026 tính theo tuổi mụ là: <strong className="text-amber-600 dark:text-amber-400">{detailedFortune.saoHan2026.lunarAge} tuổi</strong>
+                        <div className="text-xs text-slate-600 dark:text-slate-200 mt-0.5 font-medium">
+                          Năm 2026 tính theo tuổi mụ là: <strong className="text-amber-600 dark:text-amber-400 font-bold">{detailedFortune.saoHan2026.lunarAge} tuổi</strong>
                         </div>
                       </div>
 
@@ -2158,8 +2174,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
       )}
 
       {/* Modal Thiết Lập Hồ Sơ Sinh & Giới Tính Gia Chủ */}
-      {showBirthProfileModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      {showBirthProfileModal && mounted && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
           <div
             className={`w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 rounded-3xl border shadow-2xl transition-all ${
               isDarkTheme ? "bg-slate-900 border-white/20 text-white" : "bg-white border-slate-200 text-slate-900"
@@ -2173,21 +2189,21 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               <button
                 onClick={() => setShowBirthProfileModal(false)}
                 className={`p-1.5 rounded-xl transition-all ${
-                  isDarkTheme ? "hover:bg-white/10 text-slate-400" : "hover:bg-slate-100 text-slate-500"
+                  isDarkTheme ? "hover:bg-white/10 text-slate-300 hover:text-white" : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-200 mb-4 leading-relaxed font-medium">
               Nhập <strong>Giới tính</strong> và <strong>Ngày, Tháng, Năm sinh</strong> để hệ thống đối chiếu chính xác Cung Phi Bát Trạch (Nam/Nữ khác nhau), Thần Số Học, Cung Hoàng Đạo và Tử Vi trọn đời.
             </p>
 
             <div className="space-y-4">
               {/* Chọn Giới Tính */}
               <div>
-                <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-200">
+                <label className="block text-xs font-bold mb-1.5 text-slate-800 dark:text-slate-100">
                   Giới tính (Quyết định Cung Phi Bát Trạch):
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -2198,7 +2214,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       tempGender === "male"
                         ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
                         : isDarkTheme
-                        ? "bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700"
+                        ? "bg-slate-800 text-slate-200 border-white/15 hover:bg-slate-700"
                         : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
                     }`}
                   >
@@ -2212,7 +2228,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       tempGender === "female"
                         ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
                         : isDarkTheme
-                        ? "bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700"
+                        ? "bg-slate-800 text-slate-200 border-white/15 hover:bg-slate-700"
                         : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
                     }`}
                   >
@@ -2224,7 +2240,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
 
               {/* Loại Lịch */}
               <div>
-                <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-200">
+                <label className="block text-xs font-bold mb-1.5 text-slate-800 dark:text-slate-100">
                   Loại ngày sinh:
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -2233,10 +2249,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     onClick={() => setTempIsLunar(false)}
                     className={`py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
                       !tempIsLunar
-                        ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-400/50"
+                        ? "bg-amber-500/25 text-amber-700 dark:text-amber-300 border-amber-400/60"
                         : isDarkTheme
-                        ? "bg-slate-800 text-slate-400 border-white/5"
-                        : "bg-slate-100 text-slate-600 border-slate-200"
+                        ? "bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700"
+                        : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
                     }`}
                   >
                     <span>☀️ Dương Lịch (Chuẩn)</span>
@@ -2246,10 +2262,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     onClick={() => setTempIsLunar(true)}
                     className={`py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
                       tempIsLunar
-                        ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-400/50"
+                        ? "bg-amber-500/25 text-amber-700 dark:text-amber-300 border-amber-400/60"
                         : isDarkTheme
-                        ? "bg-slate-800 text-slate-400 border-white/5"
-                        : "bg-slate-100 text-slate-600 border-slate-200"
+                        ? "bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700"
+                        : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
                     }`}
                   >
                     <span>🌙 Âm Lịch</span>
@@ -2260,7 +2276,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               {/* Grid 3 Selects: Ngày, Tháng, Năm */}
               <div className="grid grid-cols-3 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold mb-1 text-slate-700 dark:text-slate-200">
+                  <label className="block text-xs font-bold mb-1 text-slate-800 dark:text-slate-100">
                     Ngày sinh:
                   </label>
                   <select
@@ -2279,7 +2295,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold mb-1 text-slate-700 dark:text-slate-200">
+                  <label className="block text-xs font-bold mb-1 text-slate-800 dark:text-slate-100">
                     Tháng sinh:
                   </label>
                   <select
@@ -2298,7 +2314,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold mb-1 text-slate-700 dark:text-slate-200">
+                  <label className="block text-xs font-bold mb-1 text-slate-800 dark:text-slate-100">
                     Năm sinh:
                   </label>
                   <select
@@ -2323,18 +2339,18 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
 
               {/* Quick Decade Shortcuts */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-semibold text-slate-400 mr-1">Nhanh:</span>
+                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-200 mr-1">Nhanh:</span>
                 {[1985, 1988, 1990, 1992, 1995, 1998, 2000, 2003].map((y) => (
                   <button
                     key={y}
                     type="button"
                     onClick={() => setTempYear(y)}
-                    className={`text-xs px-2.5 py-1 rounded-xl font-bold transition-all ${
+                    className={`text-xs px-2.5 py-1 rounded-xl font-bold transition-all border ${
                       tempYear === y
-                        ? "bg-amber-500 text-slate-950 shadow-xs"
+                        ? "bg-amber-500 text-slate-950 border-amber-400 shadow-xs"
                         : isDarkTheme
-                        ? "bg-white/10 hover:bg-white/15 text-slate-300"
-                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                        ? "bg-white/10 hover:bg-white/15 text-slate-200 border-white/10"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200"
                     }`}
                   >
                     {y}
@@ -2347,25 +2363,27 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 <div
                   className={`p-4 rounded-2xl border ${
                     isDarkTheme
-                      ? "bg-gradient-to-br from-amber-500/10 via-slate-800/60 to-slate-900 border-amber-500/30"
-                      : "bg-amber-50/80 border-amber-200"
+                      ? "bg-gradient-to-br from-amber-500/15 via-slate-800/80 to-slate-900 border-amber-500/40"
+                      : "bg-amber-50/90 border-amber-300 shadow-xs"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">
-                      {tempGender === "male" ? "👨 Nam mạng" : "👩 Nữ mạng"} • Tuổi {modalPreviewFortune.personalProfile.canChi} ({modalPreviewFortune.profile.year})
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className="text-sm font-black text-amber-500 dark:text-amber-300 flex items-center gap-1.5">
+                      <span>{tempGender === "male" ? "👨 Nam mạng" : "👩 Nữ mạng"}</span>
+                      <span>•</span>
+                      <span>Tuổi {modalPreviewFortune.personalProfile.canChi} ({modalPreviewFortune.profile.year})</span>
                     </span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/25 text-amber-800 dark:text-amber-200 border border-amber-400/40">
                       Mệnh {modalPreviewFortune.personalProfile.element} • {modalPreviewFortune.personalProfile.napAm}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
-                    <div>• Cung phi {tempGender === "male" ? "Nam" : "Nữ"}: <strong className="text-emerald-600 dark:text-emerald-400">{modalPreviewFortune.cungPhi} ({modalPreviewFortune.cungPhiGroup})</strong></div>
-                    <div>• Cung Hoàng Đạo: <strong>{modalPreviewFortune.westernZodiac.symbol} {modalPreviewFortune.westernZodiac.name}</strong></div>
-                    <div>• Thần số học: <strong>Số {modalPreviewFortune.numerology.lifePathNumber}</strong> ({modalPreviewFortune.numerology.title.split(" & ")[0]})</div>
-                    <div>• Tam hợp: <strong className="text-emerald-600 dark:text-emerald-400">{modalPreviewFortune.personalProfile.tamHop.join(", ")}</strong></div>
-                    <div className="col-span-2 pt-1 border-t border-black/5 dark:border-white/5 text-[11px]">
-                      • Hướng đại cát: <strong>{modalPreviewFortune.batTrachDirections.filter(d => d.isGood).map(d => `${d.type}: ${d.direction}`).join(" • ")}</strong>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-700 dark:text-slate-200 font-medium">
+                    <div>• Cung phi {tempGender === "male" ? "Nam" : "Nữ"}: <strong className="text-emerald-600 dark:text-emerald-300 font-bold">{modalPreviewFortune.cungPhi} ({modalPreviewFortune.cungPhiGroup})</strong></div>
+                    <div>• Cung Hoàng Đạo: <strong className="text-indigo-600 dark:text-indigo-300 font-bold">{modalPreviewFortune.westernZodiac.symbol} {modalPreviewFortune.westernZodiac.name}</strong></div>
+                    <div>• Thần số học: <strong className="text-sky-600 dark:text-sky-300 font-bold">Số {modalPreviewFortune.numerology.lifePathNumber}</strong> ({modalPreviewFortune.numerology.title.split(" & ")[0]})</div>
+                    <div>• Tam hợp: <strong className="text-emerald-600 dark:text-emerald-300 font-bold">{modalPreviewFortune.personalProfile.tamHop.join(", ")}</strong></div>
+                    <div className="col-span-2 pt-1.5 border-t border-black/10 dark:border-white/10 text-[11px] text-slate-700 dark:text-slate-200">
+                      • Hướng đại cát: <strong className="text-slate-900 dark:text-white font-bold">{modalPreviewFortune.batTrachDirections.filter(d => d.isGood).map(d => `${d.type}: ${d.direction}`).join(" • ")}</strong>
                     </div>
                   </div>
                 </div>
@@ -2377,7 +2395,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                   <button
                     type="button"
                     onClick={handleClearProfile}
-                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all"
+                    className="px-4 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/15 transition-all"
                   >
                     Xóa hồ sơ
                   </button>
@@ -2390,7 +2408,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     type="button"
                     onClick={() => setShowBirthProfileModal(false)}
                     className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                      isDarkTheme ? "bg-white/10 hover:bg-white/15 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      isDarkTheme ? "bg-white/10 hover:bg-white/15 text-slate-200" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
                     }`}
                   >
                     Hủy
@@ -2407,7 +2425,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

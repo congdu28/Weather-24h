@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { DailyForecast } from "../types/weather";
 import { getWeatherCondition } from "../services/weatherApi";
 import { getLunarDate } from "../utils/lunarCalendar";
@@ -13,12 +14,25 @@ interface Props {
   isDarkTheme?: boolean;
 }
 
+const emptySubscribe = () => () => {};
+
 export default function DailyForecastCard({
   daily,
   showLunar = true,
   isDarkTheme = true
 }: Props) {
   const [selectedDay, setSelectedDay] = useState<DailyForecast | null>(null);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+
+  // Khóa scroll khi mở modal chi tiết ngày
+  useEffect(() => {
+    if (selectedDay) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "unset";
+      };
+    }
+  }, [selectedDay]);
 
   if (!daily || daily.length === 0) return null;
 
@@ -40,7 +54,7 @@ export default function DailyForecastCard({
             <CalendarDays className="w-4 h-4 text-emerald-500" />
             Dự báo 7 ngày tới
           </h3>
-          <span className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-600 font-semibold"}`}>
+          <span className={`text-xs ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-semibold"}`}>
             Chạm để xem chi tiết ngày
           </span>
         </div>
@@ -173,8 +187,8 @@ export default function DailyForecastCard({
       </div>
 
       {/* Selected Day Details Modal */}
-      {selectedDay && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+      {selectedDay && mounted && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
           <div
             className={`w-full max-w-md border rounded-3xl p-6 shadow-2xl space-y-4 ${
               isDarkTheme ? "bg-slate-900 border-white/20 text-white" : "bg-white border-slate-200 text-slate-900"
@@ -185,14 +199,14 @@ export default function DailyForecastCard({
                 <h3 className={`text-base font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                   Dự báo ngày {selectedDay.dayOfWeek}
                 </h3>
-                <p className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                <p className={`text-xs ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-500"}`}>
                   Ngày {selectedDay.date.split("-").reverse().join("/")}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedDay(null)}
                 className={`p-1.5 rounded-full transition-colors ${
-                  isDarkTheme ? "hover:bg-white/10 text-slate-400 hover:text-white" : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"
+                  isDarkTheme ? "hover:bg-white/10 text-slate-300 hover:text-white" : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <X className="w-5 h-5" />
@@ -230,7 +244,7 @@ export default function DailyForecastCard({
                   isDarkTheme ? "bg-white/5 border-white/10" : "bg-blue-50/70 border-blue-100"
                 }`}
               >
-                <div className={`flex items-center gap-1 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center gap-1 ${isDarkTheme ? "text-slate-200 font-bold" : "text-slate-700 font-bold"}`}>
                   <Droplets className="w-3.5 h-3.5 text-blue-500" />
                   Xác suất mưa
                 </div>
@@ -250,7 +264,7 @@ export default function DailyForecastCard({
                   isDarkTheme ? "bg-white/5 border-white/10" : "bg-amber-50/70 border-amber-100"
                 }`}
               >
-                <div className={`flex items-center gap-1 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center gap-1 ${isDarkTheme ? "text-slate-200 font-bold" : "text-slate-700 font-bold"}`}>
                   <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
                   Tia cực tím UV Max
                 </div>
@@ -264,7 +278,7 @@ export default function DailyForecastCard({
                   isDarkTheme ? "bg-white/5 border-white/10" : "bg-orange-50/70 border-orange-100"
                 }`}
               >
-                <div className={`flex items-center gap-1 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center gap-1 ${isDarkTheme ? "text-slate-200 font-bold" : "text-slate-700 font-bold"}`}>
                   <Sun className="w-3.5 h-3.5 text-amber-500" />
                   Mặt trời mọc
                 </div>
@@ -278,7 +292,7 @@ export default function DailyForecastCard({
                   isDarkTheme ? "bg-white/5 border-white/10" : "bg-purple-50/70 border-purple-100"
                 }`}
               >
-                <div className={`flex items-center gap-1 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center gap-1 ${isDarkTheme ? "text-slate-200 font-bold" : "text-slate-700 font-bold"}`}>
                   <Sunset className="w-3.5 h-3.5 text-orange-500" />
                   Mặt trời lặn
                 </div>
@@ -297,7 +311,8 @@ export default function DailyForecastCard({
               Đóng
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

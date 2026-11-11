@@ -601,16 +601,50 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="relative z-10 mt-16 border-t border-slate-500/20 pt-8 pb-12 text-center text-xs opacity-70 max-w-6xl mx-auto px-4">
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-2 font-medium">
-          <span>Weather 24h & Lịch Âm Việt Nam (v1.0.63)</span>
-          <span>•</span>
-          <span>Dữ liệu: Open-Meteo & OpenStreetMap</span>
-          <span>•</span>
-          <span>Thuật toán Âm lịch: TS. Hồ Ngọc Đức</span>
+      <footer className="relative z-0 mt-12 border-t border-slate-500/20 pt-6 pb-10 text-center text-xs max-w-6xl mx-auto px-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 max-w-4xl mx-auto mb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+              ☀️
+            </span>
+            <div className="text-left">
+              <span className={`font-black text-xs sm:text-sm ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
+                Weather 24h & Lịch Vạn Niên
+              </span>
+              <span className={`text-[10px] sm:text-[11px] ml-2 px-2 py-0.5 rounded-full font-bold border ${
+                isDarkTheme
+                  ? "bg-white/10 text-amber-300 border-white/15"
+                  : "bg-amber-100 text-amber-800 border-amber-200"
+              }`}>
+                v1.0.64
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-end">
+            <span
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border ${
+                isDarkTheme
+                  ? "bg-white/5 border-white/10 text-slate-200"
+                  : "bg-slate-100 border-slate-200 text-slate-700"
+              }`}
+            >
+              🌦️ Open-Meteo & OpenStreetMap
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border ${
+                isDarkTheme
+                  ? "bg-white/5 border-white/10 text-slate-200"
+                  : "bg-slate-100 border-slate-200 text-slate-700"
+              }`}
+            >
+              🗓️ Thuật toán TS. Hồ Ngọc Đức (GMT+7)
+            </span>
+          </div>
         </div>
-        <p className="text-[11px]">
-          Giao diện đồng bộ bản Android APK v1.0.63. Hỗ trợ PWA cài đặt trực tiếp lên điện thoại & PC.
+
+        <p className={`text-[11px] max-w-2xl mx-auto leading-relaxed ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-medium"}`}>
+          Đồng bộ giao diện bản Android APK v1.0.64 • Hỗ trợ chuẩn PWA cài đặt trực tiếp lên điện thoại & PC
         </p>
       </footer>
     </div>

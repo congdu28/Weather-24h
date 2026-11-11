@@ -23,7 +23,7 @@ export default function AirQualityCard({ airQuality, isDarkTheme = true }: Props
           <Wind className="w-4 h-4 text-cyan-500" />
           Chất lượng không khí (AQI)
         </h3>
-        <span className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>
+        <span className={`text-xs ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-medium"}`}>
           {airQuality.aqiScale}
         </span>
       </div>
@@ -41,7 +41,7 @@ export default function AirQualityCard({ airQuality, isDarkTheme = true }: Props
             <span className={`text-2xl font-black ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
               {airQuality.aqiIndex}
             </span>
-            <span className={`text-[10px] uppercase font-semibold ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+            <span className={`text-[10px] uppercase font-bold ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
               AQI
             </span>
           </div>
@@ -55,7 +55,7 @@ export default function AirQualityCard({ airQuality, isDarkTheme = true }: Props
               )}
               {airQuality.category}
             </div>
-            <p className={`text-xs mt-1 max-w-sm leading-relaxed ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+            <p className={`text-xs mt-1 max-w-sm leading-relaxed ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
               {airQuality.advice}
             </p>
           </div>
@@ -68,7 +68,7 @@ export default function AirQualityCard({ airQuality, isDarkTheme = true }: Props
               isDarkTheme ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"
             }`}
           >
-            <div className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Bụi PM2.5</div>
+            <div className={`text-[11px] ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-medium"}`}>Bụi PM2.5</div>
             <div className={`text-sm font-bold mt-0.5 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
               {airQuality.pm25} µg/m³
             </div>
@@ -78,7 +78,7 @@ export default function AirQualityCard({ airQuality, isDarkTheme = true }: Props
               isDarkTheme ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"
             }`}
           >
-            <div className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Bụi PM10</div>
+            <div className={`text-[11px] ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-medium"}`}>Bụi PM10</div>
             <div className={`text-sm font-bold mt-0.5 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
               {airQuality.pm10} µg/m³
             </div>

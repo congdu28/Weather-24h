@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   X,
@@ -44,6 +45,8 @@ interface Props {
   onRemoveFavorite: (city: CityLocation) => void;
   isDarkTheme?: boolean;
 }
+
+const emptySubscribe = () => () => {};
 
 export default function SettingsDialog({
   isOpen,
@@ -124,10 +127,22 @@ export default function SettingsDialog({
 
   const currentAccent = ACCENT_THEMES[settings.accentColor] || ACCENT_THEMES.amber;
 
-  if (!isOpen) return null;
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
+  // Khóa scroll khi mở modal Cài đặt
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "unset";
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in">
       <div
         className={`w-full max-w-3xl border rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] transition-colors ${
           isDarkTheme ? "bg-slate-900/95 border-white/15 text-white" : "bg-white/95 border-slate-200 text-slate-900"
@@ -143,7 +158,7 @@ export default function SettingsDialog({
               <h2 className={`text-base font-extrabold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                 Cài đặt Weather 24h
               </h2>
-              <p className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"}`}>
+              <p className={`text-xs ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-medium"}`}>
                 Tùy biến chiều sâu, độ đậm nhạt, hiệu ứng & tính năng mở rộng
               </p>
             </div>
@@ -152,7 +167,7 @@ export default function SettingsDialog({
           <button
             onClick={onClose}
             className={`p-2 rounded-full transition-colors ${
-              isDarkTheme ? "hover:bg-white/10 text-slate-400 hover:text-white" : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"
+              isDarkTheme ? "hover:bg-white/10 text-slate-300 hover:text-white" : "hover:bg-slate-100 text-slate-500 hover:text-slate-900"
             }`}
             title="Đóng cài đặt"
           >
@@ -189,7 +204,7 @@ export default function SettingsDialog({
                         : "text-slate-700 hover:bg-slate-200/70 hover:text-slate-950 font-medium"
                   }`}
                 >
-                  <IconComp className={`w-4 h-4 shrink-0 ${isActive ? "text-slate-950" : isDarkTheme ? "text-slate-400" : "text-slate-600"}`} />
+                  <IconComp className={`w-4 h-4 shrink-0 ${isActive ? "text-slate-950" : isDarkTheme ? "text-slate-300" : "text-slate-600"}`} />
                   <span className="truncate">{tab.label}</span>
                 </button>
               );
@@ -238,7 +253,7 @@ export default function SettingsDialog({
                           Đậm nhạt: {settings.customOpacity}%
                         </span>
                       </div>
-                      <p className={`text-xs mt-1 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                      <p className={`text-xs mt-1 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                         28°C • Trời quang, nắng đẹp • Gió 14 km/h
                       </p>
                     </div>
@@ -325,7 +340,7 @@ export default function SettingsDialog({
                       <label className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                         Độ đậm nhạt & Trong suốt các khối
                       </label>
-                      <p className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                      <p className={`text-[11px] ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                         Kính siêu trong nhìn thấy nền động thời tiết hoặc khối đặc chống chói
                       </p>
                     </div>
@@ -400,7 +415,7 @@ export default function SettingsDialog({
                           }`}
                         >
                           <div className="text-xs font-bold">{item.label}</div>
-                          <div className={`text-[10px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                          <div className={`text-[10px] mt-0.5 ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                             {item.desc}
                           </div>
                         </button>
@@ -531,7 +546,7 @@ export default function SettingsDialog({
                       <div className={`text-sm font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                         Hiển thị Lịch Âm Việt Nam
                       </div>
-                      <div className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                      <div className={`text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                         Hiển thị ngày Âm lịch, Can Chi & Tiết khí chính xác theo múi giờ GMT+7
                       </div>
                     </div>
@@ -554,7 +569,7 @@ export default function SettingsDialog({
                     <h3 className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                       Tùy biến vị trí trên dưới & hiển thị
                     </h3>
-                    <p className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                    <p className={`text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                       Nhấn nút mũi tên ⬆️ / ⬇️ để thay đổi thứ tự ưu tiên các khối trên trang chủ
                     </p>
                   </div>
@@ -625,7 +640,7 @@ export default function SettingsDialog({
                             <div className={`text-xs font-bold truncate ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                               {meta.label}
                             </div>
-                            <div className={`text-[11px] truncate ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                            <div className={`text-[11px] truncate ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                               {meta.desc}
                             </div>
                           </div>
@@ -693,7 +708,7 @@ export default function SettingsDialog({
                     <div className={`text-sm font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                       Hiệu ứng thời tiết sống động
                     </div>
-                    <div className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                    <div className={`text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                       Mưa rơi, sao băng đêm, tia nắng mặt trời, sấm sét chớp sáng nền
                     </div>
                   </div>
@@ -731,7 +746,7 @@ export default function SettingsDialog({
                           }`}
                         >
                           <div>{p.label}</div>
-                          <div className={`text-[10px] font-normal mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                          <div className={`text-[10px] font-normal mt-0.5 ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                             {p.desc}
                           </div>
                         </button>
@@ -842,7 +857,7 @@ export default function SettingsDialog({
                         <span className={`text-xs font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>{m.title}</span>
                         {isSelected && <Check className={`w-4 h-4 ${isDarkTheme ? "text-amber-400" : "text-amber-600 font-bold"}`} />}
                       </div>
-                      <p className={`text-[11px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>{m.desc}</p>
+                      <p className={`text-[11px] mt-0.5 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>{m.desc}</p>
                     </button>
                   );
                 })}
@@ -856,7 +871,7 @@ export default function SettingsDialog({
                   Danh sách thành phố yêu thích
                 </div>
                 {favoriteCities.length === 0 ? (
-                  <div className={`py-8 text-center text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                  <div className={`py-8 text-center text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                     Chưa có thành phố nào được lưu. Hãy bấm biểu tượng ngôi sao ⭐ trên khối thời tiết để thêm nhanh!
                   </div>
                 ) : (
@@ -869,7 +884,7 @@ export default function SettingsDialog({
                     >
                       <div>
                         <div className={`text-xs font-bold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>{city.name}</div>
-                        <div className={`text-[11px] ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>{city.country}</div>
+                        <div className={`text-[11px] ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>{city.country}</div>
                       </div>
                       <button
                         onClick={() => onRemoveFavorite(city)}
@@ -892,7 +907,7 @@ export default function SettingsDialog({
                 <div className={`text-xs font-bold uppercase tracking-wider ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
                   Google Gemini API Key
                 </div>
-                <p className={`text-xs leading-relaxed ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <p className={`text-xs leading-relaxed ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                   Weather 24h tích hợp sẵn trí tuệ nhân tạo Gemini AI Stylist. Nếu bạn có khóa API cá nhân, hãy nhập vào đây để tăng tốc độ phân tích và không bị giới hạn số lần gọi.
                 </p>
                 <input
@@ -965,6 +980,7 @@ export default function SettingsDialog({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -350,7 +350,7 @@ export default function HeroWeatherCard({
                     isDarkTheme ? "bg-white/5 hover:bg-white/8 border-white/10" : "bg-sky-50/80 hover:bg-sky-100/80 border-sky-200"
                   }`}
                 >
-                  <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                  <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-200" : "text-slate-700 font-semibold"}`}>
                     <span className="flex items-center gap-1.5 font-medium text-[11px] sm:text-xs">
                       <div className="p-1 rounded-md bg-emerald-500/15 text-emerald-500 shrink-0">
                         <ShieldCheck className="w-3.5 h-3.5" />
@@ -363,11 +363,11 @@ export default function HeroWeatherCard({
                   </div>
                   <div className={`text-lg sm:text-xl font-bold mt-1 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                     {airQuality.aqiIndex}{" "}
-                    <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                    <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                       AQI
                     </span>
                   </div>
-                  <div className={`text-[10px] mt-0.5 truncate ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                  <div className={`text-[10px] mt-0.5 truncate font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                     PM2.5: {airQuality.pm25} µg/m³
                   </div>
                 </div>
@@ -379,7 +379,7 @@ export default function HeroWeatherCard({
                   isDarkTheme ? "bg-white/5 hover:bg-white/8 border-white/10" : "bg-blue-50/80 hover:bg-blue-100/80 border-blue-200"
                 }`}
               >
-                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-200" : "text-slate-700 font-semibold"}`}>
                   <span className="flex items-center gap-1.5 font-medium text-[11px] sm:text-xs">
                     <div className="p-1 rounded-md bg-blue-500/15 text-blue-500 shrink-0">
                       <Droplets className="w-3.5 h-3.5" />
@@ -390,7 +390,7 @@ export default function HeroWeatherCard({
                 <div className={`text-lg sm:text-xl font-bold mt-1 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                   {current.relativeHumidity}%
                 </div>
-                <div className={`text-[10px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                <div className={`text-[10px] mt-0.5 font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                   {current.relativeHumidity > 80 ? "Ẩm ướt / Nồm" : "Thoáng đãng"}
                 </div>
               </div>
@@ -401,7 +401,7 @@ export default function HeroWeatherCard({
                   isDarkTheme ? "bg-white/5 hover:bg-white/8 border-white/10" : "bg-teal-50/80 hover:bg-teal-100/80 border-teal-200"
                 }`}
               >
-                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-200" : "text-slate-700 font-semibold"}`}>
                   <span className="flex items-center gap-1.5 font-medium text-[11px] sm:text-xs truncate">
                     <div className="p-1 rounded-md bg-teal-500/15 text-teal-500 shrink-0">
                       <Wind className="w-3.5 h-3.5" />
@@ -411,11 +411,11 @@ export default function HeroWeatherCard({
                 </div>
                 <div className={`text-lg sm:text-xl font-bold mt-1 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                   {current.windSpeed}{" "}
-                  <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                  <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                     km/h
                   </span>
                 </div>
-                <div className={`text-[10px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                <div className={`text-[10px] mt-0.5 font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                   {current.windSpeed > 20 ? "Gió vừa" : "Gió nhẹ"}
                 </div>
               </div>
@@ -426,7 +426,7 @@ export default function HeroWeatherCard({
                   isDarkTheme ? "bg-white/5 hover:bg-white/8 border-white/10" : "bg-amber-50/80 hover:bg-amber-100/80 border-amber-200"
                 }`}
               >
-                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-200" : "text-slate-700 font-semibold"}`}>
                   <span className="flex items-center gap-1.5 font-medium text-[11px] sm:text-xs">
                     <div className="p-1 rounded-md bg-amber-500/15 text-amber-500 shrink-0">
                       <ShieldAlert className="w-3.5 h-3.5" />
@@ -439,11 +439,11 @@ export default function HeroWeatherCard({
                 </div>
                 <div className={`text-lg sm:text-xl font-bold mt-1 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                   {typeof current.uvIndex === "number" ? Math.round(current.uvIndex * 10) / 10 : current.uvIndex}{" "}
-                  <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                  <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                     / 11+
                   </span>
                 </div>
-                <div className={`text-[10px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                <div className={`text-[10px] mt-0.5 font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                   {current.uvIndex >= 6 ? "Cần chống nắng" : "An toàn"}
                 </div>
               </div>
@@ -454,7 +454,7 @@ export default function HeroWeatherCard({
                   isDarkTheme ? "bg-white/5 hover:bg-white/8 border-white/10" : "bg-cyan-50/80 hover:bg-cyan-100/80 border-cyan-200"
                 }`}
               >
-                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-200" : "text-slate-700 font-semibold"}`}>
                   <span className="flex items-center gap-1.5 font-medium text-[11px] sm:text-xs">
                     <div className="p-1 rounded-md bg-cyan-500/15 text-cyan-500 shrink-0">
                       <Eye className="w-3.5 h-3.5" />
@@ -464,11 +464,11 @@ export default function HeroWeatherCard({
                 </div>
                 <div className={`text-lg sm:text-xl font-bold mt-1 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                   {current.visibility}{" "}
-                  <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                  <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                     km
                   </span>
                 </div>
-                <div className={`text-[10px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                <div className={`text-[10px] mt-0.5 font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                   {current.visibility >= 10 ? "Tầm nhìn tốt" : "Sương mù"}
                 </div>
               </div>
@@ -479,7 +479,7 @@ export default function HeroWeatherCard({
                   isDarkTheme ? "bg-white/5 hover:bg-white/8 border-white/10" : "bg-purple-50/80 hover:bg-purple-100/80 border-purple-200"
                 }`}
               >
-                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-400" : "text-slate-600"}`}>
+                <div className={`flex items-center justify-between ${isDarkTheme ? "text-slate-200" : "text-slate-700 font-semibold"}`}>
                   <span className="flex items-center gap-1.5 font-medium text-[11px] sm:text-xs">
                     <div className="p-1 rounded-md bg-purple-500/15 text-purple-500 shrink-0">
                       <Gauge className="w-3.5 h-3.5" />
@@ -489,11 +489,11 @@ export default function HeroWeatherCard({
                 </div>
                 <div className={`text-lg sm:text-xl font-bold mt-1 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                   {current.surfacePressure}{" "}
-                  <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                  <span className={`text-[10px] font-normal ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>
                     hPa
                   </span>
                 </div>
-                <div className={`text-[10px] mt-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+                <div className={`text-[10px] mt-0.5 font-medium ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
                   Khí áp ổn định
                 </div>
               </div>
@@ -511,7 +511,7 @@ export default function HeroWeatherCard({
                     <Sunrise className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className={`text-[10px] font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Mặt trời mọc</div>
+                    <div className={`text-[10px] font-bold ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>Mặt trời mọc</div>
                     <div className={`font-extrabold text-sm ${isDarkTheme ? "text-white" : "text-slate-900"}`}>{todayForecast.sunrise}</div>
                   </div>
                 </div>
@@ -521,7 +521,7 @@ export default function HeroWeatherCard({
                     <Sunset className="w-4 h-4" />
                   </div>
                   <div>
-                    <div className={`text-[10px] font-medium ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Mặt trời lặn</div>
+                    <div className={`text-[10px] font-bold ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>Mặt trời lặn</div>
                     <div className={`font-extrabold text-sm ${isDarkTheme ? "text-white" : "text-slate-900"}`}>{todayForecast.sunset}</div>
                   </div>
                 </div>

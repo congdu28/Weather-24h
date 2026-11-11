@@ -40,7 +40,7 @@ export default function WeatherMetricsGrid({
   }`;
 
   const labelStyle = `flex items-center justify-between text-xs ${
-    isDarkTheme ? "text-slate-400" : "text-slate-500 font-medium"
+    isDarkTheme ? "text-slate-200 font-semibold" : "text-slate-700 font-medium"
   }`;
 
   const subTextStyle = `text-[11px] mt-1 ${
@@ -62,7 +62,7 @@ export default function WeatherMetricsGrid({
           <span className={`text-2xl sm:text-3xl font-extrabold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
             {current.uvIndex}
           </span>
-          <span className={`text-xs ml-1 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>/ 11+</span>
+          <span className={`text-xs ml-1 ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>/ 11+</span>
         </div>
         <div className={subTextStyle}>
           {current.uvIndex >= 6 ? "Nên thoa kem chống nắng & đeo kính râm." : "Mức độ an toàn ngoài trời."}
@@ -81,7 +81,7 @@ export default function WeatherMetricsGrid({
           <span className={`text-2xl sm:text-3xl font-extrabold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
             {current.relativeHumidity}
           </span>
-          <span className={`text-sm ml-0.5 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>%</span>
+          <span className={`text-sm ml-0.5 ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>%</span>
         </div>
         <div className={subTextStyle}>
           {current.relativeHumidity > 80 ? "Độ ẩm cao, trời nồm ẩm hoặc sắp mưa." : "Độ ẩm dễ chịu, thoáng đãng."}
@@ -103,7 +103,7 @@ export default function WeatherMetricsGrid({
           <span className={`text-2xl sm:text-3xl font-extrabold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
             {current.windSpeed}
           </span>
-          <span className={`text-xs ml-1 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>km/h</span>
+          <span className={`text-xs ml-1 ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>km/h</span>
         </div>
         <div className={subTextStyle}>
           {current.windSpeed > 25 ? "Gió giật mạnh, chú ý di chuyển." : "Gió nhẹ, thời tiết êm dịu."}
@@ -122,7 +122,7 @@ export default function WeatherMetricsGrid({
           <span className={`text-2xl sm:text-3xl font-extrabold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
             {current.surfacePressure}
           </span>
-          <span className={`text-xs ml-1 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>hPa</span>
+          <span className={`text-xs ml-1 ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>hPa</span>
         </div>
         <div className={subTextStyle}>
           Áp suất khí quyển chuẩn mực bề mặt.
@@ -141,7 +141,7 @@ export default function WeatherMetricsGrid({
           <span className={`text-2xl sm:text-3xl font-extrabold ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
             {current.visibility}
           </span>
-          <span className={`text-xs ml-1 ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>km</span>
+          <span className={`text-xs ml-1 ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>km</span>
         </div>
         <div className={subTextStyle}>
           {current.visibility >= 10 ? "Tầm nhìn rất rõ ràng, không sương mù." : "Tầm nhìn hạn chế, đề phòng sương."}
@@ -158,14 +158,14 @@ export default function WeatherMetricsGrid({
         </div>
         <div className="my-2 flex items-center justify-between pr-2">
           <div>
-            <div className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Mọc</div>
+            <div className={`text-xs ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-medium"}`}>Mọc</div>
             <div className="text-base font-bold text-amber-600 dark:text-amber-300">
               {todayForecast?.sunrise || "06:00"}
             </div>
           </div>
           <div className={`h-7 w-px ${isDarkTheme ? "bg-white/15" : "bg-slate-300"}`} />
           <div>
-            <div className={`text-xs ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>Lặn</div>
+            <div className={`text-xs ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-medium"}`}>Lặn</div>
             <div className="text-base font-bold text-orange-600 dark:text-orange-400">
               {todayForecast?.sunset || "18:00"}
             </div>
