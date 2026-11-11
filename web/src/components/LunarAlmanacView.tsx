@@ -22,7 +22,8 @@ import {
   DayAlmanac,
   UserBirthProfile,
   DetailedBirthFortune,
-  getDetailedBirthFortune
+  getDetailedBirthFortune,
+  elementLabel
 } from "../utils/lunarAlmanac";
 import {
   Calendar,
@@ -137,9 +138,17 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
     setShowBirthProfileModal(true);
   };
 
+  // Số ngày tối đa hợp lệ trong tháng được chọn của Modal (tự động điều chỉnh tháng 28/29/30/31 ngày hoặc 30 ngày Âm lịch)
+  const maxModalDays = useMemo(() => {
+    if (tempIsLunar) return 30;
+    return new Date(tempYear, tempMonth, 0).getDate();
+  }, [tempYear, tempMonth, tempIsLunar]);
+
+  const effectiveTempDay = Math.min(tempDay, maxModalDays);
+
   const handleSaveProfile = () => {
     const p: UserBirthProfile = {
-      day: tempDay,
+      day: effectiveTempDay,
       month: tempMonth,
       year: tempYear,
       gender: tempGender,
@@ -160,7 +169,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
   const modalPreviewFortune = useMemo(() => {
     try {
       return getDetailedBirthFortune({
-        day: tempDay,
+        day: effectiveTempDay,
         month: tempMonth,
         year: tempYear,
         gender: tempGender,
@@ -169,7 +178,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
     } catch {
       return null;
     }
-  }, [tempDay, tempMonth, tempYear, tempGender, tempIsLunar]);
+  }, [effectiveTempDay, tempMonth, tempYear, tempGender, tempIsLunar]);
 
   // Lunar date for selected date
   const lunarDate: LunarDate = useMemo(() => {
@@ -183,11 +192,12 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
   const almanac = useMemo(() => getDayAlmanac(lunarDate), [lunarDate]);
   const levelInfo = DAY_LEVEL_INFO[almanac.level];
 
-  // Hồ sơ bản mệnh phong thủy gia chủ
+  // Hồ sơ bản mệnh phong thủy gia chủ (ưu tiên năm Âm lịch từ detailedFortune cho người sinh tháng 1-2 trước Tết)
   const profile: PersonalProfile | null = useMemo(() => {
+    if (detailedFortune) return detailedFortune.personalProfile;
     const y = effectiveProfile ? effectiveProfile.year : birthYear;
     return y >= 1900 && y <= 2100 ? getPersonalProfile(y) : null;
-  }, [effectiveProfile, birthYear]);
+  }, [detailedFortune, effectiveProfile, birthYear]);
 
   // Đối chiếu phong thủy ngày được chọn với bản mệnh gia chủ
   const personalMatch: PersonalDayMatch | null = useMemo(() => {
@@ -356,14 +366,14 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               <>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm sm:text-base font-black">
-                    {detailedFortune.profile.gender === "male" ? "👨 Nam mạng" : "👩 Nữ mạng"} • Tuổi {detailedFortune.personalProfile.canChi} ({detailedFortune.profile.year})
+                    {detailedFortune.profile.gender === "male" ? "👨 Nam mạng" : "👩 Nữ mạng"} • Tuổi {detailedFortune.personalProfile.canChi} ({detailedFortune.personalProfile.birthYear})
                   </span>
                   <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                     isDarkTheme
                       ? "bg-amber-500/25 text-amber-200 border-amber-400/50"
                       : "bg-amber-500/20 text-amber-800 border-amber-400/40"
                   }`}>
-                    {detailedFortune.personalProfile.element} • {detailedFortune.personalProfile.napAm}
+                    Mệnh {elementLabel(detailedFortune.personalProfile.element)} • {detailedFortune.personalProfile.napAm}
                   </span>
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                     isDarkTheme
@@ -395,7 +405,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       ? "bg-amber-500/25 text-amber-200 border-amber-400/50"
                       : "bg-amber-500/20 text-amber-800 border-amber-400/40"
                   }`}>
-                    {profile.element} • {profile.napAm}
+                    Mệnh {elementLabel(profile.element)} • {profile.napAm}
                   </span>
                   <span className={`text-xs font-semibold ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
                     {profile.yinYangLabel}
@@ -533,13 +543,12 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
 
             <div className="text-center">
               <div className={`text-sm font-black ${isDarkTheme ? "text-amber-300" : "text-amber-700"}`}>
-                Thứ{" "}
-                {selectedDate.getDay() === 0 ? "Chủ Nhật" : selectedDate.getDay() + 1}
+                {selectedDate.getDay() === 0 ? "Chủ Nhật" : `Thứ ${selectedDate.getDay() + 1}`}
                 , ngày {selectedDate.getDate()} tháng {selectedDate.getMonth() + 1} năm{" "}
                 {selectedDate.getFullYear()}
               </div>
               <div className={`text-xs mt-0.5 font-bold ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                {lunarDate.dayCanChi} ({lunarDate.formattedLunarMedium})
+                Ngày {lunarDate.day}/{lunarDate.month}{lunarDate.isLeapMonth ? " (Nhuận)" : ""} ÂL • Ngày {lunarDate.dayCanChi}, Tháng {lunarDate.monthCanChi}, Năm {lunarDate.yearCanChi}
               </div>
             </div>
 
@@ -705,7 +714,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                             ? "bg-amber-500/25 text-amber-200 border-amber-400/50"
                             : "bg-amber-500/20 text-amber-800 border-amber-400/30"
                         }`}>
-                          {profile.element} • {profile.napAm}
+                          Mệnh {elementLabel(profile.element)} • {profile.napAm}
                         </span>
                       </div>
                       <p className={`text-xs mt-0.5 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
@@ -1218,9 +1227,9 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       {item.personal && item.personal.verdict === ActivityVerdict.BAD ? (
                         <span
                           className="text-[8.5px] sm:text-[9px] font-bold text-rose-500 bg-rose-500/10 px-1 py-0.5 rounded shrink-0"
-                          title={`Xung khắc tuổi ${profile?.canChi}: ${item.personal.notes[0]}`}
+                          title={`Đối chiếu tuổi ${profile?.canChi} (${item.personal.badgeLabel}): ${item.personal.notes[0]}`}
                         >
-                          Xung
+                          {item.personal.badgeLabel.startsWith("Xung") ? "Xung" : "Kỵ"}
                         </span>
                       ) : item.personal && item.personal.points >= 2 ? (
                         <span
@@ -1441,7 +1450,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 >
                   <div>
                     <div className={`text-sm sm:text-base font-black flex items-center gap-2 ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
-                      Thứ {item.date.getDay() === 0 ? "Chủ Nhật" : item.date.getDay() + 1},{" "}
+                      {item.date.getDay() === 0 ? "Chủ Nhật" : `Thứ ${item.date.getDay() + 1}`},{" "}
                       ngày {item.date.getDate()}/{item.date.getMonth() + 1}/{item.date.getFullYear()}
                       {item.lunar.day === 1 || item.lunar.day === 15 ? (
                         <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-300 font-bold border border-amber-400/30">
@@ -1579,11 +1588,11 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                           {detailedFortune.profile.gender === "male" ? "👨 Nam Mạng" : "👩 Nữ Mạng"}
                         </span>
                         <h2 className="text-xl sm:text-2xl font-black">
-                          Tuổi {detailedFortune.personalProfile.canChi} ({detailedFortune.profile.year})
+                          Tuổi {detailedFortune.personalProfile.canChi} ({detailedFortune.personalProfile.birthYear})
                         </h2>
                       </div>
                       <p className={`text-xs sm:text-sm mt-1 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                        Sinh ngày <strong>{detailedFortune.solarDate.day}/{detailedFortune.solarDate.month}/{detailedFortune.solarDate.year}</strong> (Dương lịch) • Âm lịch: ngày <strong>{detailedFortune.lunarDate.day}/{detailedFortune.lunarDate.month}</strong> năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong>
+                        Sinh ngày <strong>{detailedFortune.solarDate.day}/{detailedFortune.solarDate.month}/{detailedFortune.solarDate.year}</strong> (Dương lịch) • Âm lịch: ngày <strong>{detailedFortune.lunarDate.day}/{detailedFortune.lunarDate.month}</strong> năm <strong>{detailedFortune.lunarDate.yearCanChi} ({detailedFortune.lunarDate.year})</strong>
                       </p>
                       <div className={`text-[11px] mt-0.5 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
                         Tứ Trụ Can Chi: Năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong> • Tháng <strong>{detailedFortune.lunarDate.monthCanChi}</strong> • Ngày <strong>{detailedFortune.lunarDate.dayCanChi}</strong>
@@ -1605,7 +1614,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                   <div className={`p-3.5 rounded-2xl border ${isDarkTheme ? "bg-slate-900/80 border-white/15" : "bg-white/80 border-slate-200"}`}>
                     <span className={`text-[11px] font-bold block uppercase ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>Ngũ Hành Nạp Âm</span>
                     <div className="text-sm font-black text-amber-500 dark:text-amber-300 mt-0.5">
-                      Mệnh {detailedFortune.personalProfile.element}
+                      Mệnh {elementLabel(detailedFortune.personalProfile.element)}
                     </div>
                     <div className={`text-xs mt-0.5 truncate font-semibold ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
                       {detailedFortune.personalProfile.napAm}
@@ -1687,11 +1696,11 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     <div className="flex items-center gap-3 mb-2">
                       <Compass className="w-5 h-5 text-emerald-500" />
                       <h3 className="text-base font-black">
-                        Bát Trạch Cung Phi Cho {detailedFortune.profile.gender === "male" ? "Nam Mạng" : "Nữ Mạng"} Sinh Năm {detailedFortune.profile.year}
+                        Bát Trạch Cung Phi Cho {detailedFortune.profile.gender === "male" ? "Nam Mạng" : "Nữ Mạng"} Tuổi {detailedFortune.personalProfile.canChi} ({detailedFortune.personalProfile.birthYear})
                       </h3>
                     </div>
                     <p className={`text-xs leading-relaxed font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                      Theo Dịch học Bát Trạch phong thủy, cùng sinh năm {detailedFortune.profile.year} ({detailedFortune.personalProfile.canChi}) nhưng <strong>Nam mạng</strong> và <strong>Nữ mạng</strong> mang Cung Phi và Cung Mệnh hoàn toàn khác biệt.
+                      Theo Dịch học Bát Trạch phong thủy, cùng sinh năm Âm lịch {detailedFortune.personalProfile.birthYear} ({detailedFortune.personalProfile.canChi}) nhưng <strong>Nam mạng</strong> và <strong>Nữ mạng</strong> mang Cung Phi và Cung Mệnh hoàn toàn khác biệt.
                       Bạn là <strong>{detailedFortune.profile.gender === "male" ? "Nam mạng" : "Nữ mạng"}</strong> nên thuộc cung <strong>{detailedFortune.cungPhi}</strong>, nhóm <strong>{detailedFortune.cungPhiGroup}</strong>.
                       Dưới đây là 4 hướng Đại Cát mang lại sinh khí tài lộc và 4 hướng Đại Hung cần tránh:
                     </p>
@@ -2346,13 +2355,13 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     Ngày sinh:
                   </label>
                   <select
-                    value={tempDay}
+                    value={effectiveTempDay}
                     onChange={(e) => setTempDay(Number(e.target.value))}
                     className={`w-full p-2.5 rounded-xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 ${
                       isDarkTheme ? "bg-slate-800 border-white/20 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
                     }`}
                   >
-                    {Array.from({ length: 31 }).map((_, i) => (
+                    {Array.from({ length: maxModalDays }).map((_, i) => (
                       <option key={i + 1} value={i + 1}>
                         Ngày {i + 1}
                       </option>
@@ -2390,8 +2399,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       isDarkTheme ? "bg-slate-800 border-white/20 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
                     }`}
                   >
-                    {Array.from({ length: 96 }).map((_, i) => {
-                      const y = 2025 - i;
+                    {Array.from({ length: 97 }).map((_, i) => {
+                      const y = 2026 - i;
                       const p = getPersonalProfile(y);
                       return (
                         <option key={y} value={y}>
@@ -2433,18 +2442,24 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       : "bg-amber-50/90 border-amber-300 shadow-xs"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-2.5">
+                  <div className="flex items-center justify-between mb-2.5 flex-wrap gap-1.5">
                     <span className="text-sm font-black text-amber-500 dark:text-amber-300 flex items-center gap-1.5">
                       <span>{tempGender === "male" ? "👨 Nam mạng" : "👩 Nữ mạng"}</span>
                       <span>•</span>
-                      <span>Tuổi {modalPreviewFortune.personalProfile.canChi} ({modalPreviewFortune.profile.year})</span>
+                      <span>
+                        Tuổi {modalPreviewFortune.personalProfile.canChi} ({modalPreviewFortune.personalProfile.birthYear}
+                        {modalPreviewFortune.personalProfile.birthYear !== modalPreviewFortune.solarDate.year
+                          ? ` ÂL • DL ${modalPreviewFortune.solarDate.year}`
+                          : ""}
+                        )
+                      </span>
                     </span>
                     <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                       isDarkTheme
                         ? "bg-amber-500/25 text-amber-200 border-amber-400/40"
                         : "bg-amber-500/20 text-amber-800 border-amber-400/30"
                     }`}>
-                      Mệnh {modalPreviewFortune.personalProfile.element} • {modalPreviewFortune.personalProfile.napAm}
+                      Mệnh {elementLabel(modalPreviewFortune.personalProfile.element)} • {modalPreviewFortune.personalProfile.napAm}
                     </span>
                   </div>
                   <div className={`grid grid-cols-2 gap-2 text-xs font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>

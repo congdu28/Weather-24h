@@ -79,6 +79,10 @@ export const FIVE_ELEMENT_META: Record<FiveElement, { label: string; emoji: stri
   [FiveElement.THO]: { label: "Thổ", emoji: "🟤" }
 };
 
+export function elementLabel(el: FiveElement): string {
+  return FIVE_ELEMENT_META[el]?.label || el;
+}
+
 export interface TrucInfo {
   name: string;
   fullName: string;
@@ -333,37 +337,37 @@ export function calculateCungPhi(year: number): {
   huongTotNam: string[];
   huongTotNu: string[];
 } {
-  const last2 = year % 100;
-  let sum = Math.floor(last2 / 10) + (last2 % 10);
-  while (sum >= 10) {
-    sum = Math.floor(sum / 10) + (sum % 10);
-  }
+  // Tổng các chữ số của năm sinh chia 9 lấy dư (0 tương ứng với 9)
+  const rem = ((year % 9) + 9) % 9;
+  const digitSum = rem === 0 ? 9 : rem;
 
-  let cungNamIdx: number;
-  let cungNuIdx: number;
+  let cungNamIdx = (11 - digitSum) % 9 || 9;
+  let cungNuIdx = (digitSum + 4) % 9 || 9;
 
-  if (year < 2000) {
-    cungNamIdx = (10 - sum) % 9 || 9;
-    cungNuIdx = (sum + 5) % 9 || 9;
-  } else {
-    cungNamIdx = (9 - sum) % 9 || 9;
-    cungNuIdx = (sum + 6) % 9 || 9;
-  }
-
+  // Quy ước Bát Trạch Trung Cung (số 5): Nam quy về Khôn (2), Nữ quy về Cấn (8)
   if (cungNamIdx === 5) cungNamIdx = 2;
   if (cungNuIdx === 5) cungNuIdx = 8;
 
   const isDongTu = (cung: number) => [1, 9, 3, 4].includes(cung);
-  const huongDongTu = ["Đông (Chính Đông)", "Đông Nam", "Nam (Chính Nam)", "Bắc (Chính Bắc)"];
-  const huongTayTu = ["Tây (Chính Tây)", "Tây Bắc", "Tây Nam", "Đông Bắc"];
+
+  const huongByCung: Record<number, string[]> = {
+    1: ["Đông Nam (Sinh Khí)", "Chính Đông (Thiên Y)", "Chính Nam (Diên Niên)", "Chính Bắc (Phục Vị)"],
+    2: ["Đông Bắc (Sinh Khí)", "Chính Tây (Thiên Y)", "Tây Bắc (Diên Niên)", "Tây Nam (Phục Vị)"],
+    3: ["Chính Nam (Sinh Khí)", "Chính Bắc (Thiên Y)", "Đông Nam (Diên Niên)", "Chính Đông (Phục Vị)"],
+    4: ["Chính Bắc (Sinh Khí)", "Chính Nam (Thiên Y)", "Chính Đông (Diên Niên)", "Đông Nam (Phục Vị)"],
+    6: ["Chính Tây (Sinh Khí)", "Đông Bắc (Thiên Y)", "Tây Nam (Diên Niên)", "Tây Bắc (Phục Vị)"],
+    7: ["Tây Bắc (Sinh Khí)", "Tây Nam (Thiên Y)", "Đông Bắc (Diên Niên)", "Chính Tây (Phục Vị)"],
+    8: ["Tây Nam (Sinh Khí)", "Tây Bắc (Thiên Y)", "Chính Tây (Diên Niên)", "Đông Bắc (Phục Vị)"],
+    9: ["Chính Đông (Sinh Khí)", "Đông Nam (Thiên Y)", "Chính Bắc (Diên Niên)", "Chính Nam (Phục Vị)"]
+  };
 
   return {
     menhNam: CUNG_NAMES[cungNamIdx] || "Càn (Kim)",
     menhNu: CUNG_NAMES[cungNuIdx] || "Ly (Hỏa)",
     nhomNam: isDongTu(cungNamIdx) ? "Đông Tứ Mệnh" : "Tây Tứ Mệnh",
     nhomNu: isDongTu(cungNuIdx) ? "Đông Tứ Mệnh" : "Tây Tứ Mệnh",
-    huongTotNam: isDongTu(cungNamIdx) ? huongDongTu : huongTayTu,
-    huongTotNu: isDongTu(cungNuIdx) ? huongDongTu : huongTayTu
+    huongTotNam: huongByCung[cungNamIdx] || huongByCung[6],
+    huongTotNu: huongByCung[cungNuIdx] || huongByCung[9]
   };
 }
 
@@ -444,7 +448,9 @@ export function getPersonalProfile(birthYear: number): PersonalProfile {
     napAm: nAm,
     element: elem,
     isYang,
-    yinYangLabel: isYang ? `Dương (${CAN[canIdx]} ${elementOfCan(canIdx)})` : `Âm (${CAN[canIdx]} ${elementOfCan(canIdx)})`,
+    yinYangLabel: isYang
+      ? `Dương mệnh (${CAN[canIdx]} • Hành ${elementLabel(elementOfCan(canIdx))})`
+      : `Âm mệnh (${CAN[canIdx]} • Hành ${elementLabel(elementOfCan(canIdx))})`,
     canElement: elementOfCan(canIdx),
     chiElement: elementOfChi(chiIdx),
     luckyColors: luckyColorsMap[elem],
@@ -509,6 +515,8 @@ export function matchPersonalDay(profile: PersonalProfile, almanac: DayAlmanac):
   // 2. Thiên Can
   const dayCanEl = elementOfCan(dayCan);
   const userCanEl = elementOfCan(userCan);
+  const dayCanElLabel = elementLabel(dayCanEl);
+  const userCanElLabel = elementLabel(userCanEl);
 
   if (isCanHarmony(dayCan, userCan)) {
     points += 2;
@@ -518,30 +526,32 @@ export function matchPersonalDay(profile: PersonalProfile, almanac: DayAlmanac):
     notes.push(`⚠️ Thiên can tương xung: Can ngày ${CAN[dayCan]} xung can tuổi ${CAN[userCan]}.`);
   } else if (elementGenerates(dayCanEl, userCanEl)) {
     points += 1;
-    notes.push(`✅ Thiên can tương sinh: Can ngày (${dayCanEl}) sinh dưỡng can tuổi (${userCanEl}).`);
+    notes.push(`✅ Thiên can tương sinh: Can ngày ${CAN[dayCan]} (${dayCanElLabel}) sinh dưỡng can tuổi ${CAN[userCan]} (${userCanElLabel}).`);
   } else if (elementOvercomes(dayCanEl, userCanEl) && !isClash(userChi, dayChi)) {
     points -= 1;
-    notes.push(`⚠️ Thiên can khắc: Can ngày ${CAN[dayCan]} khắc can tuổi ${CAN[userCan]}.`);
+    notes.push(`⚠️ Thiên can tương khắc: Can ngày ${CAN[dayCan]} (${dayCanElLabel}) khắc can tuổi ${CAN[userCan]} (${userCanElLabel}).`);
   }
 
   // 3. Ngũ Hành Nạp Âm
   const dayEl = almanac.napAmElement;
   const userEl = profile.element;
+  const dayElLabel = elementLabel(dayEl);
+  const userElLabel = elementLabel(userEl);
 
   if (elementGenerates(dayEl, userEl)) {
     points += 3;
-    notes.push(`✅ Ngũ hành nạp âm: Ngày ${almanac.napAm} (${dayEl}) tương sinh bản mệnh ${profile.napAm} (${userEl}) – vượng khí đại cát.`);
+    notes.push(`✅ Ngũ hành nạp âm: Ngày ${almanac.napAm} (${dayElLabel}) tương sinh bản mệnh ${profile.napAm} (${userElLabel}) – vượng khí đại cát.`);
   } else if (dayEl === userEl) {
     points += 1;
-    notes.push(`✅ Ngũ hành nạp âm: Ngày ${almanac.napAm} tỷ hòa cùng hành ${userEl} với bản mệnh – thuận hòa vững bền.`);
+    notes.push(`✅ Ngũ hành nạp âm: Ngày ${almanac.napAm} tỷ hòa cùng hành ${userElLabel} với bản mệnh – thuận hòa vững bền.`);
   } else if (elementOvercomes(userEl, dayEl)) {
     points += 1;
-    notes.push(`✅ Ngũ hành nạp âm: Bản mệnh ${userEl} chế khắc được hành ngày (${dayEl}) – nắm thế chủ động, đắc tài lộc.`);
+    notes.push(`✅ Ngũ hành nạp âm: Bản mệnh ${userElLabel} (${profile.napAm}) chế khắc được hành ngày ${dayElLabel} (${almanac.napAm}) – nắm thế chủ động, đắc tài lộc.`);
   } else if (elementOvercomes(dayEl, userEl)) {
     points -= 3;
-    notes.push(`⚠️ Ngũ hành nạp âm: Ngày ${almanac.napAm} (${dayEl}) khắc bản mệnh ${profile.napAm} (${userEl}) – hao tổn, nên thận trọng.`);
+    notes.push(`⚠️ Ngũ hành nạp âm: Ngày ${almanac.napAm} (${dayElLabel}) khắc bản mệnh ${profile.napAm} (${userElLabel}) – dễ hao tổn nguyên khí, nên thận trọng.`);
   } else {
-    notes.push(`ℹ️ Ngũ hành nạp âm: Bản mệnh ${userEl} sinh xuất cho hành ngày (${dayEl}) – hao khí nhẹ, nên giữ sức khỏe.`);
+    notes.push(`ℹ️ Ngũ hành nạp âm: Bản mệnh ${userElLabel} (${profile.napAm}) sinh xuất cho hành ngày ${dayElLabel} (${almanac.napAm}) – hao khí nhẹ, nên giữ sức khỏe.`);
   }
 
   // 4. Âm Dương
@@ -550,8 +560,12 @@ export function matchPersonalDay(profile: PersonalProfile, almanac: DayAlmanac):
     notes.push(`☯️ Âm Dương giao hòa: Tuổi ${profile.isYang ? "Dương" : "Âm"} gặp ngày ${isYangDay ? "Dương" : "Âm"} – cân bằng cát lợi.`);
   }
 
+  const directClash = isClash(userChi, dayChi);
+  const directHarm = isHarm(userChi, dayChi);
+  const directPunish = isPunish(userChi, dayChi);
+
   let verdict = ActivityVerdict.NEUTRAL;
-  if (isClash(userChi, dayChi) || points <= -3) {
+  if (directClash || points <= -3) {
     verdict = ActivityVerdict.BAD;
   } else if (points >= 2) {
     verdict = ActivityVerdict.GOOD;
@@ -565,12 +579,23 @@ export function matchPersonalDay(profile: PersonalProfile, almanac: DayAlmanac):
   let cautionAdvice = "Giữ tâm thái bình hòa, tránh nóng nảy trong giao tiếp và cẩn trọng khi điều khiển phương tiện.";
 
   if (verdict === ActivityVerdict.BAD) {
-    badgeLabel = `Xung tuổi (${points > 0 ? `+${points}` : points})`;
     badgeColor = "rose";
     luckyAdvice = "Nên làm việc thiện, an dưỡng tinh thần, hoàn thành các công việc thường nhật dang dở.";
-    cautionAdvice = "Ngày xung tuổi gia chủ. Tránh xuất tiền lớn, ký hợp đồng kinh tế, tránh tranh chấp cãi cọ hay đi xa đêm khuya.";
+    if (directClash) {
+      badgeLabel = `Xung tuổi (${points > 0 ? `+${points}` : points})`;
+      cautionAdvice = `Ngày ${CHI[dayChi]} lục xung trực diện với tuổi ${CHI[userChi]} của gia chủ. Tránh xuất tiền lớn, ký hợp đồng kinh tế, cưới hỏi hay khởi sự việc trọng đại.`;
+    } else if (directHarm) {
+      badgeLabel = `Phạm Lục hại (${points})`;
+      cautionAdvice = `Ngày ${CHI[dayChi]} tương hại (lục hại) với tuổi ${CHI[userChi]} kết hợp can/mệnh tương khắc. Đề phòng tiểu nhân thị phi, tránh cho vay mượn hoặc tranh cãi.`;
+    } else if (directPunish) {
+      badgeLabel = `Phạm Tương hình (${points})`;
+      cautionAdvice = `Ngày ${CHI[dayChi]} phạm hình với tuổi ${CHI[userChi]} kèm ngũ hành bất lợi. Cần khiêm nhường, cẩn trọng giấy tờ pháp lý và đi lại.`;
+    } else {
+      badgeLabel = `Khắc mệnh (${points})`;
+      cautionAdvice = `Ngũ hành ngày (${almanac.napAm}) khắc chế bản mệnh (${profile.napAm}). Hạn chế đầu tư mạo hiểm, chú ý giữ gìn sức khỏe.`;
+    }
   } else if (points >= 5) {
-    badgeLabel = `Rất hợp (+${points})`;
+    badgeLabel = `Đại hợp (+${points})`;
     badgeColor = "emerald";
     luckyAdvice = "Thời cơ đại cát hanh thông! Rất thuận lợi để xuất hành, gặp gỡ đối tác, ký kết, mở rộng kinh doanh hay cầu tài.";
     cautionAdvice = "Tránh tự phụ chủ quan, hãy tận dụng cát khí để giải quyết dứt điểm các kế hoạch quan trọng.";
@@ -580,10 +605,18 @@ export function matchPersonalDay(profile: PersonalProfile, almanac: DayAlmanac):
     luckyAdvice = "Ngày sinh vượng cát tường. Tiến hành công việc làm ăn, trao đổi hợp tác hoặc đi lại đều gặp may mắn.";
     cautionAdvice = "Hạn chế nhận lời hứa hẹn quá sức và chú ý giờ xuất hành để tối ưu tài lộc.";
   } else if (points < 0) {
-    badgeLabel = `Hơi khắc (${points})`;
     badgeColor = "orange";
     luckyAdvice = "Tập trung giải quyết các việc nội bộ, củng cố gia đạo và chuẩn bị kế hoạch.";
-    cautionAdvice = "Hạn chế quyết định vội vàng, thận trọng lời ăn tiếng nói nơi công sở.";
+    if (directHarm) {
+      badgeLabel = `Lục hại nhẹ (${points})`;
+      cautionAdvice = `Địa chi ngày ${CHI[dayChi]} lục hại với tuổi ${CHI[userChi]}, dù có yếu tố cát hỗ trợ nhưng vẫn nên thận trọng lời ăn tiếng nói.`;
+    } else if (directPunish) {
+      badgeLabel = `Tương hình nhẹ (${points})`;
+      cautionAdvice = `Địa chi ngày ${CHI[dayChi]} tương hình với tuổi ${CHI[userChi]}, tránh nóng vội quyết định việc lớn.`;
+    } else {
+      badgeLabel = `Hơi khắc (${points})`;
+      cautionAdvice = "Hạn chế quyết định vội vàng, thận trọng lời ăn tiếng nói nơi công sở.";
+    }
   }
 
   return {
@@ -1110,6 +1143,14 @@ export function getWesternZodiac(day: number, month: number): ZodiacSignInfo {
 }
 
 const NUMEROLOGY_DATA: Record<number, Omit<NumerologyInfo, "lifePathNumber">> = {
+  1: {
+    title: "Người Tiên Phong Độc Lập & Dẫn Đầu Xu Thế",
+    keywords: ["Tiên phong", "Độc lập", "Quyết đoán", "Lãnh đạo"],
+    description: "Số 1 đại diện cho tinh thần thủ lĩnh bẩm sinh và ý chí tự lập mạnh mẽ. Bạn luôn dám mở lối đi riêng, kiên định với mục tiêu và có năng lực dẫn dắt tập thể vượt qua nghịch cảnh.",
+    strengths: ["Tính tự chủ và bản lĩnh dẫn đầu cao", "Quyết đoán, dám nghĩ dám làm", "Sáng tạo độc bản, không đi theo lối mòn", "Ý chí vươn lên mạnh mẽ"],
+    challenges: ["Cái tôi lớn, đôi khi bảo thủ", "Dễ ôm đồm công việc một mình", "Cần học cách lắng nghe và cộng tác mềm mỏng"],
+    idealCareers: ["Nhà sáng lập, giám đốc điều hành (CEO)", "Quản lý dự án, trưởng nhóm đổi mới", "Kinh doanh tự do, chuyên gia tư vấn", "Chỉ huy, thể thao chuyên nghiệp"]
+  },
   2: {
     title: "Sứ Giả Hòa Bình & Kết Nối Tình Thân",
     keywords: ["Lắng nghe", "Hòa hợp", "Thấu cảm", "Ngoại giao"],
@@ -1197,34 +1238,43 @@ const NUMEROLOGY_DATA: Record<number, Omit<NumerologyInfo, "lifePathNumber">> = 
     strengths: ["Khả năng hiện thực hóa các dự án quy mô lớn", "Tầm nhìn chiến lược vượt thời đại", "Năng lực lãnh đạo và tổ chức xuất chúng", "Đóng góp những di sản vĩ đại cho xã hội"],
     challenges: ["Gánh nặng trách nhiệm quá to lớn", "Dễ rơi vào áp lực cầu toàn cực độ", "Cần học cách chia sẻ quyền hạn và tin tưởng người khác"],
     idealCareers: ["Kiến trúc sư các đại công trình quốc gia", "Nhà sáng lập các tập đoàn đa quốc gia", "Chính khách kiến thiết đất nước", "Nhà từ thiện quy mô toàn cầu"]
+  },
+  33: {
+    title: "Bậc Thầy Chữa Lành & Tình Yêu Vô Điều Kiện (Master Teacher)",
+    keywords: ["Chữa lành", "Thấu cảm", "Giáo dưỡng", "Từ bi"],
+    description: "Số 33/6 là Master Number của lòng từ bi và trí tuệ nâng đỡ tinh thần. Bạn lan tỏa nguồn năng lượng ấm áp, truyền cảm hứng hướng thiện và có khả năng chữa lành tâm hồn sâu sắc.",
+    strengths: ["Trái tim nhân hậu và lòng vị tha hiếm có", "Khả năng truyền đạt, dẫn dắt tinh thần xuất sắc", "Trực giác nghệ thuật và thẩm mỹ tinh tế", "Điểm tựa bình yên cho gia đình và cộng đồng"],
+    challenges: ["Dễ đặt gánh nặng cảm xúc của người khác lên vai", "Đôi khi quên chăm sóc nhu cầu bản thân", "Cần thiết lập ranh giới năng lượng lành mạnh"],
+    idealCareers: ["Nhà giáo dục, diễn giả truyền cảm hứng", "Bác sĩ, chuyên gia tâm lý trị liệu", "Lãnh đạo tổ chức nhân đạo, xã hội", "Nghệ thuật chữa lành, sáng tác"]
   }
 };
 
 export function calculateLifePathNumber(day: number, month: number, year: number): NumerologyInfo {
   function sumDigits(n: number): number {
-    return String(n).split("").reduce((acc, c) => acc + (parseInt(c, 10) || 0), 0);
+    return String(Math.abs(n)).split("").reduce((acc, c) => acc + (parseInt(c, 10) || 0), 0);
   }
-  function reduce(n: number, isFinal: boolean = false): number {
-    if (n === 11 || n === 22) return n;
-    let s = sumDigits(n);
-    while (s > 9) {
-      if (s === 10 && isFinal) return 10;
-      if (s === 11 || s === 22) return s;
+  function reduceComponent(n: number): number {
+    let s = n;
+    while (s > 9 && s !== 11 && s !== 22) {
       s = sumDigits(s);
     }
     return s;
   }
-  const rd = reduce(day);
-  const rm = reduce(month);
-  const ry = reduce(year);
-  const total = rd + rm + ry;
-  const lifePath = reduce(total, true);
+  const rd = reduceComponent(day);
+  const rm = reduceComponent(month);
+  const ry = reduceComponent(year);
+  let total = rd + rm + ry;
+
+  // Chuẩn trường phái Pythagoras Việt Nam: giữ số 10, 11, 22, 33 ở bước cộng tổng cuối
+  while (total > 9 && total !== 10 && total !== 11 && total !== 22 && total !== 33) {
+    total = sumDigits(total);
+  }
 
   const fallback = NUMEROLOGY_DATA[10];
-  const data = NUMEROLOGY_DATA[lifePath] || fallback;
+  const data = NUMEROLOGY_DATA[total] || fallback;
 
   return {
-    lifePathNumber: lifePath,
+    lifePathNumber: total,
     ...data
   };
 }
@@ -1658,15 +1708,15 @@ const LIFE_STAGES_BY_GENDER_DATA: Record<number, Record<"male" | "female", LifeS
         stage: "Tiền vận",
         ageRange: "Dưới 30 tuổi",
         title: "Tích Lũy Kinh Nghiệm & Khởi Sự",
-        overview: "Thời kỳ nhiều biến động và trải nghiệm, đầu óc nhanh nhạy giúp bạn sớm nắm bắt thời cơ lập nghiệp.",
+        overview: "Thời kỳ nhiều biến động và trải nghiệm, đầu óc nhanh nhạy giúp Nam tuổi Tý sớm nắm bắt thời cơ lập nghiệp.",
         careerFinance: "Tài chính lúc đầu thăng trầm, có những bài học quý báu về đầu tư và chọn đối tác.",
-        familyLove: "Đường tình duyên có đôi chút lận đận ban đầu, sau 26 tuổi dần ổn định."
+        familyLove: "Đường tình duyên có đôi chút thử thách ban đầu, từ sau 26 tuổi dần ổn định ấm êm."
       },
       {
         stage: "Trung vận",
         ageRange: "31 - 50 tuổi",
         title: "Gây Dựng Cơ Đồ & Phát Đạt",
-        overview: "Giai đoạn hoàng kim nở rộ, kinh nghiệm dày dặn kết hợp mưu lược giúp bạn tạo dựng sự nghiệp vững chắc.",
+        overview: "Giai đoạn hoàng kim nở rộ, kinh nghiệm dày dặn kết hợp mưu lược giúp tạo dựng sự nghiệp vững chắc.",
         careerFinance: "Công danh thăng tiến vượt bậc, tài lộc dồi dào, tích lũy được điền sản lớn.",
         familyLove: "Gia đình yên ấm, vợ chồng đồng lòng phát triển kinh tế, con cái ngoan ngoãn."
       },
@@ -1675,7 +1725,7 @@ const LIFE_STAGES_BY_GENDER_DATA: Record<number, Record<"male" | "female", LifeS
         ageRange: "Từ 51 tuổi trở đi",
         title: "Hưởng Phúc An Nhàn & Đức Lưu Quang",
         overview: "Cuộc sống viên mãn, thảnh thơi hưởng thành quả lao động cả đời, con cháu thành danh.",
-        careerFinance: "Tài sản dồi dào, kinh tế vững chãi, chuyển giao kinh nghiệm cho thế hệ sau.",
+        careerFinance: "Tài sản dồi dào, kinh tế vững chãi, chuyển giao cơ nghiệp cho thế hệ sau.",
         familyLove: "Gia đạo đề huề, con cháu sum vầy hiếu thảo, tâm an trí sáng."
       }
     ],
@@ -1684,9 +1734,9 @@ const LIFE_STAGES_BY_GENDER_DATA: Record<number, Record<"male" | "female", LifeS
         stage: "Tiền vận",
         ageRange: "Dưới 30 tuổi",
         title: "Học Hỏi & Khẳng Định Bản Thân",
-        overview: "Tuổi trẻ chăm chỉ, tháo vát, sớm tự lập và có định hướng công việc rõ ràng.",
+        overview: "Tuổi trẻ chăm chỉ, tháo vát, Nữ tuổi Tý sớm tự lập và có định hướng công việc rõ ràng.",
         careerFinance: "Thu nhập ổn định, biết chi tiêu tiết kiệm và tích lũy thông minh.",
-        familyLove: "Được nhiều người theo đuổi, tình duyên tươi đẹp, sớm tìm được bến đỗ bình yên."
+        familyLove: "Duyên dáng khéo léo, được nhiều người quý mến, sớm tìm được bến đỗ bình yên."
       },
       {
         stage: "Trung vận",
@@ -1705,123 +1755,728 @@ const LIFE_STAGES_BY_GENDER_DATA: Record<number, Record<"male" | "female", LifeS
         familyLove: "Con cháu thành đạt hiếu thảo, gia tộc rạng rỡ danh tiếng."
       }
     ]
+  },
+  1: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Bền Bỉ Rèn Chí & Xây Nền Móng",
+        overview: "Nam tuổi Sửu đi lên bằng thực lực và sự kiên trì, tuổi trẻ vất vả sớm hôm nhưng nền tảng cực kỳ vững chắc.",
+        careerFinance: "Tích tiểu thành đại, không thích đầu cơ mạo hiểm nên tài chính tăng trưởng đều đặn.",
+        familyLove: "Chân thành và nghiêm túc trong tình cảm, kết hôn muộn một chút sẽ đại cát."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Khẳng Định Uy Tín & An Cư Lạc Nghiệp",
+        overview: "Chữ tín và kinh nghiệm chuyên môn giúp bạn trở thành trụ cột không thể thay thế trong tổ chức.",
+        careerFinance: "Vượng phát về điền trạch, bất động sản và các ngành kỹ thuật, sản xuất bền vững.",
+        familyLove: "Tổ ấm vững chãi, vợ hiền con thảo, gia phong nề nếp chuẩn mực."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Phú Quý Thọ Khang & Vững Bền",
+        overview: "Càng về già càng sung túc, hưởng thành quả từ những tài sản dài hạn đã gây dựng.",
+        careerFinance: "Nhà cửa ruộng đất đề huề, hậu phương tài chính vững mạnh cho con cháu.",
+        familyLove: "Gia đình đại đoàn viên, con cháu lễ phép hiếu thuận."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Chăm Chỉ Cần Mẫn & Tự Lập",
+        overview: "Nữ tuổi Sửu chịu thương chịu khó, sống thực tế và sớm gánh vác trách nhiệm phụ giúp gia đình.",
+        careerFinance: "Làm việc cẩn trọng, tích lũy từng bước vững vàng, ít khi rơi vào cảnh thiếu thốn.",
+        familyLove: "Tình cảm chân thật, đôi khi thiệt thòi vì nghĩ cho người khác quá nhiều."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Đảm Đang Giữ Lửa & Tài Lộc Nở Hoa",
+        overview: "Công sức vun vén bắt đầu đơm hoa kết trái, cuộc sống vật chất và tinh thần đều bước sang trang mới.",
+        careerFinance: "Tài vận hanh thông, có duyên tích lũy nhà đất và tài sản giá trị lâu dài.",
+        familyLove: "Vợ chồng nghĩa tình sâu nặng, con cái ngoan hiền thành đạt."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Tâm An Phúc Hậu & Thanh Nhàn",
+        overview: "Buông bỏ vất vả tuổi trẻ để tận hưởng tuổi già bình yên bên con cháu.",
+        careerFinance: "Kinh tế độc lập, sung túc, được con cháu phụng dưỡng chu toàn.",
+        familyLove: "Hưởng phúc mẫu nghi, gia đạo êm ấm thuận hòa."
+      }
+    ]
+  },
+  2: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Xông Pha Mở Lối & Thử Thách Bản Lĩnh",
+        overview: "Nam tuổi Dần mang chí lớn bốn phương, tuổi trẻ sôi nổi, dám thử sức ở những lĩnh vực khó khăn nhất.",
+        careerFinance: "Kiếm tiền giỏi nhưng cũng dễ tiêu hao vì tính hào sảng; sau 28 tuổi mới bắt đầu giữ được tiền lớn.",
+        familyLove: "Tình yêu nồng nhiệt, trải qua vài cung bậc cảm xúc mới tìm được người tri kỷ thấu hiểu."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Uy Quyền Lãnh Đạo & Sự Nghiệp Đỉnh Cao",
+        overview: "Khi biết tiết chế sự nóng nảy bằng mưu lược, Nam tuổi Dần bước vào đại vận huy hoàng nhất.",
+        careerFinance: "Nắm giữ vị trí lãnh đạo hoặc làm chủ doanh nghiệp, tài lộc bứt phá mạnh mẽ.",
+        familyLove: "Là chỗ dựa vững chắc cho cả gia đình, con cái thông minh, mạnh mẽ."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Danh Vọng Vẹn Toàn & An Vui",
+        overview: "Có uy vọng cao trong dòng tộc và xã hội, cuộc sống tuổi già phóng khoáng tự tại.",
+        careerFinance: "Cơ ngơi bề thế, tài chính dư dả, vẫn giữ vai trò cố vấn uy tín.",
+        familyLove: "Gia đình hưng thịnh, con cháu tự hào nối nghiệp."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Độc Lập Mạnh Mẽ & Sớm Thành Danh",
+        overview: "Nữ tuổi Dần thông minh, cá tính, không thích dựa dẫm và sớm khẳng định năng lực nơi công sở.",
+        careerFinance: "Nhạy bén công việc, tự chủ tài chính từ rất sớm.",
+        familyLove: "Cần sự thấu hiểu và tôn trọng từ bạn đời; kết hôn khi tâm lý đã chín chắn sẽ rất bền vững."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Bản Lĩnh Đương Đầu & Gia Đạo Vững Vàng",
+        overview: "Vừa quyết đoán ngoài xã hội vừa chu toàn việc nhà, được đồng nghiệp và gia đình nể trọng.",
+        careerFinance: "Thăng tiến nhanh, thu nhập cao, mát tay trong đầu tư kinh doanh.",
+        familyLove: "Biết nhu cương đúng lúc giúp hôn nhân hòa hợp, con cái giỏi giang."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Thảnh Thơi Tự Tại & Phúc Lộc Trường Tồn",
+        overview: "Sức khỏe dẻo dai, tinh thần minh mẫn, tận hưởng cuộc sống sung túc an vui.",
+        careerFinance: "Tài sản tích lũy vững vàng, không phải bận tâm chuyện tiền bạc.",
+        familyLove: "Con cháu hiếu thảo, quây quần ấm áp."
+      }
+    ]
+  },
+  3: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Trí Tuệ Tinh Tế & Quý Nhân Dẫn Lối",
+        overview: "Nam tuổi Mão nho nhã, khéo léo đắc nhân tâm nên từ trẻ đã có nhiều thầy giỏi, bạn tốt nâng đỡ.",
+        careerFinance: "Thuận lợi trong học vấn, thi cử, các ngành trí thức, tài chính hoặc nghệ thuật.",
+        familyLove: "Đào hoa lịch lãm, chuyện tình cảm êm đềm lãng mạn."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Ngoại Giao Đắc Thắng & Phú Quý Sinh Tài",
+        overview: "Tài thương thuyết và sự cẩn trọng giúp bạn gặt hái thành tựu lớn mà không cần tranh đoạt gay gắt.",
+        careerFinance: "Tài lộc tụ về từ nhiều nguồn, đầu tư chắc thắng, tích lũy tài sản bền vững.",
+        familyLove: "Gia đạo êm ấm thuận hòa, vợ chồng tôn trọng và sẻ chia."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Thanh Cao Nhàn Nhã & Phúc Thọ Song Toàn",
+        overview: "Cuộc sống tuổi già điềm đạm, thanh lịch, hưởng thú vui văn hóa tinh thần phong phú.",
+        careerFinance: "Tiền bạc dư dả, lộc dưỡng già dồi dào.",
+        familyLove: "Con cháu đỗ đạt khoa bảng, gia đình hòa thuận."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Thanh Nhã Dịu Hiền & Thuận Đường Học Vấn",
+        overview: "Nữ tuổi Mão thông tuệ, tinh tế, đi tới đâu cũng tạo thiện cảm và gặp may mắn.",
+        careerFinance: "Công việc thuận buồm xuôi gió, sớm có khoản tích lũy riêng.",
+        familyLove: "Tình duyên ngọt ngào, gặp được người bạn đời yêu thương chiều chuộng."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Tổ Ấm Bình Yên & Tài Lộc Đủ Đầy",
+        overview: "Khéo léo dung hòa mọi mối quan hệ, sự nghiệp ổn định và gia đình luôn ngập tràn tiếng cười.",
+        careerFinance: "Vượng lộc từ công việc chuyên môn và quản lý tài chính gia đình khôn ngoan.",
+        familyLove: "Vợ chồng tâm đầu ý hợp, con cái ngoan hiền hiếu học."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "An Nhiên Hưởng Phúc & Trường Thọ",
+        overview: "Tâm hồn trẻ trung, sức khỏe tốt, sống an vui trong tình yêu thương của con cháu.",
+        careerFinance: "Tài chính vững vàng, cuộc sống sung túc đủ đầy.",
+        familyLove: "Gia đạo bình an, con cháu thành nhân chi mỹ."
+      }
+    ]
+  },
+  4: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Hoài Bão Lớn Lao & Sớm Lộ Tài Năng",
+        overview: "Nam tuổi Thìn mang khí chất rồng bay, thông minh xuất chúng và sớm có khát vọng làm việc lớn.",
+        careerFinance: "Có nhiều cơ hội thăng tiến sớm, dù đôi lúc thăng trầm do chủ quan nhưng nhanh chóng vực dậy.",
+        familyLove: "Sức hút lớn, tình duyên phong phú, lập gia đình xong sự nghiệp càng vững."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Rồng Gặp Mây Hội & Đại Nghiệp Huy Hoàng",
+        overview: "Giai đoạn thiên thời địa lợi nhân hòa hội tụ, tạo dựng công danh và vị thế xã hội rực rỡ.",
+        careerFinance: "Tài lộc dồi dào như nước nguồn, thành công lớn trong quản lý, kinh doanh hoặc đầu tư.",
+        familyLove: "Gia đình danh giá, vợ con được hưởng phúc lộc sung túc."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Vinh Hoa Phú Quý & Phúc Đức Vẹn Toàn",
+        overview: "Uy danh lẫy lừng, cuộc sống tuổi già vương giả và được hậu thế kính ngưỡng.",
+        careerFinance: "Điền sản lớn mạnh, để lại di sản vững chắc cho con cháu.",
+        familyLove: "Con cháu hiển đạt, gia tộc hưng vượng."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Tự Tin Tỏa Sáng & Vươn Lên Mạnh Mẽ",
+        overview: "Nữ tuổi Thìn thông minh, năng động, có chí tiến thủ và không ngừng hoàn thiện bản thân.",
+        careerFinance: "Sớm đạt thành tích nổi bật trong học tập và sự nghiệp, thu nhập tốt.",
+        familyLove: "Được nhiều người ngưỡng mộ, chọn bạn đời kỹ lưỡng và xứng đôi."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Tài Sắc Song Toàn & Hưng Gia Vượng Nghiệp",
+        overview: "Không chỉ thành công trong sự nghiệp riêng mà còn là cánh tay đắc lực giúp chồng làm nên nghiệp lớn.",
+        careerFinance: "Nắm giữ tài sản lớn, kinh doanh nhạy bén, tiền bạc hanh thông.",
+        familyLove: "Gia đạo sung túc, con cái thông minh xuất sắc."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Quý Phái An Nhàn & Hưởng Lộc Con Cháu",
+        overview: "Cuộc sống tuổi già thanh quý, viên mãn cả về vật chất lẫn tinh thần.",
+        careerFinance: "Của cải sung túc, an hưởng vinh hoa.",
+        familyLove: "Con cháu thành danh, hiếu kính phụng dưỡng."
+      }
+    ]
+  },
+  5: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Trầm Tĩnh Quan Sát & Tích Lũy Nội Lực",
+        overview: "Nam tuổi Tỵ sâu sắc, kín đáo, tuổi trẻ chú trọng trau dồi chuyên môn và hoạch định chiến lược dài hạn.",
+        careerFinance: "Biết nắm bắt cơ hội ngầm, sớm có tích lũy nhờ sự nhạy bén tài chính.",
+        familyLove: "Khi đã yêu thì hết lòng sâu sắc, tìm kiếm người bạn đời tri âm tri kỷ."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Mưu Lược Tinh Tường & Tài Lộc Bứt Phá",
+        overview: "Trực giác sắc bén giúp bạn đón đầu các xu hướng lớn, sự nghiệp thăng hoa vững chắc.",
+        careerFinance: "Đặc biệt có lộc về đầu tư, tài chính, nghiên cứu và quản trị cấp cao.",
+        familyLove: "Gia đình êm ấm, luôn bảo vệ và chăm lo chu đáo cho vợ con."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Minh Triết Thảnh Thơi & Phú Quý Dài Lâu",
+        overview: "Sống cuộc đời ung dung, trí tuệ minh mẫn, hưởng thành quả từ sự chuẩn bị kỹ lưỡng.",
+        careerFinance: "Tài sản tích lũy dồi dào, không lo biến động.",
+        familyLove: "Gia đạo an hòa, con cháu thành đạt nối tiếp."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Sắc Sảo Khéo Léo & Độc Lập Tài Chính",
+        overview: "Nữ tuổi Tỵ vừa có nét duyên ngầm cuốn hút vừa có đầu óc thực tế, thông minh.",
+        careerFinance: "Quản lý tiền bạc khôn ngoan, công việc tiến triển thuận lợi.",
+        familyLove: "Tình duyên có sức hút lớn, khi lập gia đình rất chung thủy son sắt."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Vượng Tài Vượng Lộc & Giữ Lửa Tổ Ấm",
+        overview: "Trực giác nhạy bén giúp bạn vừa phát triển sự nghiệp vừa quản lý kinh tế gia đình xuất sắc.",
+        careerFinance: "Có lộc lớn về bất động sản, tích lũy kim ngân dồi dào.",
+        familyLove: "Vợ chồng gắn kết, con cái chăm ngoan thành tài."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "An Khang Thịnh Vượng & Viên Mãn",
+        overview: "Tuổi già thanh nhàn, quý phái, hưởng phúc lộc bền lâu.",
+        careerFinance: "Của ăn của để vững vàng, cuộc sống dư dả.",
+        familyLove: "Con cháu hiếu thuận, gia đình sum vầy."
+      }
+    ]
+  },
+  6: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Tung Hoành Bốn Phương & Đam Mê Khám Phá",
+        overview: "Nam tuổi Ngọ nhiệt huyết, phóng khoáng, tuổi trẻ đi nhiều biết rộng, sớm tự lập bươn chải.",
+        careerFinance: "Nắm bắt cơ hội nhanh, làm ra tiền sớm nhưng cần rèn kỷ luật tiết kiệm.",
+        familyLove: "Lãng mạn, sôi nổi, sau khi lập gia đình sẽ dần điềm đạm và trách nhiệm hơn."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Mã Đáo Thành Công & Sự Nghiệp Rạng Danh",
+        overview: "Khi tìm đúng đường hướng, sức bền và tốc độ của tuổi Ngọ giúp bạn bứt phá ngoạn mục.",
+        careerFinance: "Thương mại, kinh doanh, ngoại giao đều đại thắng; tài lộc dồi dào.",
+        familyLove: "Gia đạo hưng vượng, vợ chồng đồng hành vượt mọi thử thách."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Tiêu Dao Tự Tại & Phúc Lộc Trường Thọ",
+        overview: "Sức khỏe dồi dào, tinh thần lạc quan trẻ trung, tận hưởng tuổi già an vui.",
+        careerFinance: "Kinh tế vững chãi, điền sản sung túc.",
+        familyLove: "Con cháu thành đạt, gia đình rộn tiếng cười."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Năng Động Tháo Vát & Tự Chủ Vươn Lên",
+        overview: "Nữ tuổi Ngọ hoạt bát, thẳng thắn, làm việc gì cũng tràn đầy năng lượng tích cực.",
+        careerFinance: "Sớm tự lập kinh tế, nhạy bén trong giao tiếp và công việc.",
+        familyLove: "Tình cảm chân thành, nồng nhiệt, nên chọn bạn đời điềm đạm bao dung."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Đảm Việc Nước Giỏi Việc Nhà & Phát Đạt",
+        overview: "Sự tháo vát và quyết đoán giúp bạn gặt hái thành công cả trên thương trường lẫn trong tổ ấm.",
+        careerFinance: "Tài vận hanh thông, tích lũy được nhiều tài sản giá trị.",
+        familyLove: "Gia đình hòa thuận, con cái năng động, thông minh."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Bình Yên Hưởng Phúc & An Nhàn",
+        overview: "Tâm hồn thảnh thơi, không còn lo toan vất vả, vui vầy cùng con cháu.",
+        careerFinance: "Tài chính dư dả, tuổi già sung túc.",
+        familyLove: "Con cháu hiếu thảo, gia đạo ấm êm."
+      }
+    ]
+  },
+  7: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Ôn Hòa Rèn Chí & Quý Nhân Tương Trợ",
+        overview: "Nam tuổi Mùi điềm đạm, sâu sắc, sống tình nghĩa nên luôn có quý nhân xuất hiện giúp đỡ lúc khó khăn.",
+        careerFinance: "Khởi đầu chậm mà chắc, hợp với các ngành chuyên môn sâu, nghệ thuật, quản lý hoặc dịch vụ.",
+        familyLove: "Trọng tình cảm, luôn khao khát xây dựng một mái ấm bình yên."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Phúc Lộc Tụ Hội & Sự Nghiệp Vững Vàng",
+        overview: "Càng trưởng thành càng bản lĩnh, uy tín cá nhân giúp bạn mở rộng cơ đồ bền vững.",
+        careerFinance: "Lộc lá dồi dào, điền sản tăng thêm, công việc kinh doanh thuận lợi.",
+        familyLove: "Người chồng, người cha mẫu mực; gia đạo êm ấm hạnh phúc."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Đức Dày Phúc Lớn & An Khang Thịnh Vượng",
+        overview: "Nhờ sống thiện lương tích đức từ trẻ nên hậu vận tuổi Mùi cực kỳ sung túc, an nhàn.",
+        careerFinance: "Của cải đầy kho, không bao giờ lo túng thiếu.",
+        familyLove: "Con cháu hiếu thảo, thành danh, gia đình sum họp."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Dịu Hiền Tinh Tế & Sớm Gặp Duyên Lành",
+        overview: "Nữ tuổi Mùi nhân hậu, khéo léo, được mọi người yêu thương che chở.",
+        careerFinance: "Công việc ổn định, có duyên với các lĩnh vực thẩm mỹ, giáo dục, y tế, tài chính.",
+        familyLove: "Tình duyên thuận lợi, gặp được người chồng biết trân trọng và yêu thương."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Phúc Khí Vượng Gia & Tài Lộc Nở Rộ",
+        overview: "Đức tính hiền hòa, đảm đang của bạn mang lại phong thủy đại cát cho cả gia đình.",
+        careerFinance: "Kinh tế gia đình ngày càng khấm khá, có lộc nhà đất và tích lũy bền vững.",
+        familyLove: "Vợ chồng hòa hợp, con cái ngoan ngoãn, hiếu thảo."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Viên Mãn Thanh Nhàn & Phúc Lộc Dồi Dào",
+        overview: "Tuổi già an nhiên hưởng phúc, sức khỏe và tinh thần đều thư thái.",
+        careerFinance: "Đầy đủ sung túc, được con cháu báo hiếu chu toàn.",
+        familyLove: "Gia đạo đề huề, ấm áp yêu thương."
+      }
+    ]
+  },
+  8: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Thông Tuệ Nhạy Bén & Đa Tài Ứng Biến",
+        overview: "Nam tuổi Thân thông minh lanh lợi, học một hiểu mười, sớm bộc lộ tài năng xuất sắc.",
+        careerFinance: "Nắm bắt cơ hội kiếm tiền rất nhanh, càng thử thách càng phát huy trí sáng tạo.",
+        familyLove: "Đào hoa, hoạt ngôn, sau khi kết hôn sẽ tập trung mạnh mẽ cho sự nghiệp."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Xoay Chuyển Thời Cơ & Thành Tựu Vượt Bậc",
+        overview: "Kinh nghiệm thực chiến kết hợp tư duy linh hoạt đưa bạn lên đỉnh cao công danh.",
+        careerFinance: "Đại phát về thương mại, công nghệ, tài chính; tài sản tích lũy nhanh chóng.",
+        familyLove: "Gia đình sung túc, con cái thông minh lanh lợi."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Minh Mẫn Giàu Sang & An Vui Tự Tại",
+        overview: "Tuổi già vẫn giữ được trí tuệ sắc sảo, sống sung túc và truyền dạy kinh nghiệm quý cho con cháu.",
+        careerFinance: "Tiền tài dư dả, nguồn thu thụ động vững vàng.",
+        familyLove: "Gia đạo hưng thịnh, con cháu thành đạt."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Linh Hoạt Sắc Sảo & Sớm Khẳng Định Mình",
+        overview: "Nữ tuổi Thân thông minh, hiện đại, giao tiếp khéo léo nên đi đâu cũng tỏa sáng.",
+        careerFinance: "Công việc thuận lợi, có khả năng kiếm tiền và quản lý tài chính độc lập.",
+        familyLove: "Tình duyên sôi nổi, kết hôn với người tâm đầu ý hợp sẽ rất hạnh phúc."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Tài Đảm Song Toàn & Gia Nghiệp Hưng Long",
+        overview: "Vừa nhạy bén nắm bắt cơ hội kinh doanh vừa quán xuyến tổ ấm chu toàn.",
+        careerFinance: "Tài lộc vượng phát, mát tay trong đầu tư và tích lũy tài sản.",
+        familyLove: "Vợ chồng đồng lòng, con cái học giỏi, gia đình ngập tràn niềm vui."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Trẻ Trung Sung Túc & Hưởng Trọn Phúc Lộc",
+        overview: "Tinh thần luôn yêu đời, lạc quan, tận hưởng cuộc sống tuổi già đầy đủ tiện nghi.",
+        careerFinance: "Kinh tế vững chắc, của để dành dồi dào.",
+        familyLove: "Con cháu quây quần hiếu thuận."
+      }
+    ]
+  },
+  9: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Kỷ Luật Chuyên Cần & Khẳng Định Năng Lực",
+        overview: "Nam tuổi Dậu nguyên tắc, tỉ mỉ, có chí tiến thủ rõ ràng ngay từ khi mới lập thân.",
+        careerFinance: "Nhờ làm việc có kế hoạch khoa học nên sớm đạt vị trí tốt và có tích lũy.",
+        familyLove: "Chân thành, chu đáo, luôn tìm kiếm mối quan hệ nghiêm túc lâu dài."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Danh Chấn Bốn Phương & Tài Lộc Sung Túc",
+        overview: "Sự chuẩn xác và chữ tín giúp bạn gặt hái thành công lớn trong quản lý, tài chính, kỹ thuật hoặc pháp lý.",
+        careerFinance: "Tiền bạc dồi dào, đầu tư chắc chắn, gây dựng cơ ngơi khang trang.",
+        familyLove: "Trụ cột kinh tế vững vàng, gia đình nề nếp hạnh phúc."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Phú Quý An Nhàn & Hậu Vận Vững Chãi",
+        overview: "Mọi kế hoạch tích lũy từ trẻ phát huy hiệu quả, tuổi già sống ung dung tự tại.",
+        careerFinance: "Tài sản sung túc, không phải lo nghĩ chuyện vật chất.",
+        familyLove: "Con cháu thành danh, hiếu thảo và kính trọng."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Đảm Đang Chu Toàn & Tự Lập Sớm",
+        overview: "Nữ tuổi Dậu chăm chỉ, sắc sảo, làm việc gì cũng gọn gàng và có trách nhiệm cao.",
+        careerFinance: "Giỏi kiếm tiền và rất biết cách quản lý chi tiêu hợp lý.",
+        familyLove: "Tình cảm sâu sắc, hết lòng vì người mình yêu thương."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Vượng Phu Ích Tử & Kinh Tế Vững Vàng",
+        overview: "Là người giữ tay hòm chìa khóa xuất sắc, đưa kinh tế gia đình ngày một đi lên.",
+        careerFinance: "Có duyên với bất động sản, kinh doanh và tích lũy tài sản lớn.",
+        familyLove: "Chồng con thành đạt nhờ bàn tay chăm sóc chu toàn của bạn."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "An Vui Thảnh Thơi & Phúc Đức Trọn Vẹn",
+        overview: "Tuổi già bình yên, hưởng quả ngọt từ sự tần tảo và nuôi dạy con cái thành tài.",
+        careerFinance: "Của ăn của để dư dả, cuộc sống an nhàn.",
+        familyLove: "Gia đình sum vầy, con cháu hiếu nghĩa."
+      }
+    ]
+  },
+  10: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Chính Trực Kiên Cường & Rèn Luyện Bản Lĩnh",
+        overview: "Nam tuổi Tuất trọng nghĩa khí, trung thực, tuổi trẻ chăm chỉ cống hiến và xây dựng uy tín.",
+        careerFinance: "Đi lên bằng năng lực thật, càng làm việc ở môi trường minh bạch càng nhanh thăng tiến.",
+        familyLove: "Chung thủy, chân thành, khi lập gia đình luôn đặt vợ con lên trên hết."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Uy Tín Vang Xa & Sự Nghiệp Bền Vững",
+        overview: "Sự tin cậy tuyệt đối từ cấp trên, đối tác và bạn bè giúp bạn nắm giữ những trọng trách lớn.",
+        careerFinance: "Tài lộc tăng trưởng vững chắc, tích lũy được nhà cửa và tài sản giá trị.",
+        familyLove: "Gia đạo bình yên, vợ chồng đồng cam cộng khổ, con cái hiếu thuận."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Tâm An Phúc Vượng & Hưởng Lộc Bền Lâu",
+        overview: "Cuộc sống tuổi già thanh thản, được mọi người kính trọng vì đức độ.",
+        careerFinance: "Kinh tế ổn định vững vàng, hậu vận sung túc.",
+        familyLove: "Con cháu sum vầy, gia phong tốt đẹp."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Hiền Lương Chăm Chỉ & Chân Thành",
+        overview: "Nữ tuổi Tuất sống ngay thẳng, giàu lòng nhân ái, luôn nỗ lực học tập và làm việc.",
+        careerFinance: "Thu nhập ổn định, biết tiết kiệm và lo xa cho tương lai.",
+        familyLove: "Thủy chung son sắt, tìm được người bạn đời chân thành, trách nhiệm."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Điểm Tựa Gia Đình & Tài Lộc Hưng Thịnh",
+        overview: "Sự kiên nhẫn và quán xuyến khéo léo của bạn giúp gia đình vượt qua mọi sóng gió để vươn lên.",
+        careerFinance: "Công việc thuận lợi, tích lũy tài chính ngày càng vững mạnh.",
+        familyLove: "Hôn nhân bền chặt, con cái ngoan ngoãn, học hành tấn tới."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Phúc Hậu Bình An & Viên Mãn",
+        overview: "Hưởng tuổi già êm đềm, không vướng bận âu lo, sức khỏe dồi dào.",
+        careerFinance: "Đầy đủ sung túc, lộc con cháu dồi dào.",
+        familyLove: "Gia đình hòa thuận, con cháu hiếu thảo."
+      }
+    ]
+  },
+  11: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Phúc Khí Tự Nhiên & Thuận Lợi Khởi Đầu",
+        overview: "Nam tuổi Hợi nhân hậu, rộng lượng, đi tới đâu cũng gặp quý nhân phù trợ.",
+        careerFinance: "Ít khi gặp cảnh ngặt nghèo, cơ hội công việc và tài lộc đến khá tự nhiên.",
+        familyLove: "Hiền hòa, ấm áp, đường tình duyên thuận lợi êm đẹp."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Đại Lộc Hanh Thông & Gia Nghiệp Sung Túc",
+        overview: "Chữ tín và tấm lòng bao dung giúp bạn thu hút đối tác lớn, sự nghiệp phát triển bền vững.",
+        careerFinance: "Tiền tài dồi dào, có lộc lớn về kinh doanh, thương mại và điền sản.",
+        familyLove: "Gia đình hạnh phúc, vợ con được hưởng cuộc sống ấm no đủ đầy."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Viên Mãn Phú Quý & Trường Thọ Đa Phúc",
+        overview: "Một trong những con giáp có hậu vận tốt đẹp nhất, sống an nhàn sung sướng.",
+        careerFinance: "Của cải dư dả, phúc lộc vẹn toàn.",
+        familyLove: "Con cháu sum vầy, hiếu thảo, gia tộc hưng thịnh."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Hiền Hòa Đôn Hậu & May Mắn Cát Tường",
+        overview: "Nữ tuổi Hợi có số hưởng phúc, tính tình vui vẻ thiện lương nên luôn được yêu mến.",
+        careerFinance: "Công việc hanh thông, tài chính ổn định vững vàng.",
+        familyLove: "Tình duyên tốt đẹp, kết hôn cùng người chồng yêu thương, trách nhiệm."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Vượng Phu Ích Tử & Tài Lộc Dồi Dào",
+        overview: "Mang lại phúc khí lớn cho nhà chồng, kinh tế gia đình ngày một phất lên.",
+        careerFinance: "Tích lũy được nhiều tài sản, tiền bạc rủng rỉnh.",
+        familyLove: "Tổ ấm ngập tràn yêu thương, con cái ngoan hiền đỗ đạt."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "An Nhiên Phú Quý & Phúc Đức Ngập Tràn",
+        overview: "Tuổi già thanh thản, khỏe mạnh, hưởng trọn niềm vui bên con đàn cháu đống.",
+        careerFinance: "Sung túc đủ đầy, không lo nghĩ vật chất.",
+        familyLove: "Con cháu thành đạt, hiếu kính vẹn toàn."
+      }
+    ]
   }
 };
 
-// Generic fallback generator for life stages for other animals
 function getLifeStagesForAnimal(chiIdx: number, gender: "male" | "female"): LifeStageFortune[] {
-  if (LIFE_STAGES_BY_GENDER_DATA[chiIdx]?.[gender]) {
-    return LIFE_STAGES_BY_GENDER_DATA[chiIdx][gender];
-  }
-  const isMale = gender === "male";
-  return [
-    {
-      stage: "Tiền vận",
-      ageRange: "Dưới 30 tuổi",
-      title: isMale ? "Xông Pha Trải Nghiệm & Lập Thân" : "Rèn Giũa Tài Năng & Khởi Đầu Thuận Lợi",
-      overview: "Thời kỳ học hỏi, tích lũy vốn sống và đối mặt với thử thách để tôi luyện bản lĩnh vững vàng.",
-      careerFinance: "Tài chính bước đầu gây dựng, có lúc lên bổng xuống trầm nhưng tôi luyện ý chí kiên định.",
-      familyLove: "Tình cảm tuổi trẻ nồng nhiệt, qua vài mối duyên sẽ tìm thấy người bạn đời đích thực."
-    },
-    {
-      stage: "Trung vận",
-      ageRange: "31 - 50 tuổi",
-      title: isMale ? "Đại Vận Hanh Thông & Khẳng Định Vị Thế" : "Gia Đạo Hưng Vượng & Sự Nghiệp Viên Mãn",
-      overview: "Giai đoạn hoàng kim rực rỡ nhất trong cuộc đời, thiên thời địa lợi nhân hòa đều tụ hội.",
-      careerFinance: "Công việc kinh doanh thăng tiến, nắm giữ trọng trách, tiền tài tích lũy vững chãi.",
-      familyLove: "Vợ chồng hòa hợp đồng tâm, con cái học hành đỗ đạt, gia đạo luôn tràn đầy tiếng cười."
-    },
-    {
-      stage: "Hậu vận",
-      ageRange: "Từ 51 tuổi trở đi",
-      title: "An Nhàn Hưởng Phúc & Di Sản Trường Tồn",
-      overview: "Cuộc sống an nhiên tự tại, hưởng thụ thành quả sự nghiệp, phúc lộc trường tồn.",
-      careerFinance: "Của cải điền sản vững vàng, sống dư dả không bận tâm gánh nặng cơm áo gạo tiền.",
-      familyLove: "Con cháu vinh hiển, gia tộc hưng thịnh, tinh thần thanh thản bình an."
-    }
-  ];
+  const normalizedChi = ((chiIdx % 12) + 12) % 12;
+  return LIFE_STAGES_BY_GENDER_DATA[normalizedChi][gender];
 }
 
 export function getSaoHan2026(lunarAge: number, gender: "male" | "female"): SaoHan2026Info {
+  const safeAge = Math.max(1, lunarAge);
   const saoNam = [
-    { name: "La Hầu", type: "Hung tinh" as const, desc: "Chủ về khẩu thiệt thị phi, hao tài tốn của, bệnh mắt tai, cần đặc biệt lưu ý tháng Giêng và tháng 7 Âm lịch." },
-    { name: "Thổ Tú", type: "Trung tinh" as const, desc: "Khởi đầu có chút trắc trở gian nan nhưng hậu vận hanh thông. Cần giữ gia đạo hòa thuận, kỵ tháng 4 và 8 Âm lịch." },
-    { name: "Thủy Diệu", type: "Cát tinh" as const, desc: "Cát tinh chủ về tài lộc hưng thịnh, có hỷ sự bất ngờ, song cần chú ý khi đi lại vùng sông nước, cẩn trọng tháng 4 và 8." },
-    { name: "Thái Bạch", type: "Hung tinh" as const, desc: "Hung tinh hao tài nặng nhất ('Thái Bạch quét sạch cửa nhà'). Cần giữ gìn tài chính chặt chẽ, tránh vay mượn mạo hiểm, kỵ tháng 5." },
-    { name: "Thái Dương", type: "Cát tinh" as const, desc: "Đại cát tinh rực rỡ nhất cho Nam mạng. Vượng khí công danh thăng tiến, kinh doanh bội thu, may mắn đỉnh điểm tháng 6 và 10." },
-    { name: "Vân Hớn", type: "Trung tinh" as const, desc: "Vận thế bình hòa, tránh nóng nảy và bảo thủ, giữ gìn lời ăn tiếng nói nơi công sở để tránh thị phi, cẩn trọng tháng 2 và 8." },
-    { name: "Kế Đô", type: "Hung tinh" as const, desc: "Ám muội, buồn phiền, hao tài nhẹ, cần giữ tâm thái bình an và làm nhiều việc thiện tích đức, kỵ tháng 3 và 9." },
-    { name: "Thái Âm", type: "Cát tinh" as const, desc: "Cát tinh chủ về danh lợi song toàn, được quý nhân nâng đỡ, toại nguyện ước mơ cầu tài, tháng 9 Âm lịch vượng phát nhất." },
-    { name: "Mộc Đức", type: "Cát tinh" as const, desc: "Cát tinh may mắn về hôn nhân, tài lộc phát đạt, được bạn bè đối tác tương trợ, tháng Chạp (tháng 12) đắc tài đắc lộc." }
+    { name: "La Hầu", type: "Hung tinh" as const, desc: "Chủ về khẩu thiệt thị phi, công việc dễ gặp tranh cãi, cần giữ gìn sức khỏe mắt tai và cẩn trọng tháng Giêng, tháng 7 Âm lịch." },
+    { name: "Thổ Tú", type: "Trung tinh" as const, desc: "Khởi đầu có chút thử thách nhưng kiên trì sẽ hanh thông. Cần giữ gia đạo hòa thuận, đề phòng tiểu nhân tháng 4 và tháng 8 Âm lịch." },
+    { name: "Thủy Diệu", type: "Cát tinh" as const, desc: "Cát tinh chủ về tài lộc hưng thịnh, đi xa có lộc, gia đạo có hỷ sự; tuy nhiên cần cẩn trọng lời nói và sông nước vào tháng 4, tháng 8 Âm lịch." },
+    { name: "Thái Bạch", type: "Hung tinh" as const, desc: "Hung tinh chủ về hao tài ('Thái Bạch quét sạch cửa nhà'). Cần quản lý tài chính chặt chẽ, tránh đầu tư mạo hiểm, kỵ nhất tháng 2, 5, 8 Âm lịch." },
+    { name: "Thái Dương", type: "Cát tinh" as const, desc: "Đệ nhất cát tinh cho Nam mạng ('Thái Dương rực rỡ mặt trời'). Công danh thăng tiến, kinh doanh đắc lộc, đại vượng tháng 6 và tháng 10 Âm lịch." },
+    { name: "Vân Hớn", type: "Trung tinh" as const, desc: "Vận thế bình hòa, công việc giữ mức ổn định. Cần kiềm chế nóng nảy, cẩn trọng giấy tờ pháp lý vào tháng 2 và tháng 8 Âm lịch." },
+    { name: "Kế Đô", type: "Hung tinh" as const, desc: "Dễ sinh tâm lý lo âu, buồn phiền hoặc hao tài vặt; đi xa lại có tài lộc bất ngờ. Nên làm việc thiện tích đức, cẩn trọng tháng 3 và tháng 9 Âm lịch." },
+    { name: "Thái Âm", type: "Cát tinh" as const, desc: "Cát tinh chủ về danh lợi lưỡng toàn, được quý nhân khác giới trợ giúp, vượng Bất động sản và tài chính, đại cát tháng 9, cần giữ sức khỏe tháng 11." },
+    { name: "Mộc Đức", type: "Cát tinh" as const, desc: "Phúc tinh chiếu mệnh, hanh thông về công danh, hôn nhân và quý nhân nâng đỡ; đặc biệt đắc lộc vào tháng 10 và tháng Chạp (12 ÂL)." }
   ];
 
   const saoNu = [
-    { name: "Kế Đô", type: "Hung tinh" as const, desc: "Hung tinh lớn đối với Nữ mạng, dễ vướng thị phi tình cảm, bệnh vặt, cần giữ tâm an tịnh, cẩn trọng tháng 3 và tháng 9 Âm lịch." },
-    { name: "Vân Hớn", type: "Trung tinh" as const, desc: "Vận thế trung bình, cần chú ý sức khỏe sinh sản, việc bếp núc lửa nước, tránh khẩu thiệt tranh cãi, kỵ tháng 2 và 8." },
-    { name: "Mộc Đức", type: "Cát tinh" as const, desc: "Cát tinh mang lại an vui, gia đạo hòa thuận êm ấm, có tin vui về con cái hoặc sự nghiệp, đặc biệt vượng tháng 10 và 12." },
-    { name: "Thái Âm", type: "Cát tinh" as const, desc: "Đệ nhất cát tinh cho Nữ mạng, tài chính dồi dào, tình cảm thăng hoa, mưu sự lớn dễ thành công rực rỡ, tháng 9 Âm lịch may mắn nhất." },
-    { name: "Thổ Tú", type: "Trung tinh" as const, desc: "Có chút trăn trở lo toan trong nội tâm, xuất hành cần cẩn trọng và giữ gìn hòa khí gia đình, kỵ tháng 4 và 8." },
-    { name: "La Hầu", type: "Hung tinh" as const, desc: "Dễ gặp chuyện phiền muộn, cần đề phòng thị phi nói xấu sau lưng, giữ gìn sức khỏe tai mắt, kỵ tháng Giêng và tháng 7." },
-    { name: "Thái Dương", type: "Cát tinh" as const, desc: "Cát tinh mang lại sự tự tin, tháo vát, công việc làm ăn buôn bán hanh thông, gia đạo bình an, vượng tháng 6 và 10." },
-    { name: "Thái Bạch", type: "Hung tinh" as const, desc: "Hạn hao tài tốn của, tránh cho vay mượn hoặc đầu tư rủi ro cao, chú ý sức khỏe đường hô hấp, kỵ tháng 5 Âm lịch." },
-    { name: "Thủy Diệu", type: "Cát tinh" as const, desc: "Cát tinh chủ về hỷ khí, tài lộc dồi dào, tình duyên êm đẹp, tuy nhiên tránh đi sông biển xa vào tháng 4 và 8." }
+    { name: "Kế Đô", type: "Hung tinh" as const, desc: "Hung tinh đối với Nữ mạng, dễ vướng thị phi tình cảm hoặc tâm tư buồn phiền. Nên giữ tâm an tịnh, hướng thiện, cẩn trọng tháng 3 và tháng 9 Âm lịch." },
+    { name: "Vân Hớn", type: "Trung tinh" as const, desc: "Vận thế trung bình, cần chú ý sức khỏe huyết khí, thai sản, tránh nóng nảy tranh cãi trong nhà, lưu ý tháng 2 và tháng 8 Âm lịch." },
+    { name: "Mộc Đức", type: "Cát tinh" as const, desc: "Cát tinh mang lại an vui, gia đạo ấm êm hòa thuận, công việc kinh doanh phát đạt, đại cát vào tháng 10 và tháng 12 Âm lịch." },
+    { name: "Thái Âm", type: "Cát tinh" as const, desc: "Đệ nhất cát tinh cho Nữ mạng. Tài lộc dồi dào, tình duyên viên mãn, cầu danh cầu lợi đều toại nguyện, vượng nhất tháng 9 Âm lịch (lưu ý sức khỏe tháng 11)." },
+    { name: "Thổ Tú", type: "Trung tinh" as const, desc: "Tâm lý đôi lúc lo âu, xuất hành đi xa chưa thuận, cần giữ gìn hòa khí gia đình và sức khỏe vào tháng 4 và tháng 8 Âm lịch." },
+    { name: "La Hầu", type: "Hung tinh" as const, desc: "Chủ về khẩu thiệt thị phi, phiền muộn gia đạo, hao tài nhẹ. Cần giữ bình tĩnh, tránh nghe lời gièm pha, kỵ tháng Giêng và tháng 7 Âm lịch." },
+    { name: "Thái Dương", type: "Cát tinh" as const, desc: "Cát tinh mang lại quý nhân nâng đỡ, công việc buôn bán hanh thông, tinh thần phấn chấn, vượng lộc tháng 6 và tháng 10 Âm lịch." },
+    { name: "Thái Bạch", type: "Hung tinh" as const, desc: "Hạn hao tài tốn của, tránh cho vay mượn lớn hoặc đầu tư rủi ro cao, chú ý sức khỏe vào tháng 2, tháng 5 và tháng 8 Âm lịch." },
+    { name: "Thủy Diệu", type: "Cát tinh" as const, desc: "Phúc lộc tinh chủ về tài lộc và tin vui gia đạo; tuy nhiên Nữ mạng cần giữ gìn lời ăn tiếng nói để tránh thị phi vào tháng 4 và tháng 8 Âm lịch." }
   ];
 
-  const saoIdx = ((lunarAge - 10) % 9 + 9) % 9;
+  // Cửu Diệu: Khởi từ 10 tuổi (hoặc 1 tuổi), chu kỳ 9 năm
+  const saoIdx = ((safeAge - 10) % 9 + 9) % 9;
   const sao = gender === "male" ? saoNam[saoIdx] : saoNu[saoIdx];
 
+  // Bát Hạn chuẩn Ngọc Hạp Thông Thư:
+  // 0: Huỳnh Tuyền -> 1: Tam Kheo -> 2: Ngũ Mộ -> 3: Thiên Tinh -> 4: Toán Tận -> 5: Thiên La -> 6: Địa Võng -> 7: Diêm Vương
   const hanList = [
-    { name: "Huỳnh Tuyền", desc: "Hạn chủ về sức khỏe, kỵ đi lại đường sông nước, đề phòng bệnh đau đầu chóng mặt." },
-    { name: "Tam Kheo", desc: "Hạn chủ về tay chân xương khớp, đau mắt, cần chú ý khi vận động thể thao hay đi lại ban đêm." },
-    { name: "Ngũ Thổ (Ngũ Hộ)", desc: "Hạn về thị phi, tâm lý lo âu bất an, tránh tin người nhẹ dạ hay bảo lãnh người khác." },
-    { name: "Thiên Tinh", desc: "Hạn chủ về ăn uống, ngộ độc thực phẩm, đề phòng kiện tụng hay tai bay vạ gió." },
-    { name: "Toán Tận", desc: "Đại hạn về tiền bạc, cẩn trọng cướp giật, mất mát tài sản bất ngờ, không nên mang theo nhiều tiền bạc." },
-    { name: "Thiên La", desc: "Hạn tâm lý, mất ngủ, áp lực tinh thần, cần giữ hòa khí vợ chồng tránh mâu thuẫn lục đục." },
-    { name: "Địa Võng", desc: "Đề phòng tiểu nhân ghen ghét vu oan, tránh đi xa vào ban đêm hay dính líu việc bao đồng." },
-    { name: "Diêm Vương", desc: "Kỵ phụ nữ ốm đau hoặc sinh nở, nhưng lại có lộc lớn cho người làm ăn kinh doanh buôn bán." }
+    { name: "Huỳnh Tuyền", desc: "Hạn chủ về sức khỏe, đề phòng bệnh đau đầu, huyết áp, chóng mặt; kỵ đi lại đường sông nước hoặc bảo lãnh tài chính." },
+    { name: "Tam Kheo", desc: "Hạn nhỏ về tứ chi xương khớp, mỏi mắt; cần chú ý đi lại cẩn trọng và hạn chế thức khuya." },
+    { name: "Ngũ Mộ", desc: "Hạn chủ về hao tài tốn của ('Ngũ Mộ hạn xấu tổn tài'); mua sắm hàng hóa cần rõ nguồn gốc, không nên cho vay mượn khó đòi." },
+    { name: "Thiên Tinh", desc: "Hạn chủ về tiêu hóa, ăn uống và lời ăn tiếng nói; cần giữ chữ tín, cẩn trọng giấy tờ để tránh tranh chấp thị phi." },
+    { name: "Toán Tận", desc: "Hạn về tiền bạc tài sản; đi lại cần cẩn trọng tư trang, tránh mang nhiều tài sản quý giá hoặc góp vốn mạo hiểm." },
+    { name: "Thiên La", desc: "Hạn chủ về tâm lý lo âu, mất ngủ; vợ chồng cần thấu hiểu nhường nhịn nhau, giữ tâm an định thì mọi việc tự yên." },
+    { name: "Địa Võng", desc: "Hạn chủ về lời ra tiếng vào, thị phi hiểu lầm; không nên đi muộn về khuya hay can dự chuyện bao đồng." },
+    { name: "Diêm Vương", desc: "Người đau yếu hoặc phụ nữ thai sản cần chú trọng chăm sóc sức khỏe; ngược lại người khỏe mạnh làm ăn kinh doanh lại rất đắc tài lộc." }
   ];
 
-  const hanIdx = ((lunarAge - 18) % 8 + 8) % 8;
+  // Cách bấm độn Bát Hạn truyền thống:
+  // Nam khởi 10 tuổi tại Huỳnh Tuyền (0) đi thuận; Nữ khởi 10 tuổi tại Toán Tận (4) đi nghịch.
+  // Bấm hàng chục tiếp nối hàng đơn vị: số bước dịch chuyển từ mốc 10 tuổi = (hàng chục - 1) + hàng đơn vị.
+  const tens = Math.max(1, Math.floor(safeAge / 10));
+  const unit = safeAge % 10;
+  const steps = (tens - 1) + unit;
+  const hanIdx = gender === "male"
+    ? ((steps % 8) + 8) % 8
+    : ((4 - steps) % 8 + 8) % 8;
   const han = hanList[hanIdx];
 
   const isGoodSao = sao.type === "Cát tinh";
-  const yearOverview = `Năm 2026 (Bính Ngọ), tuổi mụ của bạn là ${lunarAge} tuổi. Bạn được chiếu mệnh bởi sao ${sao.name} (${sao.type}) và gặp hạn niên ${han.name}. ${isGoodSao ? "Vận trình năm nay có nhiều cát khí hanh thông, công việc và tài chính có nhiều bước tiến thuận lợi nếu biết nắm bắt thời cơ." : "Năm nay cần chú trọng dĩ hòa vi quý, thận trọng trong việc đầu tư lớn và chăm sóc sức khỏe gia đình để hóa nguy thành an."}`;
+  const yearOverview = `Năm 2026 (Bính Ngọ), tính theo lịch Âm bạn ${safeAge} tuổi (tuổi mụ). Bạn được sao ${sao.name} (${sao.type}) chiếu mệnh và gặp niên hạn ${han.name}. ${isGoodSao ? "Vận trình năm nay đón nhận nhiều cát khí hanh thông, thuận lợi mở rộng công việc và tích lũy tài chính nếu biết nắm bắt thời cơ." : "Năm nay nên lấy sự ổn định làm trọng, dĩ hòa vi quý trong giao tiếp, quản lý tài chính chặt chẽ và chăm sóc sức khỏe để hóa giải vận hạn."}`;
 
-  const favorableMonths = isGoodSao ? [1, 4, 6, 8, 10, 12] : [2, 6, 10];
-  const cautionMonths = sao.name === "Thái Bạch" ? [5] :
-                        sao.name === "La Hầu" ? [1, 7] :
-                        sao.name === "Kế Đô" ? [3, 9] :
-                        sao.name === "Thổ Tú" ? [4, 8] : [5, 7];
+  const favorableBySao: Record<string, number[]> = {
+    "Thái Dương": [2, 6, 10, 12],
+    "Thái Âm": [3, 6, 9, 10],
+    "Mộc Đức": [1, 4, 10, 12],
+    "Thủy Diệu": [1, 6, 10, 12],
+    "Thổ Tú": [2, 6, 10, 12],
+    "Vân Hớn": [3, 6, 9, 11],
+    "La Hầu": [3, 6, 10, 12],
+    "Kế Đô": [1, 6, 10, 12],
+    "Thái Bạch": [1, 6, 10, 12]
+  };
+
+  const cautionBySao: Record<string, number[]> = {
+    "Thái Dương": [4, 8],
+    "Thái Âm": [11],
+    "Mộc Đức": [2, 5],
+    "Thủy Diệu": [4, 8],
+    "Thổ Tú": [4, 8],
+    "Vân Hớn": [2, 8],
+    "La Hầu": [1, 7],
+    "Kế Đô": [3, 9],
+    "Thái Bạch": [2, 5, 8]
+  };
 
   return {
-    lunarAge,
+    lunarAge: safeAge,
     sao: sao.name,
     saoType: sao.type,
     saoDescription: sao.desc,
     han: han.name,
     hanDescription: han.desc,
     yearOverview,
-    favorableMonths,
-    cautionMonths
+    favorableMonths: favorableBySao[sao.name] || [2, 6, 10],
+    cautionMonths: cautionBySao[sao.name] || [5, 7]
   };
 }
 
 export function getDetailedBirthFortune(profile: UserBirthProfile): DetailedBirthFortune {
   let solarDay = profile.day;
-  let solarMonth = profile.month;
+  let solarMonth = Math.max(1, Math.min(12, profile.month));
   let solarYear = profile.year;
 
   if (profile.isLunar) {
-    const solarRes = convertLunarToSolar(profile.day, profile.month, profile.year, false);
+    const clampedLunarDay = Math.max(1, Math.min(30, profile.day));
+    // Thử đổi ngày Âm sang Dương; nếu người dùng chọn ngày 30 trong tháng thiếu (29 ngày), tự động lùi về 29 ÂL
+    const solarRes =
+      convertLunarToSolar(clampedLunarDay, solarMonth, solarYear, false) ||
+      (clampedLunarDay === 30 ? convertLunarToSolar(29, solarMonth, solarYear, false) : null);
     if (solarRes) {
       solarDay = solarRes.day;
       solarMonth = solarRes.month;
       solarYear = solarRes.year;
     }
+  } else {
+    // Đảm bảo ngày Dương lịch hợp lệ với số ngày thực tế của tháng (VD: tháng 2 có 28/29 ngày)
+    const maxSolarDays = new Date(solarYear, solarMonth, 0).getDate();
+    solarDay = Math.max(1, Math.min(maxSolarDays, solarDay));
   }
 
   const lunarDate = getLunarDate(solarDay, solarMonth, solarYear);
-  const personalProfile = getPersonalProfile(profile.year);
+  // QUAN TRỌNG: Tử Vi, Bát Trạch, Can Chi năm sinh, Nạp Âm, Con Giáp và Tuổi Mụ phải tính theo Năm Âm Lịch (lunarDate.year)!
+  const lunarBirthYear = lunarDate.year;
+  const personalProfile = getPersonalProfile(lunarBirthYear);
   const isMale = profile.gender === "male";
   const cungPhi = isMale ? personalProfile.cungMenh.menhNam : personalProfile.cungMenh.menhNu;
   const cungPhiGroup = isMale ? personalProfile.cungMenh.nhomNam : personalProfile.cungMenh.nhomNu;
@@ -1831,6 +2486,7 @@ export function getDetailedBirthFortune(profile: UserBirthProfile): DetailedBirt
                          cungPhi.includes("Mộc") ? "Mộc" : "Thổ";
 
   const batTrachDirections = getBatTrachDetails(cungPhi);
+  // Cung Hoàng Đạo Phương Tây & Thần Số Học Pythagoras chuẩn quốc tế tính theo ngày Dương lịch
   const westernZodiac = getWesternZodiac(solarDay, solarMonth);
   const numerology = calculateLifePathNumber(solarDay, solarMonth, solarYear);
 
@@ -1851,7 +2507,7 @@ export function getDetailedBirthFortune(profile: UserBirthProfile): DetailedBirt
   };
 
   const lifeStages = getLifeStagesForAnimal(chiIdx, profile.gender);
-  const lunarAge = 2026 - profile.year + 1;
+  const lunarAge = Math.max(1, 2026 - lunarBirthYear + 1);
   const saoHan2026 = getSaoHan2026(lunarAge, profile.gender);
 
   return {
