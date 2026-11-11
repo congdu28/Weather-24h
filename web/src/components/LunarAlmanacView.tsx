@@ -5,9 +5,7 @@ import {
   getLunarDate,
   getMonthDays,
   convertLunarToSolar,
-  LunarDate,
-  CAN,
-  CHI
+  LunarDate
 } from "../utils/lunarCalendar";
 import {
   getDayAlmanac,
@@ -19,9 +17,11 @@ import {
   PersonalDayMatch,
   getPersonalProfile,
   matchPersonalDay,
-  ZODIAC_TRAITS,
   ActivityVerdict,
-  DayAlmanac
+  DayAlmanac,
+  UserBirthProfile,
+  DetailedBirthFortune,
+  getDetailedBirthFortune
 } from "../utils/lunarAlmanac";
 import {
   Calendar,
@@ -40,7 +40,12 @@ import {
   CalendarDays,
   Award,
   X,
-  Check
+  Check,
+  Heart,
+  Shield,
+  TrendingUp,
+  Zap,
+  Star
 } from "lucide-react";
 import { DailyForecast } from "../types/weather";
 import { getWeatherCondition } from "../services/weatherApi";
@@ -56,11 +61,99 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeSubTab, setActiveSubTab] = useState<"day" | "month" | "good_days" | "fortune" | "converter">("day");
 
-  // Năm sinh gia chủ lưu bền vững trong localStorage
+  // Hồ sơ ngày sinh & giới tính gia chủ lưu bền vững trong localStorage
+  const [userProfile, setUserProfile] = usePersistentState<UserBirthProfile | null>("weather24h_user_profile", null);
   const [birthYear, setBirthYear] = usePersistentState<number>("weather24h_birth_year", 0);
-  const [showBirthYearModal, setShowBirthYearModal] = useState<boolean>(false);
-  const [tempYear, setTempYear] = useState<number>(1990);
+  const [showBirthProfileModal, setShowBirthProfileModal] = useState<boolean>(false);
   const [filterPersonalMatch, setFilterPersonalMatch] = useState<boolean>(true);
+
+  // State tạm thời cho Modal thiết lập ngày sinh & giới tính
+  const [tempGender, setTempGender] = useState<"male" | "female">("male");
+  const [tempDay, setTempDay] = useState<number>(15);
+  const [tempMonth, setTempMonth] = useState<number>(6);
+  const [tempYear, setTempYear] = useState<number>(1990);
+  const [tempIsLunar, setTempIsLunar] = useState<boolean>(false);
+
+  // Phân mục bên trong Tab 5 (Bói Tử Vi & Vận Mệnh)
+  const [fortuneCategory, setFortuneCategory] = useState<"battrach" | "lifestages" | "numerology" | "zodiac" | "year2026">("battrach");
+
+  // Hồ sơ hợp nhất đảm bảo tương thích ngược nếu trước đó đã lưu birthYear
+  const effectiveProfile: UserBirthProfile | null = useMemo(() => {
+    if (userProfile && userProfile.year >= 1900 && userProfile.year <= 2100) {
+      return userProfile;
+    }
+    if (birthYear >= 1900 && birthYear <= 2100) {
+      return { day: 15, month: 6, year: birthYear, gender: "male", isLunar: false };
+    }
+    return null;
+  }, [userProfile, birthYear]);
+
+  // Chi tiết luận giải tử vi vận mệnh theo giới tính & ngày tháng năm sinh
+  const detailedFortune: DetailedBirthFortune | null = useMemo(() => {
+    if (!effectiveProfile) return null;
+    try {
+      return getDetailedBirthFortune(effectiveProfile);
+    } catch {
+      return null;
+    }
+  }, [effectiveProfile]);
+
+  const openProfileModal = () => {
+    if (userProfile) {
+      setTempGender(userProfile.gender);
+      setTempDay(userProfile.day);
+      setTempMonth(userProfile.month);
+      setTempYear(userProfile.year);
+      setTempIsLunar(userProfile.isLunar || false);
+    } else if (birthYear >= 1900 && birthYear <= 2100) {
+      setTempGender("male");
+      setTempDay(15);
+      setTempMonth(6);
+      setTempYear(birthYear);
+      setTempIsLunar(false);
+    } else {
+      setTempGender("male");
+      setTempDay(15);
+      setTempMonth(6);
+      setTempYear(1990);
+      setTempIsLunar(false);
+    }
+    setShowBirthProfileModal(true);
+  };
+
+  const handleSaveProfile = () => {
+    const p: UserBirthProfile = {
+      day: tempDay,
+      month: tempMonth,
+      year: tempYear,
+      gender: tempGender,
+      isLunar: tempIsLunar
+    };
+    setUserProfile(p);
+    setBirthYear(tempYear);
+    setShowBirthProfileModal(false);
+  };
+
+  const handleClearProfile = () => {
+    setUserProfile(null);
+    setBirthYear(0);
+    setShowBirthProfileModal(false);
+  };
+
+  // Preview trực tiếp khi người dùng thao tác trong modal
+  const modalPreviewFortune = useMemo(() => {
+    try {
+      return getDetailedBirthFortune({
+        day: tempDay,
+        month: tempMonth,
+        year: tempYear,
+        gender: tempGender,
+        isLunar: tempIsLunar
+      });
+    } catch {
+      return null;
+    }
+  }, [tempDay, tempMonth, tempYear, tempGender, tempIsLunar]);
 
   // Lunar date for selected date
   const lunarDate: LunarDate = useMemo(() => {
@@ -76,8 +169,9 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
 
   // Hồ sơ bản mệnh phong thủy gia chủ
   const profile: PersonalProfile | null = useMemo(() => {
-    return birthYear >= 1900 && birthYear <= 2100 ? getPersonalProfile(birthYear) : null;
-  }, [birthYear]);
+    const y = effectiveProfile ? effectiveProfile.year : birthYear;
+    return y >= 1900 && y <= 2100 ? getPersonalProfile(y) : null;
+  }, [effectiveProfile, birthYear]);
 
   // Đối chiếu phong thủy ngày được chọn với bản mệnh gia chủ
   const personalMatch: PersonalDayMatch | null = useMemo(() => {
@@ -242,7 +336,27 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
             {profile ? "👤" : "🔮"}
           </div>
           <div>
-            {profile ? (
+            {detailedFortune ? (
+              <>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm sm:text-base font-black">
+                    {detailedFortune.profile.gender === "male" ? "👨 Nam mạng" : "👩 Nữ mạng"} • Tuổi {detailedFortune.personalProfile.canChi} ({detailedFortune.profile.year})
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/40">
+                    {detailedFortune.personalProfile.element} • {detailedFortune.personalProfile.napAm}
+                  </span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-400/30">
+                    {detailedFortune.westernZodiac.symbol} {detailedFortune.westernZodiac.name}
+                  </span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-400/30">
+                    Số {detailedFortune.numerology.lifePathNumber}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Cung phi: <strong>{detailedFortune.cungPhi}</strong> ({detailedFortune.cungPhiGroup}) • Tam hợp: <strong>{detailedFortune.personalProfile.tamHop.join(", ")}</strong> • Kỵ xung: <strong className="text-rose-500">{detailedFortune.personalProfile.tuHanhXung[0]}</strong>
+                </p>
+              </>
+            ) : profile ? (
               <>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm sm:text-base font-black">
@@ -262,13 +376,13 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
             ) : (
               <>
                 <div className="text-sm font-black flex items-center gap-2">
-                  <span>Chưa thiết lập năm sinh gia chủ</span>
+                  <span>Chưa thiết lập ngày sinh & giới tính</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold">
                     Cá nhân hóa
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Nhập năm sinh để đối chiếu ngày xung/hợp, nhận lời khuyên việc nên làm & mở khóa bói tử vi phong thủy trọn đời!
+                  Nhập giới tính, ngày tháng năm sinh để xem tử vi trọn đời, Bát Trạch phong thủy, thần số học và ngày hợp tuổi!
                 </p>
               </>
             )}
@@ -276,17 +390,14 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
         </div>
 
         <button
-          onClick={() => {
-            if (profile) setTempYear(profile.birthYear);
-            setShowBirthYearModal(true);
-          }}
+          onClick={openProfileModal}
           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm shrink-0 self-end sm:self-center ${
             profile
               ? "bg-amber-500 hover:bg-amber-600 text-slate-950"
               : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950"
           }`}
         >
-          {profile ? `Đổi tuổi (${profile.birthYear})` : "Nhập năm sinh ngay ›"}
+          {detailedFortune ? "Đổi thông tin sinh" : profile ? `Đổi tuổi (${profile.birthYear})` : "Nhập ngày sinh & giới tính ›"}
         </button>
       </div>
 
@@ -553,14 +664,18 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       👤
                     </div>
                     <div>
-                      <div className="text-sm font-black flex items-center gap-2">
-                        Đối Chiếu Phong Thủy Tuổi: {profile.canChi} ({profile.birthYear})
+                      <div className="text-sm font-black flex items-center gap-2 flex-wrap">
+                        Đối Chiếu Phong Thủy: {detailedFortune ? `${detailedFortune.profile.gender === "male" ? "👨 Nam mạng" : "👩 Nữ mạng"} • ` : ""}{profile.canChi} ({profile.birthYear})
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
                           {profile.element} • {profile.napAm}
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        {profile.yinYangLabel} • Cung {profile.cungMenh.menhNam} (Nam) / {profile.cungMenh.menhNu} (Nữ)
+                        {profile.yinYangLabel} • {detailedFortune ? (
+                          <>Cung Phi Bát Trạch: <strong>{detailedFortune.cungPhi}</strong> ({detailedFortune.cungPhiGroup})</>
+                        ) : (
+                          <>Cung {profile.cungMenh.menhNam} (Nam) / {profile.cungMenh.menhNu} (Nữ)</>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -626,14 +741,14 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 <div className="flex items-center gap-2.5">
                   <Sparkles className="w-5 h-5 text-amber-500 shrink-0" />
                   <span>
-                    Chưa nhập năm sinh để xem đối chiếu phong thủy riêng! Nhập năm sinh để biết hôm nay có hợp tuổi bạn không.
+                    Chưa thiết lập hồ sơ sinh để xem đối chiếu phong thủy riêng! Nhập ngày sinh & giới tính để nhận luận giải chuẩn xác.
                   </span>
                 </div>
                 <button
-                  onClick={() => setShowBirthYearModal(true)}
+                  onClick={openProfileModal}
                   className="px-3.5 py-1.5 rounded-xl font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shrink-0 shadow-xs"
                 >
-                  Nhập năm sinh
+                  Nhập ngày sinh & giới tính
                 </button>
               </div>
             )}
@@ -1324,10 +1439,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
         </div>
       )}
 
-      {/* 5. BÓI TỬ VI & VẬN MỆNH TRỌN ĐỜI */}
+      {/* 5. BÓI TỬ VI & VẬN MỆNH CHI TIẾT THEO GIỚI TÍNH, NGÀY THÁNG NĂM SINH */}
       {activeSubTab === "fortune" && (
         <div className="space-y-6">
-          {!profile ? (
+          {!detailedFortune ? (
             <div
               className={`p-8 sm:p-12 rounded-3xl backdrop-blur-xl border text-center shadow-xl ${
                 isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
@@ -1336,16 +1451,18 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-4 font-bold text-3xl">
                 🔮
               </div>
-              <h3 className="text-xl sm:text-2xl font-black mb-2">Bói Tử Vi & Vận Mệnh Bản Mệnh</h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed">
-                Khám phá bí mật tử vi theo năm sinh: Ngũ Hành Nạp Âm, tướng tinh con giáp, Bát Trạch phong thủy hướng nhà, màu sắc may mắn và bộ tuổi Tam Hợp/Lục Hợp trọn đời.
+              <h3 className="text-xl sm:text-2xl font-black mb-2">Bói Tử Vi & Vận Mệnh Cá Nhân Hóa</h3>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-lg mx-auto mb-6 leading-relaxed">
+                Khám phá bản mệnh toàn diện theo <strong>Giới tính</strong> và <strong>Ngày, Tháng, Năm sinh</strong>:
+                Bát Trạch phong thủy theo giới tính, Tử Vi trọn đời 3 thời kỳ Tiền - Trung - Hậu vận, Thần Số Học Pythagoras số chủ đạo,
+                Cung Hoàng Đạo phương Tây giao thoa 12 con giáp, và dự báo Sao Hạn năm 2026 (Bính Ngọ).
               </p>
               <button
-                onClick={() => setShowBirthYearModal(true)}
+                onClick={openProfileModal}
                 className="px-6 py-3 rounded-2xl font-black text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 shadow-lg shadow-amber-500/25 transition-all inline-flex items-center gap-2"
               >
                 <User className="w-4 h-4" />
-                Chọn Năm Sinh Để Xem Lá Số ›
+                Nhập Ngày Sinh & Giới Tính Để Mở Lá Số ›
               </button>
 
               <div className="mt-8 pt-6 border-t border-black/5 dark:border-white/10">
@@ -1356,7 +1473,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     return (
                       <button
                         key={y}
-                        onClick={() => setBirthYear(y)}
+                        onClick={() => {
+                          setUserProfile({ day: 15, month: 6, year: y, gender: "male", isLunar: false });
+                          setBirthYear(y);
+                        }}
                         className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all ${
                           isDarkTheme
                             ? "bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10"
@@ -1372,185 +1492,686 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Header Profile Summary */}
+              {/* Header Profile Summary Banner */}
               <div
                 className={`p-6 sm:p-8 rounded-3xl backdrop-blur-xl border shadow-xl relative overflow-hidden ${
                   isDarkTheme
-                    ? "bg-gradient-to-br from-amber-500/15 via-slate-900/90 to-amber-950/20 border-amber-500/30 text-white"
+                    ? "bg-gradient-to-br from-amber-500/15 via-slate-900/90 to-amber-950/25 border-amber-500/30 text-white"
                     : "bg-gradient-to-br from-amber-50 via-white to-orange-50/80 border-amber-200 text-slate-900"
                 }`}
               >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 font-black text-2xl shadow-lg shrink-0">
-                      {profile.zodiacAnimal.includes("Chuột") ? "🐀" :
-                       profile.zodiacAnimal.includes("Trâu") ? "🐂" :
-                       profile.zodiacAnimal.includes("Hổ") ? "🐅" :
-                       profile.zodiacAnimal.includes("Mèo") ? "🐈" :
-                       profile.zodiacAnimal.includes("Rồng") ? "🐉" :
-                       profile.zodiacAnimal.includes("Rắn") ? "🐍" :
-                       profile.zodiacAnimal.includes("Ngựa") ? "🐎" :
-                       profile.zodiacAnimal.includes("Dê") ? "🐐" :
-                       profile.zodiacAnimal.includes("Khỉ") ? "🐒" :
-                       profile.zodiacAnimal.includes("Gà") ? "🐓" :
-                       profile.zodiacAnimal.includes("Chó") ? "🐕" : "🐖"}
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 font-black text-3xl shadow-lg shrink-0">
+                      {detailedFortune.personalProfile.zodiacAnimal.includes("Chuột") ? "🐀" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Trâu") ? "🐂" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Hổ") ? "🐅" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Mèo") ? "🐈" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Rồng") ? "🐉" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Rắn") ? "🐍" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Ngựa") ? "🐎" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Dê") ? "🐐" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Khỉ") ? "🐒" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Gà") ? "🐓" :
+                       detailedFortune.personalProfile.zodiacAnimal.includes("Chó") ? "🐕" : "🐖"}
                     </div>
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h2 className="text-xl sm:text-2xl font-black">
-                          Tuổi {profile.canChi} ({profile.birthYear})
-                        </h2>
-                        <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/40">
-                          {profile.element} • {profile.napAm}
+                        <span className="text-xs font-black px-3 py-1 rounded-full bg-amber-500 text-slate-950">
+                          {detailedFortune.profile.gender === "male" ? "👨 Nam Mạng" : "👩 Nữ Mạng"}
                         </span>
+                        <h2 className="text-xl sm:text-2xl font-black">
+                          Tuổi {detailedFortune.personalProfile.canChi} ({detailedFortune.profile.year})
+                        </h2>
                       </div>
                       <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">
-                        Cầm tinh con <strong>{profile.zodiacAnimal}</strong> • Thiên Can: <strong>{CAN[profile.canIndex]}</strong> ({profile.canElement}) • Địa Chi: <strong>{CHI[profile.chiIndex]}</strong> ({profile.chiElement})
+                        Sinh ngày <strong>{detailedFortune.solarDate.day}/{detailedFortune.solarDate.month}/{detailedFortune.solarDate.year}</strong> (Dương lịch) • Âm lịch: ngày <strong>{detailedFortune.lunarDate.day}/{detailedFortune.lunarDate.month}</strong> năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong>
                       </p>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        Tứ Trụ Can Chi: Năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong> • Tháng <strong>{detailedFortune.lunarDate.monthCanChi}</strong> • Ngày <strong>{detailedFortune.lunarDate.dayCanChi}</strong>
+                      </div>
                     </div>
                   </div>
 
                   <button
-                    onClick={() => setShowBirthYearModal(true)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-all shadow-sm shrink-0"
+                    onClick={openProfileModal}
+                    className="px-4 py-2.5 rounded-2xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-all shadow-md shrink-0 self-end lg:self-center flex items-center gap-1.5"
                   >
-                    Đổi năm sinh
+                    <User className="w-4 h-4" />
+                    Sửa thông tin sinh
                   </button>
+                </div>
+
+                {/* 4 Badged Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-6 border-t border-amber-500/20">
+                  <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                    <span className="text-[11px] font-bold text-slate-400 block uppercase">Ngũ Hành Nạp Âm</span>
+                    <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-0.5">
+                      Mệnh {detailedFortune.personalProfile.element}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      {detailedFortune.personalProfile.napAm}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                    <span className="text-[11px] font-bold text-slate-400 block uppercase">Cung Phi ({detailedFortune.profile.gender === "male" ? "Nam" : "Nữ"})</span>
+                    <div className="text-sm font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      Cung {detailedFortune.cungPhi}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {detailedFortune.cungPhiGroup}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                    <span className="text-[11px] font-bold text-slate-400 block uppercase">Cung Hoàng Đạo</span>
+                    <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 mt-0.5 flex items-center gap-1">
+                      <span>{detailedFortune.westernZodiac.symbol}</span>
+                      <span>{detailedFortune.westernZodiac.name}</span>
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      Nguyên tố: {detailedFortune.westernZodiac.element}
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                    <span className="text-[11px] font-bold text-slate-400 block uppercase">Thần Số Học</span>
+                    <div className="text-sm font-black text-rose-600 dark:text-rose-400 mt-0.5">
+                      Số Chủ Đạo {detailedFortune.numerology.lifePathNumber}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      {detailedFortune.numerology.title.split(" & ")[0]}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Grid 4 cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* 1. Tính Cách & Vận Mệnh Con Giáp */}
-                <div
-                  className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
-                    isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
-                  }`}
-                >
-                  <h3 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-amber-500">
-                    <Award className="w-4 h-4" />
-                    Tính Cách & Tướng Tinh Con Giáp ({ZODIAC_TRAITS[profile.chiIndex].title})
-                  </h3>
-                  <div className="space-y-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                    <div>
-                      <strong className="text-slate-900 dark:text-white block mb-0.5">Đặc tính cốt lõi:</strong>
-                      {ZODIAC_TRAITS[profile.chiIndex].personality}
+              {/* Fortune Category Selector Tabs */}
+              <div
+                className={`flex flex-wrap items-center gap-1.5 p-1.5 rounded-2xl border backdrop-blur-xl ${
+                  isDarkTheme ? "bg-white/5 border-white/10" : "bg-white/85 border-slate-200 shadow-sm"
+                }`}
+              >
+                {[
+                  { id: "battrach" as const, label: "Bát Trạch Phong Thủy", icon: "🧭", tag: "Theo Giới Tính" },
+                  { id: "lifestages" as const, label: "Tử Vi Trọn Đời", icon: "📜", tag: "3 Thời Kỳ & Tình Duyên" },
+                  { id: "numerology" as const, label: "Thần Số Học", icon: "🔢", tag: "Số Chủ Đạo Pythagoras" },
+                  { id: "zodiac" as const, label: "Cung Hoàng Đạo", icon: "♈", tag: "Phương Tây" },
+                  { id: "year2026" as const, label: "Vận Hạn 2026", icon: "🔮", tag: "Năm Bính Ngọ" }
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setFortuneCategory(cat.id)}
+                    className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                      fortuneCategory === cat.id
+                        ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20"
+                        : isDarkTheme
+                        ? "text-slate-300 hover:text-white hover:bg-white/5"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* 1. BÁT TRẠCH PHONG THỦY THEO GIỚI TÍNH */}
+              {fortuneCategory === "battrach" && (
+                <div className="space-y-6">
+                  {/* Cung Phi Info Box */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <Compass className="w-5 h-5 text-emerald-500" />
+                      <h3 className="text-base font-black">
+                        Bát Trạch Cung Phi Cho {detailedFortune.profile.gender === "male" ? "Nam Mạng" : "Nữ Mạng"} Sinh Năm {detailedFortune.profile.year}
+                      </h3>
                     </div>
-                    <div>
-                      <strong className="text-slate-900 dark:text-white block mb-0.5">Lĩnh vực sự nghiệp đại cát:</strong>
-                      {ZODIAC_TRAITS[profile.chiIndex].career}
-                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Theo Dịch học Bát Trạch phong thủy, cùng sinh năm {detailedFortune.profile.year} ({detailedFortune.personalProfile.canChi}) nhưng <strong>Nam mạng</strong> và <strong>Nữ mạng</strong> mang Cung Phi và Cung Mệnh hoàn toàn khác biệt.
+                      Bạn là <strong>{detailedFortune.profile.gender === "male" ? "Nam mạng" : "Nữ mạng"}</strong> nên thuộc cung <strong>{detailedFortune.cungPhi}</strong>, nhóm <strong>{detailedFortune.cungPhiGroup}</strong>.
+                      Dưới đây là 4 hướng Đại Cát mang lại sinh khí tài lộc và 4 hướng Đại Hung cần tránh:
+                    </p>
                   </div>
-                </div>
 
-                {/* 2. Bát Trạch Cung Phi & Hướng Phong Thủy */}
-                <div
-                  className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
-                    isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
-                  }`}
-                >
-                  <h3 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-emerald-500">
-                    <Compass className="w-4 h-4" />
-                    Bát Trạch Cung Phi & Hướng Nhà Cát Lợi
-                  </h3>
-                  <div className="space-y-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                    <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-                      <span className="font-bold text-slate-900 dark:text-white">Nam mạng:</span> Cung <strong>{profile.cungMenh.menhNam}</strong> ({profile.cungMenh.nhomNam})
-                      <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
-                        Hướng tốt (Sinh Khí, Thiên Y, Diên Niên, Phục Vị): <strong>{profile.cungMenh.huongTotNam.join(", ")}</strong>
-                      </div>
-                    </div>
+                  {/* 8 Directions Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* 4 Hướng Cát */}
+                    <div
+                      className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                        isDarkTheme ? "bg-emerald-950/20 border-emerald-500/30 text-white" : "bg-emerald-50/80 border-emerald-200 text-slate-900"
+                      }`}
+                    >
+                      <h4 className="text-sm font-extrabold flex items-center gap-2 mb-4 text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="w-4 h-4" />
+                        4 Hướng Đại Cát (Vượng Khí & Chiêu Tài Lộc)
+                      </h4>
 
-                    <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
-                      <span className="font-bold text-slate-900 dark:text-white">Nữ mạng:</span> Cung <strong>{profile.cungMenh.menhNu}</strong> ({profile.cungMenh.nhomNu})
-                      <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">
-                        Hướng tốt (Sinh Khí, Thiên Y, Diên Niên, Phục Vị): <strong>{profile.cungMenh.huongTotNu.join(", ")}</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Tam Hợp, Lục Hợp & Tứ Hành Xung */}
-                <div
-                  className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
-                    isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
-                  }`}
-                >
-                  <h3 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-indigo-500">
-                    <CheckCircle2 className="w-4 h-4" />
-                    Tuổi Hợp & Tuổi Kỵ Trong Làm Ăn / Kết Hôn
-                  </h3>
-                  <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
-                    <div>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">Tam Hợp:</span> Tuổi{" "}
-                      <strong>{profile.tamHop.join(", ")}</strong> (hợp tác làm ăn phát đạt, gia đạo hòa hợp).
-                    </div>
-                    <div>
-                      <span className="font-bold text-emerald-600 dark:text-emerald-400">Lục Hợp (Nhị Hợp):</span> Tuổi{" "}
-                      <strong>{profile.lucHop}</strong> (quý nhân tương trợ, trăm sự hanh thông).
-                    </div>
-                    <div className="pt-2 border-t border-black/5 dark:border-white/5">
-                      <span className="font-bold text-rose-500">Tứ Hành Xung:</span> Kỵ tuổi{" "}
-                      <strong>{profile.tuHanhXung.join(", ")}</strong> (dễ bất đồng quan điểm, nên nhường nhịn).
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Màu Sắc & Con Số May Mắn */}
-                <div
-                  className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
-                    isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
-                  }`}
-                >
-                  <h3 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-amber-500">
-                    <Sparkles className="w-4 h-4" />
-                    Màu Sắc May Mắn & Số Kích Tài Lộc
-                  </h3>
-                  <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
-                    <div>
-                      <strong className="text-emerald-600 dark:text-emerald-400 block mb-0.5">Màu hợp phong thủy:</strong>
-                      {profile.luckyColors}
-                    </div>
-                    <div>
-                      <strong className="text-rose-500 block mb-0.5">Màu tương khắc nên hạn chế:</strong>
-                      {profile.unluckyColors}
-                    </div>
-                    <div className="pt-2 border-t border-black/5 dark:border-white/5">
-                      <strong className="text-amber-600 dark:text-amber-400 block mb-1">Con số may mắn kích hoạt tài khí:</strong>
-                      <div className="flex items-center gap-2">
-                        {profile.luckyNumbers.map((num) => (
-                          <span
-                            key={num}
-                            className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-300 font-black flex items-center justify-center border border-amber-400/40 text-xs"
+                      <div className="space-y-3.5">
+                        {detailedFortune.batTrachDirections.filter(d => d.isGood).map((dir, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-xs space-y-1"
                           >
-                            {num}
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-emerald-700 dark:text-emerald-300 text-sm">
+                                {dir.type}: {dir.direction}
+                              </span>
+                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                {dir.starName}
+                              </span>
+                            </div>
+                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                              {dir.meaning}
+                            </p>
+                            <div className="text-[11px] text-emerald-600 dark:text-emerald-400 pt-1 font-medium">
+                              💡 <strong>Ứng dụng:</strong> {dir.advice}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 4 Hướng Hung */}
+                    <div
+                      className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                        isDarkTheme ? "bg-rose-950/20 border-rose-500/30 text-white" : "bg-rose-50/80 border-rose-200 text-slate-900"
+                      }`}
+                    >
+                      <h4 className="text-sm font-extrabold flex items-center gap-2 mb-4 text-rose-600 dark:text-rose-400">
+                        <XCircle className="w-4 h-4" />
+                        4 Hướng Đại Hung (Nên Tránh & Hóa Giải)
+                      </h4>
+
+                      <div className="space-y-3.5">
+                        {detailedFortune.batTrachDirections.filter(d => !d.isGood).map((dir, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3.5 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-xs space-y-1"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-rose-700 dark:text-rose-300 text-sm">
+                                {dir.type}: {dir.direction}
+                              </span>
+                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                {dir.starName}
+                              </span>
+                            </div>
+                            <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                              {dir.meaning}
+                            </p>
+                            <div className="text-[11px] text-rose-600 dark:text-rose-400 pt-1 font-medium">
+                              ⚠️ <strong>Hóa giải:</strong> {dir.advice}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ứng dụng thực chiến phong thủy */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <h4 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-amber-500">
+                      <Sparkles className="w-4 h-4" />
+                      Gợi Ý Bố Trí Không Gian Sống Thực Chiến Cho {detailedFortune.profile.gender === "male" ? "Nam" : "Nữ"} Mạng
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                        <strong className="text-slate-900 dark:text-white block mb-1">🖥️ Bàn làm việc:</strong>
+                        Quay mặt về hướng <strong>{detailedFortune.batTrachDirections[0].direction} (Sinh Khí)</strong> để thu hút năng lượng thăng tiến và ký kết hợp đồng thuận lợi.
+                      </div>
+                      <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                        <strong className="text-slate-900 dark:text-white block mb-1">🛏️ Đầu giường ngủ:</strong>
+                        Kê tựa về hướng <strong>{detailedFortune.batTrachDirections[1].direction} (Thiên Y)</strong> hoặc <strong>{detailedFortune.batTrachDirections[2].direction} (Diên Niên)</strong> giúp ngủ ngon, phục hồi sinh lực.
+                      </div>
+                      <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                        <strong className="text-slate-900 dark:text-white block mb-1">🚪 Cửa chính & Ban thờ:</strong>
+                        Mở cửa hoặc đặt ban thờ hướng <strong>{detailedFortune.batTrachDirections[3].direction} (Phục Vị)</strong> hoặc Sinh Khí để gia đạo luôn an yên, thi cử đỗ đạt.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. TỬ VI TRỌN ĐỜI: 3 THỜI KỲ & TÌNH DUYÊN */}
+              {fortuneCategory === "lifestages" && (
+                <div className="space-y-6">
+                  {/* Tính cách theo Giới tính */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <h3 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-amber-500">
+                      <Award className="w-4 h-4" />
+                      Tướng Tinh & Đặc Trưng Tính Cách: {detailedFortune.personalityByGender.title}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600 dark:text-slate-300">
+                      <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                        <strong className="text-slate-900 dark:text-white block mb-1">Bản lĩnh cốt lõi:</strong>
+                        {detailedFortune.personalityByGender.coreTraits}
+                      </div>
+                      <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                        <strong className="text-slate-900 dark:text-white block mb-1">Thế mạnh vượt trội:</strong>
+                        {detailedFortune.personalityByGender.strengths}
+                      </div>
+                      <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06]">
+                        <strong className="text-slate-900 dark:text-white block mb-1">Phong cách giao thiệp:</strong>
+                        {detailedFortune.personalityByGender.socialStyle}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3 Thời kỳ cuộc đời */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <h3 className="text-sm font-extrabold flex items-center gap-2 mb-4 text-indigo-500">
+                      <TrendingUp className="w-4 h-4" />
+                      Vận Trình Cuộc Đời Qua 3 Giai Đoạn (Tiền Vận — Trung Vận — Hậu Vận)
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {detailedFortune.lifeStages.map((stage, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-4 rounded-2xl border text-xs space-y-2.5 ${
+                            idx === 1
+                              ? isDarkTheme
+                                ? "bg-amber-500/10 border-amber-500/30"
+                                : "bg-amber-50/70 border-amber-200"
+                              : "bg-black/[0.02] dark:bg-white/[0.04] border-black/[0.04] dark:border-white/[0.06]"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between pb-1.5 border-b border-black/5 dark:border-white/5">
+                            <span className="font-black text-sm text-amber-600 dark:text-amber-400">
+                              {stage.stage} ({stage.ageRange})
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-400">
+                              {idx === 0 ? "🌅 Khởi sắc" : idx === 1 ? "☀️ Đỉnh cao" : "🌕 Viên mãn"}
+                            </span>
+                          </div>
+
+                          <div className="font-bold text-slate-900 dark:text-white">
+                            {stage.title}
+                          </div>
+
+                          <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                            {stage.overview}
+                          </p>
+
+                          <div className="pt-1.5 border-t border-black/5 dark:border-white/5 space-y-1 text-[11px]">
+                            <div>
+                              <strong className="text-emerald-600 dark:text-emerald-400">Công danh & Tiền tài:</strong> {stage.careerFinance}
+                            </div>
+                            <div>
+                              <strong className="text-rose-500">Gia đạo & Tình duyên:</strong> {stage.familyLove}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tình duyên & Hôn nhân */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <h3 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-rose-500">
+                      <Heart className="w-4 h-4" />
+                      Hôn Nhân & Tình Duyên Của {detailedFortune.profile.gender === "male" ? "Nam" : "Nữ"} Mạng Tuổi {detailedFortune.personalProfile.canChi}
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-4">
+                      {detailedFortune.loveMarriage.overview}
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                        <strong className="text-emerald-600 dark:text-emerald-400 block mb-1">
+                          💍 Tuổi Đại Hợp Kết Hôn & Làm Ăn:
+                        </strong>
+                        <p className="text-slate-600 dark:text-slate-300">
+                          Tuổi <strong>{detailedFortune.loveMarriage.bestAges.join(", ")}</strong> (Tam Hợp & Lục Hợp mang lại hòa hợp gia đạo, phú quý sinh tài).
+                        </p>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                        <strong className="text-rose-500 block mb-1">
+                          ⚠️ Tuổi Cần Nhường Nhịn Trong Hôn Nhân:
+                        </strong>
+                        <p className="text-slate-600 dark:text-slate-300">
+                          Tuổi <strong>{detailedFortune.loveMarriage.challengingAges.join(", ")}</strong> (Tứ Hành Xung, nên học cách lắng nghe và bao dung để hóa giải xung khắc).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.06] text-xs">
+                      💡 <strong>Lời khuyên giữ lửa hôn nhân:</strong> {detailedFortune.loveMarriage.advice}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. THẦN SỐ HỌC PYTHAGORAS */}
+              {fortuneCategory === "numerology" && (
+                <div className="space-y-6">
+                  {/* Hero Life Path Card */}
+                  <div
+                    className={`p-6 sm:p-8 rounded-3xl backdrop-blur-xl border shadow-xl relative overflow-hidden ${
+                      isDarkTheme
+                        ? "bg-gradient-to-br from-indigo-950/40 via-slate-900/80 to-purple-950/30 border-indigo-500/30 text-white"
+                        : "bg-gradient-to-br from-indigo-50 via-white to-purple-50/70 border-indigo-200 text-slate-900"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-black text-3xl shadow-lg shadow-indigo-500/25 shrink-0">
+                        {detailedFortune.numerology.lifePathNumber}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs uppercase font-extrabold px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-400/30">
+                            Con Số Chủ Đạo Pythagoras
+                          </span>
+                          <h3 className="text-xl sm:text-2xl font-black">
+                            Số {detailedFortune.numerology.lifePathNumber}: {detailedFortune.numerology.title}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap mt-2">
+                          {detailedFortune.numerology.keywords.map((kw, i) => (
+                            <span key={i} className="text-xs px-2.5 py-0.5 rounded-lg bg-black/5 dark:bg-white/10 font-bold">
+                              #{kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-5 leading-relaxed pt-5 border-t border-indigo-500/20">
+                      {detailedFortune.numerology.description}
+                    </p>
+                  </div>
+
+                  {/* Strengths & Challenges */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div
+                      className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                        isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                      }`}
+                    >
+                      <h4 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-emerald-500">
+                        <CheckCircle2 className="w-4 h-4" />
+                        Điểm Mạnh Bẩm Sinh & Năng Khiếu
+                      </h4>
+                      <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                        {detailedFortune.numerology.strengths.map((s, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-emerald-500 font-bold mt-0.5">✓</span>
+                            <span className="leading-relaxed">{s}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div
+                      className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                        isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                      }`}
+                    >
+                      <h4 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-rose-500">
+                        <Shield className="w-4 h-4" />
+                        Bài Học Cuộc Đời & Điểm Cần Hoàn Thiện
+                      </h4>
+                      <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-300">
+                        {detailedFortune.numerology.challenges.map((c, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <span className="text-rose-500 font-bold mt-0.5">!</span>
+                            <span className="leading-relaxed">{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Nghề nghiệp phù hợp */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <h4 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-amber-500">
+                      <Zap className="w-4 h-4" />
+                      Lĩnh Vực Nghề Nghiệp Thăng Hoa Nhất
+                    </h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {detailedFortune.numerology.idealCareers.map((c, i) => (
+                        <span
+                          key={i}
+                          className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-400/30"
+                        >
+                          💼 {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. CUNG HOÀNG ĐẠO PHƯƠNG TÂY KẾT HỢP ĐÔNG TÂY */}
+              {fortuneCategory === "zodiac" && (
+                <div className="space-y-6">
+                  {/* Hero Zodiac Card */}
+                  <div
+                    className={`p-6 sm:p-8 rounded-3xl backdrop-blur-xl border shadow-xl relative overflow-hidden ${
+                      isDarkTheme
+                        ? "bg-gradient-to-br from-amber-950/30 via-slate-900/80 to-slate-950 border-amber-500/30 text-white"
+                        : "bg-gradient-to-br from-amber-50 via-white to-orange-50 border-amber-200 text-slate-900"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 font-black text-4xl shadow-lg shrink-0">
+                        {detailedFortune.westernZodiac.symbol}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs uppercase font-extrabold px-3 py-1 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-400/30">
+                            Cung Hoàng Đạo Phương Tây
+                          </span>
+                          <h3 className="text-xl sm:text-2xl font-black">
+                            {detailedFortune.westernZodiac.name} ({detailedFortune.westernZodiac.latinName})
+                          </h3>
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-3 flex-wrap">
+                          <span>📅 {detailedFortune.westernZodiac.dateRange}</span>
+                          <span>•</span>
+                          <span>Nguyên tố: <strong>{detailedFortune.westernZodiac.element}</strong></span>
+                          <span>•</span>
+                          <span>Sao bảo hộ: <strong>{detailedFortune.westernZodiac.rulingPlanet}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-5 leading-relaxed pt-5 border-t border-amber-500/20">
+                      {detailedFortune.westernZodiac.traits}
+                    </p>
+                  </div>
+
+                  {/* Nét giao thoa Đông - Tây */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <h4 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-indigo-500">
+                      <Sparkles className="w-4 h-4" />
+                      Nét Giao Thoa Độc Đáo: Con Giáp {detailedFortune.personalProfile.zodiacAnimal.split(" ")[0]} & Cung {detailedFortune.westernZodiac.name}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Sự kết hợp giữa tướng tinh con giáp <strong>{detailedFortune.personalProfile.zodiacAnimal}</strong> của nền văn minh Á Đông và phẩm chất của cung <strong>{detailedFortune.westernZodiac.name} (Nguyên tố {detailedFortune.westernZodiac.element})</strong> tạo nên một cá tính đa tầng: vừa có sự nhạy bén, sâu sắc, trọng tình cảm của người phương Đông, vừa mang tư duy phản biện, tự tin và độc lập của người phương Tây.
+                    </p>
+
+                    <div className="mt-4 pt-4 border-t border-black/5 dark:border-white/5">
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block mb-2">Thế mạnh kết hợp nổi bật:</span>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {detailedFortune.westernZodiac.strengths.map((st, i) => (
+                          <span
+                            key={i}
+                            className="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-400/30"
+                          >
+                            ✨ {st}
                           </span>
                         ))}
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* 5. VẬN HẠN NĂM 2026 (BÍNH NGỌ) */}
+              {fortuneCategory === "year2026" && (
+                <div className="space-y-6">
+                  {/* Hero 2026 Card */}
+                  <div
+                    className={`p-6 sm:p-8 rounded-3xl backdrop-blur-xl border shadow-xl relative overflow-hidden ${
+                      isDarkTheme
+                        ? "bg-gradient-to-br from-amber-500/20 via-slate-900/90 to-red-950/20 border-amber-500/30 text-white"
+                        : "bg-gradient-to-br from-amber-50 via-white to-red-50/70 border-amber-200 text-slate-900"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-amber-500/20">
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wider text-amber-500">
+                          Dự Báo Vận Trình Năm 2026 (Bính Ngọ)
+                        </span>
+                        <h3 className="text-xl sm:text-2xl font-black mt-0.5">
+                          {detailedFortune.profile.gender === "male" ? "Nam mạng" : "Nữ mạng"} • {detailedFortune.personalProfile.canChi}
+                        </h3>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          Năm 2026 tính theo tuổi mụ là: <strong className="text-amber-600 dark:text-amber-400">{detailedFortune.saoHan2026.lunarAge} tuổi</strong>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-black px-3 py-1.5 rounded-full border ${
+                          detailedFortune.saoHan2026.saoType === "Cát tinh"
+                            ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
+                            : detailedFortune.saoHan2026.saoType === "Hung tinh"
+                            ? "bg-rose-500/20 text-rose-600 dark:text-rose-300 border-rose-500/40"
+                            : "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-400/40"
+                        }`}>
+                          Sao: {detailedFortune.saoHan2026.sao} ({detailedFortune.saoHan2026.saoType})
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-4 leading-relaxed">
+                      {detailedFortune.saoHan2026.yearOverview}
+                    </p>
+                  </div>
+
+                  {/* 2 Cards: Sao Chiếu & Hạn Niên */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div
+                      className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                        isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                      }`}
+                    >
+                      <h4 className="text-sm font-extrabold flex items-center gap-2 mb-2 text-amber-500">
+                        <Star className="w-4 h-4" />
+                        Sao Chiếu Mệnh Cửu Diệu: Sao {detailedFortune.saoHan2026.sao}
+                      </h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {detailedFortune.saoHan2026.saoDescription}
+                      </p>
+                    </div>
+
+                    <div
+                      className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                        isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                      }`}
+                    >
+                      <h4 className="text-sm font-extrabold flex items-center gap-2 mb-2 text-rose-500">
+                        <Shield className="w-4 h-4" />
+                        Niên Hạn: Hạn {detailedFortune.saoHan2026.han}
+                      </h4>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {detailedFortune.saoHan2026.hanDescription}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Tháng tốt & Tháng cẩn trọng */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/50 border-white/10 text-white" : "bg-white/85 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <h4 className="text-sm font-extrabold flex items-center gap-2 mb-3 text-emerald-500">
+                      <Calendar className="w-4 h-4" />
+                      Lưu Ý Tháng May Mắn & Tháng Cần Phòng Ngừa Trong Năm 2026
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                      <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+                        <strong className="text-emerald-600 dark:text-emerald-400 block mb-1">
+                          🌟 Các tháng Đại Cát vượng tài, dễ thành công:
+                        </strong>
+                        <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                          {detailedFortune.saoHan2026.favorableMonths.map(m => (
+                            <span key={m} className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                              Tháng {m} ÂL
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
+                        <strong className="text-rose-500 block mb-1">
+                          ⚠️ Các tháng kỵ nên thận trọng tiền bạc, sức khỏe:
+                        </strong>
+                        <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                          {detailedFortune.saoHan2026.cautionMonths.map(m => (
+                            <span key={m} className="px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-600 dark:text-rose-300 font-bold">
+                              Tháng {m} ÂL
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Modal Chọn Năm Sinh Gia Chủ */}
-      {showBirthYearModal && (
+      {/* Modal Thiết Lập Hồ Sơ Sinh & Giới Tính Gia Chủ */}
+      {showBirthProfileModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div
-            className={`w-full max-w-lg p-6 rounded-3xl border shadow-2xl overflow-hidden transition-all ${
+            className={`w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 rounded-3xl border shadow-2xl transition-all ${
               isDarkTheme ? "bg-slate-900 border-white/20 text-white" : "bg-white border-slate-200 text-slate-900"
             }`}
           >
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-black/5 dark:border-white/10">
               <h3 className="text-base font-black flex items-center gap-2">
                 <User className="w-5 h-5 text-amber-500" />
-                Thiết Lập Năm Sinh & Tử Vi Gia Chủ
+                Thiết Lập Hồ Sơ Sinh & Tử Vi Cá Nhân
               </h3>
               <button
-                onClick={() => setShowBirthYearModal(false)}
+                onClick={() => setShowBirthProfileModal(false)}
                 className={`p-1.5 rounded-xl transition-all ${
                   isDarkTheme ? "hover:bg-white/10 text-slate-400" : "hover:bg-slate-100 text-slate-500"
                 }`}
@@ -1560,39 +2181,153 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-              Nhập hoặc chọn năm sinh Dương lịch của bạn để Weather 24h đối chiếu lá số Tử Vi, Bát Trạch phong thủy, tuổi Tam Hợp/Lục Xung và cá nhân hóa lịch ngày tốt.
+              Nhập <strong>Giới tính</strong> và <strong>Ngày, Tháng, Năm sinh</strong> để hệ thống đối chiếu chính xác Cung Phi Bát Trạch (Nam/Nữ khác nhau), Thần Số Học, Cung Hoàng Đạo và Tử Vi trọn đời.
             </p>
 
             <div className="space-y-4">
+              {/* Chọn Giới Tính */}
               <div>
                 <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-200">
-                  Chọn năm sinh (1930 - 2025):
+                  Giới tính (Quyết định Cung Phi Bát Trạch):
                 </label>
-                <select
-                  value={tempYear}
-                  onChange={(e) => setTempYear(Number(e.target.value))}
-                  className={`w-full p-3 rounded-2xl border text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 ${
-                    isDarkTheme ? "bg-slate-800 border-white/20 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
-                  }`}
-                >
-                  {Array.from({ length: 96 }).map((_, i) => {
-                    const y = 2025 - i;
-                    const p = getPersonalProfile(y);
-                    return (
-                      <option key={y} value={y}>
-                        {y} — Tuổi {p.canChi} ({p.zodiacAnimal.split(" ")[0]}) • Mệnh {p.element} ({p.napAm})
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setTempGender("male")}
+                    className={`py-2.5 px-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 border ${
+                      tempGender === "male"
+                        ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
+                        : isDarkTheme
+                        ? "bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700"
+                        : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                    }`}
+                  >
+                    <span>👨</span>
+                    <span>Nam Mạng</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTempGender("female")}
+                    className={`py-2.5 px-4 rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-2 border ${
+                      tempGender === "female"
+                        ? "bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20"
+                        : isDarkTheme
+                        ? "bg-slate-800 text-slate-300 border-white/10 hover:bg-slate-700"
+                        : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
+                    }`}
+                  >
+                    <span>👩</span>
+                    <span>Nữ Mạng</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Loại Lịch */}
+              <div>
+                <label className="block text-xs font-bold mb-1.5 text-slate-700 dark:text-slate-200">
+                  Loại ngày sinh:
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setTempIsLunar(false)}
+                    className={`py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
+                      !tempIsLunar
+                        ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-400/50"
+                        : isDarkTheme
+                        ? "bg-slate-800 text-slate-400 border-white/5"
+                        : "bg-slate-100 text-slate-600 border-slate-200"
+                    }`}
+                  >
+                    <span>☀️ Dương Lịch (Chuẩn)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTempIsLunar(true)}
+                    className={`py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 border ${
+                      tempIsLunar
+                        ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-400/50"
+                        : isDarkTheme
+                        ? "bg-slate-800 text-slate-400 border-white/5"
+                        : "bg-slate-100 text-slate-600 border-slate-200"
+                    }`}
+                  >
+                    <span>🌙 Âm Lịch</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid 3 Selects: Ngày, Tháng, Năm */}
+              <div className="grid grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-700 dark:text-slate-200">
+                    Ngày sinh:
+                  </label>
+                  <select
+                    value={tempDay}
+                    onChange={(e) => setTempDay(Number(e.target.value))}
+                    className={`w-full p-2.5 rounded-xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                      isDarkTheme ? "bg-slate-800 border-white/20 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
+                    }`}
+                  >
+                    {Array.from({ length: 31 }).map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        Ngày {i + 1}
                       </option>
-                    );
-                  })}
-                </select>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-700 dark:text-slate-200">
+                    Tháng sinh:
+                  </label>
+                  <select
+                    value={tempMonth}
+                    onChange={(e) => setTempMonth(Number(e.target.value))}
+                    className={`w-full p-2.5 rounded-xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                      isDarkTheme ? "bg-slate-800 border-white/20 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
+                    }`}
+                  >
+                    {Array.from({ length: 12 }).map((_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        Tháng {i + 1}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold mb-1 text-slate-700 dark:text-slate-200">
+                    Năm sinh:
+                  </label>
+                  <select
+                    value={tempYear}
+                    onChange={(e) => setTempYear(Number(e.target.value))}
+                    className={`w-full p-2.5 rounded-xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                      isDarkTheme ? "bg-slate-800 border-white/20 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
+                    }`}
+                  >
+                    {Array.from({ length: 96 }).map((_, i) => {
+                      const y = 2025 - i;
+                      const p = getPersonalProfile(y);
+                      return (
+                        <option key={y} value={y}>
+                          {y} ({p.canChi})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
               </div>
 
               {/* Quick Decade Shortcuts */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[11px] font-semibold text-slate-400 mr-1">Nhanh:</span>
-                {[1980, 1985, 1990, 1995, 2000, 2005].map((y) => (
+                {[1985, 1988, 1990, 1992, 1995, 1998, 2000, 2003].map((y) => (
                   <button
                     key={y}
+                    type="button"
                     onClick={() => setTempYear(y)}
                     className={`text-xs px-2.5 py-1 rounded-xl font-bold transition-all ${
                       tempYear === y
@@ -1607,48 +2342,44 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 ))}
               </div>
 
-              {/* Preview Bản Mệnh */}
-              {(() => {
-                const previewProfile = getPersonalProfile(tempYear);
-                return (
-                  <div
-                    className={`p-4 rounded-2xl border ${
-                      isDarkTheme
-                        ? "bg-gradient-to-br from-amber-500/10 via-slate-800/60 to-slate-900 border-amber-500/30"
-                        : "bg-amber-50/80 border-amber-200"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-black text-amber-600 dark:text-amber-400">
-                        Tuổi {previewProfile.canChi} ({previewProfile.birthYear})
-                      </span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
-                        {previewProfile.element} • {previewProfile.napAm}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
-                      <div>• Con giáp: <strong>{previewProfile.zodiacAnimal}</strong></div>
-                      <div>• {previewProfile.yinYangLabel}</div>
-                      <div>• Tam hợp: <strong className="text-emerald-600 dark:text-emerald-400">{previewProfile.tamHop.join(", ")}</strong></div>
-                      <div>• Tứ hành xung: <strong className="text-rose-500">{previewProfile.tuHanhXung.join(", ")}</strong></div>
-                      <div className="col-span-2 pt-1 border-t border-black/5 dark:border-white/5">
-                        • Cung phi: <strong>{previewProfile.cungMenh.menhNam}</strong> (Nam) / <strong>{previewProfile.cungMenh.menhNu}</strong> (Nữ)
-                      </div>
+              {/* Live Preview Card */}
+              {modalPreviewFortune && (
+                <div
+                  className={`p-4 rounded-2xl border ${
+                    isDarkTheme
+                      ? "bg-gradient-to-br from-amber-500/10 via-slate-800/60 to-slate-900 border-amber-500/30"
+                      : "bg-amber-50/80 border-amber-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                      {tempGender === "male" ? "👨 Nam mạng" : "👩 Nữ mạng"} • Tuổi {modalPreviewFortune.personalProfile.canChi} ({modalPreviewFortune.profile.year})
+                    </span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-400/30">
+                      Mệnh {modalPreviewFortune.personalProfile.element} • {modalPreviewFortune.personalProfile.napAm}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-300">
+                    <div>• Cung phi {tempGender === "male" ? "Nam" : "Nữ"}: <strong className="text-emerald-600 dark:text-emerald-400">{modalPreviewFortune.cungPhi} ({modalPreviewFortune.cungPhiGroup})</strong></div>
+                    <div>• Cung Hoàng Đạo: <strong>{modalPreviewFortune.westernZodiac.symbol} {modalPreviewFortune.westernZodiac.name}</strong></div>
+                    <div>• Thần số học: <strong>Số {modalPreviewFortune.numerology.lifePathNumber}</strong> ({modalPreviewFortune.numerology.title.split(" & ")[0]})</div>
+                    <div>• Tam hợp: <strong className="text-emerald-600 dark:text-emerald-400">{modalPreviewFortune.personalProfile.tamHop.join(", ")}</strong></div>
+                    <div className="col-span-2 pt-1 border-t border-black/5 dark:border-white/5 text-[11px]">
+                      • Hướng đại cát: <strong>{modalPreviewFortune.batTrachDirections.filter(d => d.isGood).map(d => `${d.type}: ${d.direction}`).join(" • ")}</strong>
                     </div>
                   </div>
-                );
-              })()}
+                </div>
+              )}
 
+              {/* Action Buttons */}
               <div className="flex items-center justify-between gap-3 pt-2">
-                {birthYear > 0 ? (
+                {userProfile || birthYear > 0 ? (
                   <button
-                    onClick={() => {
-                      setBirthYear(0);
-                      setShowBirthYearModal(false);
-                    }}
+                    type="button"
+                    onClick={handleClearProfile}
                     className="px-4 py-2.5 rounded-xl text-xs font-bold text-rose-500 hover:bg-rose-500/10 transition-all"
                   >
-                    Xóa năm sinh
+                    Xóa hồ sơ
                   </button>
                 ) : (
                   <div />
@@ -1656,7 +2387,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
 
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setShowBirthYearModal(false)}
+                    type="button"
+                    onClick={() => setShowBirthProfileModal(false)}
                     className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isDarkTheme ? "bg-white/10 hover:bg-white/15 text-slate-300" : "bg-slate-100 hover:bg-slate-200 text-slate-700"
                     }`}
@@ -1664,14 +2396,12 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     Hủy
                   </button>
                   <button
-                    onClick={() => {
-                      setBirthYear(tempYear);
-                      setShowBirthYearModal(false);
-                    }}
+                    type="button"
+                    onClick={handleSaveProfile}
                     className="px-5 py-2.5 rounded-xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-slate-950 transition-all shadow-md flex items-center gap-1.5"
                   >
                     <Check className="w-4 h-4" />
-                    Lưu & Sử dụng
+                    Lưu Hồ Sơ & Mở Lá Số
                   </button>
                 </div>
               </div>

@@ -4,7 +4,9 @@ import {
   HOUR_RANGES,
   LunarDate,
   auspiciousHourIndices,
-  jdFromDate
+  jdFromDate,
+  getLunarDate,
+  convertLunarToSolar
 } from "./lunarCalendar";
 
 export enum AlmanacActivity {
@@ -331,9 +333,10 @@ export function calculateCungPhi(year: number): {
   huongTotNam: string[];
   huongTotNu: string[];
 } {
-  let sum = String(year).split("").reduce((acc, c) => acc + parseInt(c, 10), 0);
-  while (sum > 9) {
-    sum = String(sum).split("").reduce((acc, c) => acc + parseInt(c, 10), 0);
+  const last2 = year % 100;
+  let sum = Math.floor(last2 / 10) + (last2 % 10);
+  while (sum >= 10) {
+    sum = Math.floor(sum / 10) + (sum % 10);
   }
 
   let cungNamIdx: number;
@@ -867,5 +870,1004 @@ export function getDayAlmanac(lunar: LunarDate): DayAlmanac {
     summary,
     goodActivities,
     badActivities
+  };
+}
+
+// ==========================================
+// TÍNH NĂNG BÓI CHI TIẾT THEO GIỚI TÍNH, NGÀY THÁNG NĂM SINH
+// ==========================================
+
+export interface UserBirthProfile {
+  day: number;
+  month: number;
+  year: number;
+  gender: "male" | "female";
+  isLunar?: boolean;
+}
+
+export interface ZodiacSignInfo {
+  name: string;
+  latinName: string;
+  symbol: string;
+  dateRange: string;
+  element: "Lửa" | "Đất" | "Khí" | "Nước";
+  rulingPlanet: string;
+  traits: string;
+  strengths: string[];
+}
+
+export interface NumerologyInfo {
+  lifePathNumber: number;
+  title: string;
+  keywords: string[];
+  description: string;
+  strengths: string[];
+  challenges: string[];
+  idealCareers: string[];
+}
+
+export interface BatTrachDirection {
+  direction: string;
+  type: "Sinh Khí" | "Thiên Y" | "Diên Niên" | "Phục Vị" | "Tuyệt Mệnh" | "Ngũ Quỷ" | "Lục Sát" | "Họa Hại";
+  isGood: boolean;
+  starName: string;
+  starElement: string;
+  meaning: string;
+  advice: string;
+}
+
+export interface LifeStageFortune {
+  stage: "Tiền vận" | "Trung vận" | "Hậu vận";
+  ageRange: string;
+  title: string;
+  overview: string;
+  careerFinance: string;
+  familyLove: string;
+}
+
+export interface SaoHan2026Info {
+  lunarAge: number;
+  sao: string;
+  saoType: "Cát tinh" | "Hung tinh" | "Trung tinh";
+  saoDescription: string;
+  han: string;
+  hanDescription: string;
+  yearOverview: string;
+  favorableMonths: number[];
+  cautionMonths: number[];
+}
+
+export interface DetailedBirthFortune {
+  profile: UserBirthProfile;
+  solarDate: { day: number; month: number; year: number };
+  lunarDate: LunarDate;
+  personalProfile: PersonalProfile;
+  cungPhi: string;
+  cungPhiGroup: "Đông Tứ Mệnh" | "Tây Tứ Mệnh";
+  cungPhiElement: string;
+  batTrachDirections: BatTrachDirection[];
+  westernZodiac: ZodiacSignInfo;
+  numerology: NumerologyInfo;
+  personalityByGender: {
+    title: string;
+    coreTraits: string;
+    strengths: string;
+    socialStyle: string;
+  };
+  loveMarriage: {
+    overview: string;
+    bestAges: string[];
+    challengingAges: string[];
+    advice: string;
+  };
+  lifeStages: LifeStageFortune[];
+  saoHan2026: SaoHan2026Info;
+}
+
+export function getWesternZodiac(day: number, month: number): ZodiacSignInfo {
+  if ((month === 3 && day >= 21) || (month === 4 && day <= 19)) {
+    return {
+      name: "Bạch Dương",
+      latinName: "Aries",
+      symbol: "♈",
+      dateRange: "21/03 - 19/04",
+      element: "Lửa",
+      rulingPlanet: "Sao Hỏa (Mars)",
+      traits: "Tiên phong, quả cảm, dồi dào sinh lực và luôn khao khát dẫn đầu trong mọi lĩnh vực.",
+      strengths: ["Quyết đoán nhanh", "Nhiệt huyết bùng nổ", "Tự tin mở lối", "Dám nghĩ dám làm"]
+    };
+  }
+  if ((month === 4 && day >= 20) || (month === 5 && day <= 20)) {
+    return {
+      name: "Kim Ngưu",
+      latinName: "Taurus",
+      symbol: "♉",
+      dateRange: "20/04 - 20/05",
+      element: "Đất",
+      rulingPlanet: "Sao Kim (Venus)",
+      traits: "Kiên định, thực tế, bền bỉ, có khả năng quản lý tài chính và yêu cái đẹp đích thực.",
+      strengths: ["Đáng tin cậy", "Kiên nhẫn phi thường", "Quản lý tài chính giỏi", "Vững vàng trước bão giông"]
+    };
+  }
+  if ((month === 5 && day >= 21) || (month === 6 && day <= 21)) {
+    return {
+      name: "Song Tử",
+      latinName: "Gemini",
+      symbol: "♊",
+      dateRange: "21/05 - 21/06",
+      element: "Khí",
+      rulingPlanet: "Sao Thủy (Mercury)",
+      traits: "Linh hoạt, hóm hỉnh, giao tiếp cuốn hút, tư duy đa chiều và thích nghi cực nhanh.",
+      strengths: ["Hoạt ngôn thuyết phục", "Trí tuệ nhanh nhạy", "Đa tài đa nghệ", "Sáng tạo đổi mới"]
+    };
+  }
+  if ((month === 6 && day >= 22) || (month === 7 && day <= 22)) {
+    return {
+      name: "Cự Giải",
+      latinName: "Cancer",
+      symbol: "♋",
+      dateRange: "22/06 - 22/07",
+      element: "Nước",
+      rulingPlanet: "Mặt Trăng (Moon)",
+      traits: "Giàu tình cảm, trực giác tinh tế, chu đáo và luôn đặt tổ ấm gia đình làm điểm tựa.",
+      strengths: ["Thấu cảm sâu sắc", "Bảo bọc chở che", "Trung thành tuyệt đối", "Trực giác chuẩn xác"]
+    };
+  }
+  if ((month === 7 && day >= 23) || (month === 8 && day <= 22)) {
+    return {
+      name: "Sư Tử",
+      latinName: "Leo",
+      symbol: "♌",
+      dateRange: "23/07 - 22/08",
+      element: "Lửa",
+      rulingPlanet: "Mặt Trời (Sun)",
+      traits: "Bản lĩnh lãnh đạo, phong thái uy quyền, quảng đại, hào phóng và luôn tỏa sáng rực rỡ.",
+      strengths: ["Khí chất vương giả", "Hào hiệp trượng nghĩa", "Truyền cảm hứng lớn", "Lạc quan tích cực"]
+    };
+  }
+  if ((month === 8 && day >= 23) || (month === 9 && day <= 22)) {
+    return {
+      name: "Xử Nữ",
+      latinName: "Virgo",
+      symbol: "♍",
+      dateRange: "23/08 - 22/09",
+      element: "Đất",
+      rulingPlanet: "Sao Thủy (Mercury)",
+      traits: "Tỉ mỉ, kỷ luật, chu toàn, khả năng phân tích logic và tiêu chuẩn hoàn thiện rất cao.",
+      strengths: ["Chính xác tuyệt đối", "Tư duy phân tích sắc sảo", "Tận tâm chu đáo", "Tổ chức khoa học"]
+    };
+  }
+  if ((month === 9 && day >= 23) || (month === 10 && day <= 23)) {
+    return {
+      name: "Thiên Bình",
+      latinName: "Libra",
+      symbol: "♎",
+      dateRange: "23/09 - 23/10",
+      element: "Khí",
+      rulingPlanet: "Sao Kim (Venus)",
+      traits: "Công bằng, thanh lịch, giao tiếp hòa nhã, có mắt thẩm mỹ tinh tế và yêu hòa bình.",
+      strengths: ["Ngoại giao xuất sắc", "Cân bằng dĩ hòa vi quý", "Thẩm mỹ tinh tế", "Thu hút lòng người"]
+    };
+  }
+  if ((month === 10 && day >= 24) || (month === 11 && day <= 21)) {
+    return {
+      name: "Bọ Cạp",
+      latinName: "Scorpio",
+      symbol: "♏",
+      dateRange: "24/10 - 21/11",
+      element: "Nước",
+      rulingPlanet: "Sao Diêm Vương (Pluto)",
+      traits: "Sâu sắc, kiên cường, nội tâm mạnh mẽ, trực giác thấu thị và ý chí thép vượt khó khăn.",
+      strengths: ["Ý chí bất khuất", "Trực giác nhạy bén", "Bí ẩn cuốn hút", "Tập trung cao độ"]
+    };
+  }
+  if ((month === 11 && day >= 22) || (month === 12 && day <= 21)) {
+    return {
+      name: "Nhân Mã",
+      latinName: "Sagittarius",
+      symbol: "♐",
+      dateRange: "22/11 - 21/12",
+      element: "Lửa",
+      rulingPlanet: "Sao Mộc (Jupiter)",
+      traits: "Lạc quan, tự do, phóng khoáng, ham học hỏi và luôn hướng về những chân trời mới mẻ.",
+      strengths: ["Tầm nhìn chiến lược", "Trung thực thẳng thắn", "Năng lượng tích cực", "Dám bước ra khỏi vùng an toàn"]
+    };
+  }
+  if ((month === 12 && day >= 22) || (month === 1 && day <= 19)) {
+    return {
+      name: "Ma Kết",
+      latinName: "Capricorn",
+      symbol: "♑",
+      dateRange: "22/12 - 19/01",
+      element: "Đất",
+      rulingPlanet: "Sao Thổ (Saturn)",
+      traits: "Kỷ luật thép, tham vọng lớn, trách nhiệm cao và bền bỉ leo lên đỉnh vinh quang sự nghiệp.",
+      strengths: ["Kiên định mục tiêu", "Chiến lược dài hạn", "Tinh thần trách nhiệm cao", "Bản lĩnh lãnh đạo vững chãi"]
+    };
+  }
+  if ((month === 1 && day >= 20) || (month === 2 && day <= 18)) {
+    return {
+      name: "Bảo Bình",
+      latinName: "Aquarius",
+      symbol: "♒",
+      dateRange: "20/01 - 18/02",
+      element: "Khí",
+      rulingPlanet: "Sao Thiên Vương (Uranus)",
+      traits: "Độc lập, sáng tạo đột phá, tư duy vượt thời đại, nhân đạo và ghét sự gò bó sáo mòn.",
+      strengths: ["Tư duy đổi mới", "Tầm nhìn nhân văn", "Độc lập tự chủ", "Khả năng phát minh sáng tạo"]
+    };
+  }
+  return {
+    name: "Song Ngư",
+    latinName: "Pisces",
+    symbol: "♓",
+    dateRange: "19/02 - 20/03",
+    element: "Nước",
+    rulingPlanet: "Sao Hải Vương (Neptune)",
+    traits: "Nhân hậu, giàu lòng trắc ẩn, tâm hồn nghệ sĩ lãng mạn và trực giác tâm linh thấu hiểu.",
+    strengths: ["Thấu cảm tâm hồn", "Khả năng nghệ thuật", "Lương thiện bao dung", "Trực giác tiên đoán"]
+  };
+}
+
+const NUMEROLOGY_DATA: Record<number, Omit<NumerologyInfo, "lifePathNumber">> = {
+  2: {
+    title: "Sứ Giả Hòa Bình & Kết Nối Tình Thân",
+    keywords: ["Lắng nghe", "Hòa hợp", "Thấu cảm", "Ngoại giao"],
+    description: "Bạn mang năng lượng của sự nhạy cảm, hòa giải và gắn kết. Bạn có năng khiếu ngoại giao bẩm sinh, luôn biết cách xoa dịu mâu thuẫn và tạo ra sự cân bằng trong các mối quan hệ.",
+    strengths: ["Khả năng lắng nghe chân thành", "Trực giác tình cảm tốt", "Trung thành và đáng tin cậy", "Khéo léo dung hòa tập thể"],
+    challenges: ["Dễ bị tổn thương bởi lời chỉ trích", "Hay do dự không dám đưa ra quyết định quyết liệt", "Đôi khi quá hy sinh quyền lợi cá nhân"],
+    idealCareers: ["Ngoại giao, hòa giải viên", "Tâm lý học, tư vấn trị liệu", "Nhân sự (HR), quan hệ công chúng", "Nghệ thuật, giáo dục"]
+  },
+  3: {
+    title: "Người Sáng Tạo & Truyền Cảm Hứng Lạc Quan",
+    keywords: ["Sáng tạo", "Hoạt ngôn", "Năng lượng", "Niềm vui"],
+    description: "Bạn là linh hồn của các cuộc hội ngộ, sở hữu nguồn năng lượng tươi vui, khiếu hài hước và tài năng ngôn ngữ phong phú. Cuộc đời bạn là hành trình lan tỏa cảm hứng và làm đẹp cuộc sống.",
+    strengths: ["Tài ăn nói và biểu đạt lôi cuốn", "Tư duy sáng tạo không giới hạn", "Lạc quan truyền năng lượng tích cực", "Dễ kết nối và được quý mến"],
+    challenges: ["Dễ phân tán mục tiêu, nhanh chán", "Cần rèn luyện tính kiên trì kỷ luật", "Đôi khi nói nhiều hơn lắng nghe"],
+    idealCareers: ["Truyền thông, marketing, sáng tạo nội dung", "MC, diễn giả, nghệ thuật giải trí", "Thiết kế, hội họa, viết lách", "Kinh doanh và bán hàng"]
+  },
+  4: {
+    title: "Người Kiến Tạo Kỷ Luật & Thực Tiễn Vững Chãi",
+    keywords: ["Kỷ luật", "Thực tế", "Tổ chức", "Bền bỉ"],
+    description: "Bạn là điểm tựa vững chãi của gia đình và tổ chức. Với tinh thần trách nhiệm cao độ và sự tỉ mỉ, bạn luôn biến những ý tưởng mông lung thành quy trình chuẩn mực và kết quả bền vững.",
+    strengths: ["Kỷ luật sắt và sự kiên trì phi thường", "Khả năng tổ chức, quản lý chi tiết sắc sảo", "Trung thực, giữ chữ tín hàng đầu", "Xây dựng nền móng dài hạn"],
+    challenges: ["Đôi khi cứng nhắc, ngại thay đổi", "Dễ rơi vào lo âu về tài chính và an toàn", "Cần học cách thả lỏng và linh hoạt"],
+    idealCareers: ["Quản lý dự án, kỹ sư, kiến trúc sư", "Tài chính, kế toán, kiểm toán", "Pháp lý, quản trị hệ thống", "Sản xuất, bất động sản"]
+  },
+  5: {
+    title: "Nhà Thám Hiểm Tự Do & Đột Phá Tiên Phong",
+    keywords: ["Tự do", "Khám phá", "Thích nghi", "Đổi mới"],
+    description: "Bạn sinh ra để phá vỡ những giới hạn khuôn mẫu. Với lòng dũng cảm và niềm đam mê phiêu lưu, bạn không ngừng tìm kiếm những chân trời mới và tạo nên những cuộc cách mạng đổi mới tích cực.",
+    strengths: ["Khả năng thích ứng siêu việt", "Tư duy cởi mở, không ngại thử thách", "Năng lượng dồi dào, cuốn hút tự nhiên", "Dám nghĩ khác và làm khác"],
+    challenges: ["Khó gắn bó lâu dài với công việc nhàm chán", "Dễ bốc đồng và thiếu kiên nhẫn", "Cần học cách kiểm soát sự tùy hứng"],
+    idealCareers: ["Du lịch, hàng không, ngoại thương", "Khởi nghiệp công nghệ, đổi mới sáng tạo", "Nhiếp ảnh gia, nhà báo du ký", "Tư vấn chiến lược, tiếp thị số"]
+  },
+  6: {
+    title: "Người Chăm Sóc & Yêu Thương Gia Đình",
+    keywords: ["Trách nhiệm", "Yêu thương", "Bảo bọc", "Mỹ cảm"],
+    description: "Trái tim bạn luôn đong đầy tình yêu thương vô điều kiện. Bạn coi sóc tổ ấm, chu toàn cho những người thân yêu và sẵn sàng cống hiến vì hạnh phúc của cộng đồng.",
+    strengths: ["Tình cảm bao la, đức hy sinh cao quý", "Trách nhiệm gia đình và xã hội tuyệt vời", "Mắt thẩm mỹ và khả năng trang trí tinh tế", "Chữa lành và gắn kết các thành viên"],
+    challenges: ["Dễ ôm đồm gánh vác việc của người khác", "Hay lo lắng thái quá và kỳ vọng cao", "Cần biết yêu thương và chăm sóc bản thân"],
+    idealCareers: ["Y tế, bác sĩ, điều dưỡng", "Giáo dục mầm non, tâm lý học đường", "Thiết kế nội thất, ẩm thực, nhà hàng", "Tổ chức phi lợi nhuận, công tác xã hội"]
+  },
+  7: {
+    title: "Nhà Thông Thái & Chiêm Nghiệm Tri Thức",
+    keywords: ["Trí tuệ", "Triết lý", "Nghiên cứu", "Nội tâm"],
+    description: "Bạn là một linh hồn tri thức khao khát tìm hiểu bản chất sâu xa của vạn vật. Bạn không tin vào bề nổi mà luôn phân tích, chiêm nghiệm và tìm kiếm chân lý cuộc đời.",
+    strengths: ["Tư duy phản biện và trực giác triết học", "Khả năng nghiên cứu chuyên sâu độc lập", "Độc lập tự chủ cao", "Cái nhìn sâu sắc qua vẻ ngoài hào nhoáng"],
+    challenges: ["Có xu hướng thu mình, sống khép kín", "Dễ hoài nghi và xa cách đám đông", "Cần mở lòng kết nối tình cảm với mọi người"],
+    idealCareers: ["Nghiên cứu khoa học, học giả, triết gia", "Phân tích dữ liệu, chuyên gia công nghệ cao", "Tư vấn chiến lược cấp cao", "Y học chuyên sâu, tâm linh huyền học"]
+  },
+  8: {
+    title: "Bản Lĩnh Điều Hành & Quản Trị Tài Chính",
+    keywords: ["Quyền lực", "Tài chính", "Điều hành", "Thành đạt"],
+    description: "Bạn sở hữu tư chất của một nhà lãnh đạo tầm vóc, có trực giác kinh doanh sắc sảo và khả năng kiến tạo thịnh vượng vật chất. Bạn sinh ra để làm chủ những đại nghiệp lớn lao.",
+    strengths: ["Tầm nhìn kinh doanh và quản trị tài chính sắc bén", "Bản lĩnh vững vàng trước áp lực cao", "Khả năng chỉ huy và dẫn dắt đội ngũ lớn", "Khát vọng vươn tới đỉnh cao thành công"],
+    challenges: ["Dễ đặt nặng giá trị vật chất hơn cảm xúc", "Có thể trở nên độc đoán nếu thiếu lắng nghe", "Cần cân bằng giữa công việc và đời sống tinh thần"],
+    idealCareers: ["Doanh nhân, CEO, giám đốc điều hành", "Đầu tư tài chính, ngân hàng, chứng khoán", "Bất động sản quy mô lớn", "Chính trị gia, quản lý cấp cao"]
+  },
+  9: {
+    title: "Trực Giác Nhân Đạo & Phụng Sự Cộng Đồng",
+    keywords: ["Nhân đạo", "Bao dung", "Lý tưởng", "Cống hiến"],
+    description: "Bạn mang tâm thế của người phụng sự nhân loại. Với trái tim vị tha và tầm nhìn đại cục, bạn luôn khát khao để lại những giá trị trường tồn và nâng đỡ những người yếu thế.",
+    strengths: ["Lòng nhân ái bao la và tinh thần đại nghĩa", "Khả năng truyền cảm hứng nhân văn mạnh mẽ", "Uy tín và sự kính trọng tự nhiên từ mọi người", "Tầm nhìn bao quát vượt lên lợi ích vị kỷ"],
+    challenges: ["Dễ bị thất vọng khi đời thực không như lý tưởng", "Khó tha thứ cho sự bất công hoặc lừa dối", "Cần thực tế hơn trong quản lý tài chính cá nhân"],
+    idealCareers: ["Lãnh đạo các tổ chức cộng đồng, từ thiện", "Giáo dục, đào tạo phát triển con người", "Văn hóa nghệ thuật mang tính nhân văn", "Luật sư nhân quyền, tư vấn hướng nghiệp"]
+  },
+  10: {
+    title: "Người Tiên Phong Độc Lập & Dẫn Đầu Xu Thế",
+    keywords: ["Tiên phong", "Tự chủ", "Quyết đoán", "Bản lĩnh"],
+    description: "Số 10 (con số của sự trọn vẹn và khởi nguyên) đại diện cho nhà lãnh đạo tự thân. Bạn có tinh thần độc lập mạnh mẽ, ý chí kiên định và khả năng xoay chuyển cục diện để tự tay mở ra con đường thành công.",
+    strengths: ["Tính tự lập và lòng tự trọng rất cao", "Quyết đoán, không nao núng trước thử thách", "Khả năng tái tạo và thích nghi ngoạn mục", "Sức hút cá nhân và tài dẫn dắt bẩm sinh"],
+    challenges: ["Cái tôi lớn, đôi khi khó chấp nhận lời khuyên", "Dễ cảm thấy cô đơn trên hành trình dẫn đầu", "Cần rèn luyện sự lắng nghe và thấu cảm"],
+    idealCareers: ["Nhà sáng lập, chủ doanh nghiệp độc lập", "Giám đốc sáng tạo, trưởng bộ phận đổi mới", "Chỉ huy, thể thao chuyên nghiệp", "Nhà hoạch định chính sách"]
+  },
+  11: {
+    title: "Bậc Thầy Trực Giác & Soi Sáng Tâm Linh",
+    keywords: ["Trực giác", "Tâm linh", "Khai sáng", "Lý tưởng"],
+    description: "Số 11 là Master Number mang tần số rung động tâm linh phi thường. Bạn sở hữu giác quan thứ sáu nhạy bén kỳ lạ và có sứ mệnh nâng tầm nhận thức, soi rọi con đường cho người khác.",
+    strengths: ["Trực giác tâm linh thấu thị vượt trội", "Khả năng truyền cảm hứng sâu sắc tới tâm hồn", "Tư tưởng tiến bộ và lý tưởng cao đẹp", "Sự nhạy cảm tinh tế với năng lượng xung quanh"],
+    challenges: ["Áp lực tinh thần nội tâm rất lớn", "Dễ bị quá tải cảm xúc nếu không biết thiền định", "Cần giữ đôi chân vững chắc trên mặt đất"],
+    idealCareers: ["Nhà khai vấn tâm lý (Life Coach), trị liệu", "Lãnh đạo tinh thần, nhà nghiên cứu tâm linh", "Nghệ sĩ triết học, nhà thơ, triết gia", "Tổ chức từ thiện quốc tế"]
+  },
+  22: {
+    title: "Bậc Thầy Kiến Tạo Ước Mơ Vĩ Đại (Master Builder)",
+    keywords: ["Kiến tạo", "Tầm vóc", "Hiện thực hóa", "Vĩ đại"],
+    description: "Số 22/4 là Master Number quyền năng nhất trong Thần số học. Bạn vừa có tầm nhìn vĩ mô siêu phàm của số 11 vừa có tính thực tiễn kỷ luật sắt của số 4, có thể biến những giấc mơ khổng lồ thành hiện thực.",
+    strengths: ["Khả năng hiện thực hóa các dự án quy mô lớn", "Tầm nhìn chiến lược vượt thời đại", "Năng lực lãnh đạo và tổ chức xuất chúng", "Đóng góp những di sản vĩ đại cho xã hội"],
+    challenges: ["Gánh nặng trách nhiệm quá to lớn", "Dễ rơi vào áp lực cầu toàn cực độ", "Cần học cách chia sẻ quyền hạn và tin tưởng người khác"],
+    idealCareers: ["Kiến trúc sư các đại công trình quốc gia", "Nhà sáng lập các tập đoàn đa quốc gia", "Chính khách kiến thiết đất nước", "Nhà từ thiện quy mô toàn cầu"]
+  }
+};
+
+export function calculateLifePathNumber(day: number, month: number, year: number): NumerologyInfo {
+  function sumDigits(n: number): number {
+    return String(n).split("").reduce((acc, c) => acc + (parseInt(c, 10) || 0), 0);
+  }
+  function reduce(n: number, isFinal: boolean = false): number {
+    if (n === 11 || n === 22) return n;
+    let s = sumDigits(n);
+    while (s > 9) {
+      if (s === 10 && isFinal) return 10;
+      if (s === 11 || s === 22) return s;
+      s = sumDigits(s);
+    }
+    return s;
+  }
+  const rd = reduce(day);
+  const rm = reduce(month);
+  const ry = reduce(year);
+  const total = rd + rm + ry;
+  const lifePath = reduce(total, true);
+
+  const fallback = NUMEROLOGY_DATA[10];
+  const data = NUMEROLOGY_DATA[lifePath] || fallback;
+
+  return {
+    lifePathNumber: lifePath,
+    ...data
+  };
+}
+
+const BAT_TRACH_MAP: Record<string, {
+  sinhKhi: string; thienY: string; dienNien: string; phucVi: string;
+  hoaHai: string; lucSat: string; nguQuy: string; tuyetMenh: string;
+}> = {
+  "Khảm": {
+    sinhKhi: "Đông Nam", thienY: "Chính Đông", dienNien: "Chính Nam", phucVi: "Chính Bắc",
+    hoaHai: "Chính Tây", lucSat: "Tây Bắc", nguQuy: "Đông Bắc", tuyetMenh: "Tây Nam"
+  },
+  "Khôn": {
+    sinhKhi: "Đông Bắc", thienY: "Chính Tây", dienNien: "Tây Bắc", phucVi: "Tây Nam",
+    hoaHai: "Chính Đông", lucSat: "Chính Nam", nguQuy: "Đông Nam", tuyetMenh: "Chính Bắc"
+  },
+  "Chấn": {
+    sinhKhi: "Chính Nam", thienY: "Chính Bắc", dienNien: "Đông Nam", phucVi: "Chính Đông",
+    hoaHai: "Tây Nam", lucSat: "Đông Bắc", nguQuy: "Tây Bắc", tuyetMenh: "Chính Tây"
+  },
+  "Tốn": {
+    sinhKhi: "Chính Bắc", thienY: "Chính Nam", dienNien: "Chính Đông", phucVi: "Đông Nam",
+    hoaHai: "Tây Bắc", lucSat: "Chính Tây", nguQuy: "Tây Nam", tuyetMenh: "Đông Bắc"
+  },
+  "Càn": {
+    sinhKhi: "Chính Tây", thienY: "Đông Bắc", dienNien: "Tây Nam", phucVi: "Tây Bắc",
+    hoaHai: "Đông Nam", lucSat: "Chính Bắc", nguQuy: "Chính Đông", tuyetMenh: "Chính Nam"
+  },
+  "Đoài": {
+    sinhKhi: "Tây Bắc", thienY: "Tây Nam", dienNien: "Đông Bắc", phucVi: "Chính Tây",
+    hoaHai: "Chính Bắc", lucSat: "Đông Nam", nguQuy: "Chính Nam", tuyetMenh: "Chính Đông"
+  },
+  "Cấn": {
+    sinhKhi: "Tây Nam", thienY: "Tây Bắc", dienNien: "Chính Tây", phucVi: "Đông Bắc",
+    hoaHai: "Chính Nam", lucSat: "Chính Đông", nguQuy: "Chính Bắc", tuyetMenh: "Đông Nam"
+  },
+  "Ly": {
+    sinhKhi: "Chính Đông", thienY: "Đông Nam", dienNien: "Chính Bắc", phucVi: "Chính Nam",
+    hoaHai: "Đông Bắc", lucSat: "Tây Nam", nguQuy: "Chính Tây", tuyetMenh: "Tây Bắc"
+  }
+};
+
+export function getBatTrachDetails(cungFullName: string): BatTrachDirection[] {
+  let key = "Càn";
+  for (const k of Object.keys(BAT_TRACH_MAP)) {
+    if (cungFullName.includes(k)) {
+      key = k;
+      break;
+    }
+  }
+  const m = BAT_TRACH_MAP[key] || BAT_TRACH_MAP["Càn"];
+
+  return [
+    {
+      direction: m.sinhKhi,
+      type: "Sinh Khí",
+      isGood: true,
+      starName: "Sao Tham Lang (Mộc)",
+      starElement: "Mộc",
+      meaning: "Đại cát đệ nhất. Thu hút tài lộc dồi dào, thăng quan tiến chức, danh tiếng rạng rỡ.",
+      advice: "Rất tốt để đặt hướng cửa chính nhà ở, bàn làm việc của người đứng đầu, phòng khách để chiêu tài tụ lộc."
+    },
+    {
+      direction: m.thienY,
+      type: "Thiên Y",
+      isGood: true,
+      starName: "Sao Cự Môn (Thổ)",
+      starElement: "Thổ",
+      meaning: "Cát tinh chủ về sức khỏe dồi dào, tiêu trừ bệnh tật, có quý nhân tương trợ, trường thọ.",
+      advice: "Thích hợp đặt đầu giường ngủ, phòng nghỉ ngơi dưỡng sức hoặc phòng khám chữa bệnh."
+    },
+    {
+      direction: m.dienNien,
+      type: "Diên Niên",
+      isGood: true,
+      starName: "Sao Vũ Khúc (Kim)",
+      starElement: "Kim",
+      meaning: "Cát tinh chủ về tình duyên gia đạo, vợ chồng con cái hòa thuận, quan hệ xã giao tốt đẹp.",
+      advice: "Tốt cho việc đặt phòng khách, cửa chính, phòng ngủ vợ chồng để giữ gìn hòa khí ấm êm."
+    },
+    {
+      direction: m.phucVi,
+      type: "Phục Vị",
+      isGood: true,
+      starName: "Sao Tả Phụ (Thủy)",
+      starElement: "Thủy",
+      meaning: "Cát tinh chủ về sự an định, củng cố sức mạnh tinh thần, thi cử tiến bộ, may mắn trong học tập.",
+      advice: "Rất tốt để đặt bàn thờ tổ tiên trang nghiêm, bàn học tập, nơi thiền định tĩnh tâm."
+    },
+    {
+      direction: m.hoaHai,
+      type: "Họa Hại",
+      isGood: false,
+      starName: "Sao Lộc Tồn (Thổ)",
+      starElement: "Thổ",
+      meaning: "Hung tinh nhẹ. Dễ gặp chuyện trái ý, bất hòa, thị phi vặt vãnh làm tiêu hao tinh thần.",
+      advice: "Tránh mở cửa chính vào hướng này. Có thể bố trí phòng kho, nhà vệ sinh để trấn hung."
+    },
+    {
+      direction: m.lucSat,
+      type: "Lục Sát",
+      isGood: false,
+      starName: "Sao Văn Khúc (Thủy)",
+      starElement: "Thủy",
+      meaning: "Hung tinh chủ về xáo trộn tình cảm, tranh chấp kiện tụng, dễ hao tổn tiền của và bất an gia đạo.",
+      advice: "Tránh đặt phòng ngủ hoặc phòng làm việc theo hướng này để giữ tình cảm gia đình vững bền."
+    },
+    {
+      direction: m.nguQuy,
+      type: "Ngũ Quỷ",
+      isGood: false,
+      starName: "Sao Liêm Trinh (Hỏa)",
+      starElement: "Hỏa",
+      meaning: "Hung tinh chủ về thị phi hỏa hoạn, mất việc làm, tiểu nhân quấy phá, bệnh tật liên miên.",
+      advice: "Tuyệt đối không đặt phòng bếp hoặc phòng ngủ theo hướng này. Dùng hướng bếp quay về hướng tốt để trấn áp."
+    },
+    {
+      direction: m.tuyetMenh,
+      type: "Tuyệt Mệnh",
+      isGood: false,
+      starName: "Sao Phá Quân (Kim)",
+      starElement: "Kim",
+      meaning: "Đại hung tinh nguy hiểm nhất. Chủ về hao tán tài sản lớn, tổn thọ, gia đạo bất an, mệt mỏi.",
+      advice: "Kỵ nhất cửa chính, phòng ngủ, phòng làm việc. Nên bố trí nhà vệ sinh hoặc nhà kho để 'lấy hung trấn hung'."
+    }
+  ];
+}
+
+const PERSONALITY_BY_GENDER_DATA: Record<number, Record<"male" | "female", {
+  title: string; coreTraits: string; strengths: string; socialStyle: string;
+}>> = {
+  0: {
+    male: {
+      title: "Túc Trí Đa Mưu • Tiên Phong Khởi Nghiệp",
+      coreTraits: "Nhanh nhẹn, thông minh, khả năng thích ứng tuyệt vời, giỏi quan sát và nắm bắt thời cơ kinh doanh.",
+      strengths: "Nhìn xa trông rộng, biết tích lũy của cải, tư duy nhạy bén trước biến động.",
+      socialStyle: "Khéo léo, rộng rãi với bạn bè, giỏi mở rộng quan hệ đối tác tin cậy."
+    },
+    female: {
+      title: "Nhu Mì Linh Hoạt • Vượng Phu Ích Tử",
+      coreTraits: "Đảm đang, chu đáo, tinh tế, tay hòm chìa khóa giỏi quản lý tài chính gia đình vững vàng.",
+      strengths: "Tháo vát, kiên nhẫn, trực giác nhạy bén, luôn là hậu phương vững chắc.",
+      socialStyle: "Duyên dáng, hòa nhã, được mọi người trong gia đình và xã hội yêu mến."
+    }
+  },
+  1: {
+    male: {
+      title: "Cần Kiệm Trì Trọng • Trụ Cột Vững Vàng",
+      coreTraits: "Chăm chỉ, thực tế, kiên định như núi, luôn xây dựng sự nghiệp bằng sự bền bỉ vững chắc.",
+      strengths: "Đáng tin cậy tuyệt đối, không ngại gian khó, chữ tín luôn đặt lên hàng đầu.",
+      socialStyle: "Chân thành, ít nói nhưng làm nhiều, luôn giữ đúng lời hứa."
+    },
+    female: {
+      title: "Hiền Thục Đảm Đang • Điềm Đạm Nhẫn Nại",
+      coreTraits: "Cần mẫn, giàu đức hy sinh, biết vun vén tổ ấm và chăm lo gia đình chu toàn.",
+      strengths: "Bền chí, chịu thương chịu khó, quản lý chi tiêu tài tình.",
+      socialStyle: "Mộc mạc, thật thà, sống chan hòa và luôn sẵn lòng giúp đỡ người khác."
+    }
+  },
+  2: {
+    male: {
+      title: "Uy Phong Hùng Dũng • Khí Phách Lãnh Đạo",
+      coreTraits: "Nhiệt huyết, dũng cảm, quyết đoán, mang tố chất của nhà tiên phong dám đương đầu thử thách.",
+      strengths: "Ý chí kiên cường, dám nghĩ dám làm, luôn bảo vệ lẽ phải và người thân yêu.",
+      socialStyle: "Hào phóng, khẳng khái, có sức hút tự nhiên với đám đông và cấp dưới."
+    },
+    female: {
+      title: "Bản Lĩnh Độc Lập • Năng Động Hiện Đại",
+      coreTraits: "Mạnh mẽ, tự tin, thông minh, không thích dựa dẫm và luôn có chính kiến độc lập.",
+      strengths: "Nhiệt tình, sáng tạo, khả năng giải quyết khủng hoảng xuất sắc.",
+      socialStyle: "Cởi mở, thẳng thắn, được bạn bè nể phục và mến mộ vì lòng trượng nghĩa."
+    }
+  },
+  3: {
+    male: {
+      title: "Ôn Hòa Nho Nhã • Trí Tuệ Tinh Tế",
+      coreTraits: "Điềm tĩnh, lịch thiệp, mắt thẩm mỹ cao, giỏi đối nhân xử thế và luôn giữ gìn hòa khí.",
+      strengths: "Khéo léo ngoại giao, tư duy cẩn trọng, tránh xa rủi ro không cần thiết.",
+      socialStyle: "Lịch lãm, nhã nhặn, giao thiệp rộng rãi và luôn có quý nhân giúp đỡ."
+    },
+    female: {
+      title: "Dịu Dàng Đoan Trang • Tinh Tế Khéo Léo",
+      coreTraits: "Thanh nhã, chu đáo, giàu lòng trắc ẩn, yêu cái đẹp và có đời sống nội tâm phong phú.",
+      strengths: "Thấu hiểu lòng người, khéo léo vun vén hạnh phúc, mắt thẩm mỹ cao.",
+      socialStyle: "Duyên dáng, nhẹ nhàng, ai gặp cũng có thiện cảm và quý mến."
+    }
+  },
+  4: {
+    male: {
+      title: "Hùng Tâm Tráng Khí • Tầm Vóc Vĩ Đại",
+      coreTraits: "Khí phách ngút trời, tham vọng lớn, tự tin và luôn khao khát vươn tầm đỉnh cao sự nghiệp.",
+      strengths: "Tầm nhìn chiến lược, năng lượng dồi dào, khả năng truyền cảm hứng lớn.",
+      socialStyle: "Rộng lượng, nghĩa hiệp, phong thái tự tin thu hút mọi ánh nhìn."
+    },
+    female: {
+      title: "Quý Phái Tự Tin • Tài Sắc Vẹn Toàn",
+      coreTraits: "Thông tuệ, kiêu hãnh, năng động, luôn nỗ lực để đạt được thành công tự thân.",
+      strengths: "Năng lực lãnh đạo xuất sắc, ý chí tiến thủ, phong thái thanh lịch quý phái.",
+      socialStyle: "Cuốn hút, chân thành, quảng giao và luôn tỏa sáng nơi đông người."
+    }
+  },
+  5: {
+    male: {
+      title: "Thâm Trầm Cơ Trí • Trực Giác Sắc Bén",
+      coreTraits: "Sâu sắc, điềm đạm, trực giác chuẩn xác, phong thái bình thản nhưng mưu lược bên trong.",
+      strengths: "Tư duy phân tích thấu đáo, bí ẩn cuốn hút, kiên nhẫn chờ thời cơ vàng.",
+      socialStyle: "Kín đáo, chọn lọc bạn bè, đã kết thân là hết lòng trung thành."
+    },
+    female: {
+      title: "Quyến Rũ Tinh Tế • Trí Tuệ Sâu Sắc",
+      coreTraits: "Sắc sảo, trực giác nhạy cảm phi thường, phong cách thời thượng và giàu sức hút.",
+      strengths: "Khéo léo xử lý tình huống khó, biết cách giữ lửa gia đình, độc lập tự chủ.",
+      socialStyle: "Bí ẩn, tinh tế, ứng xử thông minh và luôn giữ chừng mực."
+    }
+  },
+  6: {
+    male: {
+      title: "Khoáng Đạt Tự Do • Tiên Phong Hành Động",
+      coreTraits: "Năng động, cởi mở, dồi dào nhiệt huyết, thích xê dịch và đam mê chinh phục mục tiêu mới.",
+      strengths: "Dám dấn thân, không ngại đổi mới, tinh thần lạc quan truyền cảm hứng.",
+      socialStyle: "Hào hiệp, vui vẻ, nhiều bạn bè bè bạn khắp bốn phương."
+    },
+    female: {
+      title: "Tươi Vui Rạng Rỡ • Độc Lập Nhiệt Thành",
+      coreTraits: "Nhanh nhẹn, tháo vát, yêu tự do, tích cực lan tỏa nụ cười và năng lượng sống.",
+      strengths: "Học hỏi nhanh, làm việc năng suất cao, không bao giờ chịu khuất phục khó khăn.",
+      socialStyle: "Cởi mở, chân thành, hoạt bát và luôn mang lại tiếng cười."
+    }
+  },
+  7: {
+    male: {
+      title: "Nhân Hậu Lương Thiện • Trầm Tĩnh Vững Vàng",
+      coreTraits: "Thân thiện, giàu lòng trắc ẩn, yêu chuộng hòa bình và luôn hướng về gia đình.",
+      strengths: "Chu đáo, tỉ mỉ, kiên nhẫn, có năng khiếu nghệ thuật và thẩm mỹ cao.",
+      socialStyle: "Hiền hòa, nhường nhịn, luôn biết nghĩ cho người khác."
+    },
+    female: {
+      title: "Dịu Hiền Đôn Hậu • Khéo Léo Vun Vén",
+      coreTraits: "Nhân từ, bao dung, giàu tình mẫu tử, luôn tạo ra bầu không khí ấm áp trong tổ ấm.",
+      strengths: "Chăm sóc gia đình tuyệt vời, đức hy sinh cao, khéo léo may vá bếp núc.",
+      socialStyle: "Nhã nhặn, kín đáo, được họ hàng và bạn bè hết lòng yêu mến."
+    }
+  },
+  8: {
+    male: {
+      title: "Thông Tuệ Biến Hóa • Đa Tài Ứng Biến",
+      coreTraits: "Thông minh, hóm hỉnh, đa tài, xử lý tình huống linh hoạt và giỏi nắm bắt cơ hội.",
+      strengths: "Đầu óc kinh doanh nhạy bén, khả năng đàm phán thuyết phục xuất sắc.",
+      socialStyle: "Vui vẻ, hóm hỉnh, dễ gần và luôn làm chủ bầu không khí giao tiếp."
+    },
+    female: {
+      title: "Linh Hoạt Sắc Sảo • Tháo Vát Tự Lập",
+      coreTraits: "Nhanh trí, hoạt ngôn, đảm việc nước giỏi việc nhà, thích nghi tốt với mọi hoàn cảnh.",
+      strengths: "Tư duy sáng tạo, tay hòm chìa khóa đắc lực, tự chủ kinh tế vững vàng.",
+      socialStyle: "Duyên dáng, sôi nổi, luôn mang đến sự mới mẻ và cuốn hút."
+    }
+  },
+  9: {
+    male: {
+      title: "Nguyên Tắc Chu Toàn • Trách Nhiệm Kiên Định",
+      coreTraits: "Chính xác, kỷ luật cao, cầu toàn, trung thực và luôn giữ uy tín nghề nghiệp.",
+      strengths: "Quản lý công việc khoa học, tỉ mỉ, dám đứng ra chịu trách nhiệm lớn.",
+      socialStyle: "Nghiêm túc, thẳng thắn, chân thành và ghét sự dối trá."
+    },
+    female: {
+      title: "Tháo Vát Chăm Chỉ • Tề Gia Nội Trợ",
+      coreTraits: "Cần mẫn, chu toàn, gọn gàng ngăn nắp, biết vun vén chi tiêu và chăm lo con cái thành đạt.",
+      strengths: "Giỏi việc nhà lẫn việc xã hội, quản lý tài chính chặt chẽ, chu đáo.",
+      socialStyle: "Nhiệt tình, chu đáo, hiếu nghĩa vẹn toàn với hai bên gia đình."
+    }
+  },
+  10: {
+    male: {
+      title: "Trung Nghĩa Trực Trực • Chính Trực Đáng Tin",
+      coreTraits: "Trung thành, thẳng thắn, khẳng khái, giàu tinh thần bảo vệ lẽ phải và trách nhiệm cao.",
+      strengths: "Đáng tin cậy nhất trong 12 con giáp, kiên định trước cám dỗ, sống trọng tình nghĩa.",
+      socialStyle: "Chân thành, ghét thị phi giả tạo, là người bạn tri kỷ suốt đời."
+    },
+    female: {
+      title: "Hiền Lương Trung Hậu • Đảm Đang Thủy Chung",
+      coreTraits: "Thủy chung, hiền lành, yêu chuộng công bằng, luôn hết lòng vì người mình yêu thương.",
+      strengths: "Trách nhiệm gia đình son sắt, kiên nhẫn, điểm tựa bình yên cho bạn đời.",
+      socialStyle: "Chân chất, giản dị, đáng tin cậy và luôn giữ trọn lời hứa."
+    }
+  },
+  11: {
+    male: {
+      title: "Phúc Hậu An Nhiên • Khoan Dung Độ Lượng",
+      coreTraits: "Hòa nhã, rộng rãi, hào phóng, có phúc lộc tự nhiên và phong thái lạc quan yêu đời.",
+      strengths: "Tâm hồn rộng mở, không chấp nhặt, hưởng phúc lộc trời ban, cuộc sống an nhiên.",
+      socialStyle: "Hào phóng, ấm áp, bạn bè quý mến vì tấm lòng chân thành."
+    },
+    female: {
+      title: "Phúc Khí Dồi Dào • Hiền Thục Đại Cát",
+      coreTraits: "Phúc hậu, dịu hiền, may mắn về đường con cái và tài lộc, gia đình luôn hòa thuận ấm no.",
+      strengths: "Vượng phu ích tử, tâm tính thiện lương, mang lại may mắn cho gia đình.",
+      socialStyle: "Vui vẻ, hòa đồng, bao dung và luôn mang lại cảm giác bình yên."
+    }
+  }
+};
+
+const MARRIAGE_BY_GENDER_DATA: Record<number, Record<"male" | "female", {
+  overview: string; advice: string;
+}>> = {
+  0: {
+    male: {
+      overview: "Nam tuổi Tý tình cảm nồng nàn, sống có trách nhiệm với vợ con, luôn nỗ lực để gia đình sung túc.",
+      advice: "Nên lắng nghe và sẻ chia nhiều hơn, tránh áp đặt suy nghĩ chủ quan lên bạn đời."
+    },
+    female: {
+      overview: "Nữ tuổi Tý khéo léo vun vén, một lòng chăm lo tổ ấm, là chỗ dựa tinh thần tuyệt vời cho chồng.",
+      advice: "Giữ tâm lý thoải mái, bớt lo toan vụn vặt để không khí gia đình luôn ngập tràn tiếng cười."
+    }
+  },
+  1: {
+    male: {
+      overview: "Nam tuổi Sửu chung thủy, đáng tin cậy, coi trọng mái ấm và luôn là trụ cột kiên cường.",
+      advice: "Cần học cách thể hiện tình cảm lãng mạn hơn qua lời nói, tránh sự khô khan cứng nhắc."
+    },
+    female: {
+      overview: "Nữ tuổi Sửu giàu đức hy sinh, hiền thục nết na, hết lòng vì chồng con và gia đạo.",
+      advice: "Dành thời gian chăm sóc bản thân nhiều hơn, chia sẻ bớt gánh nặng việc nhà cùng bạn đời."
+    }
+  },
+  2: {
+    male: {
+      overview: "Nam tuổi Dần yêu đương mãnh liệt, luôn muốn bảo bọc che chở nhưng cái tôi khá cao.",
+      advice: "Hạ bớt cái tôi, nhường nhịn bạn đời khi tranh cãi để gìn giữ hạnh phúc dài lâu."
+    },
+    female: {
+      overview: "Nữ tuổi Dần độc lập, chung tình, luôn mong muốn bạn đời cùng chí hướng phát triển.",
+      advice: "Mềm mỏng đúng lúc, tránh kiểm soát thái quá để người bạn đời cảm thấy thoải mái."
+    }
+  },
+  3: {
+    male: {
+      overview: "Nam tuổi Mão dịu dàng, chu đáo, rất tâm lý và biết cách làm vui lòng người bạn đời.",
+      advice: "Cần quyết đoán hơn trong các việc lớn của gia đình, không nên né tránh mâu thuẫn."
+    },
+    female: {
+      overview: "Nữ tuổi Mão đoan trang, tinh tế, luôn mang lại sự êm ấm, thanh bình cho ngôi nhà.",
+      advice: "Tự tin bộc lộ mong muốn của bản thân, không nên giấu kín tâm sự trong lòng."
+    }
+  },
+  4: {
+    male: {
+      overview: "Nam tuổi Thìn phong độ, hào hiệp, luôn mong muốn đem lại vinh hoa cho gia đình.",
+      advice: "Cân bằng thời gian giữa công việc và gia đình, đừng để sự bận rộn làm phai nhạt tình cảm."
+    },
+    female: {
+      overview: "Nữ tuổi Thìn tài sắc, tự tin, luôn đồng hành cùng chồng vượt qua mọi sóng gió.",
+      advice: "Dành sự tôn trọng và khích lệ cho bạn đời, tránh so sánh với người khác."
+    }
+  },
+  5: {
+    male: {
+      overview: "Nam tuổi Tỵ chung tình sâu sắc, bảo vệ gia đình kỹ lưỡng, hết lòng vì người mình yêu.",
+      advice: "Tránh tính hay nghi ngờ hoặc giữ trong lòng, cần thẳng thắn trò chuyện thấu hiểu."
+    },
+    female: {
+      overview: "Nữ tuổi Tỵ duyên dáng quyến rũ, biết giữ gìn hạnh phúc và quản lý kinh tế tổ ấm tài tình.",
+      advice: "Mở lòng tin tưởng bạn đời nhiều hơn để tình cảm vợ chồng luôn gắn kết keo sơn."
+    }
+  },
+  6: {
+    male: {
+      overview: "Nam tuổi Ngọ phóng khoáng, vui vẻ, mang lại nhiều năng lượng tích cực cho hôn nhân.",
+      advice: "Học cách kiên nhẫn và gắn bó hơn với không gian gia đình, giảm bớt tiệc tùng bên ngoài."
+    },
+    female: {
+      overview: "Nữ tuổi Ngọ đảm đang, tích cực, luôn đồng cam cộng khổ cùng chồng lập nghiệp.",
+      advice: "Giữ bình tĩnh khi nóng giận, 'chồng giận thì vợ bớt lời' sẽ giữ êm ấm thuận hòa."
+    }
+  },
+  7: {
+    male: {
+      overview: "Nam tuổi Mùi ấm áp, nhân hậu, rất thương yêu vợ con và chăm chút cho tổ ấm.",
+      advice: "Mạnh mẽ và kiên quyết hơn khi đứng trước các quyết định quan trọng của đời sống."
+    },
+    female: {
+      overview: "Nữ tuổi Mùi hiền dịu, bao dung, tạo nên một mái ấm bình yên, ấm áp và hạnh phúc.",
+      advice: "Tránh nhạy cảm quá mức, tin tưởng vào tình cảm chân thành của người bạn đời."
+    }
+  },
+  8: {
+    male: {
+      overview: "Nam tuổi Thân hài hước, linh hoạt, luôn biết cách làm mới tình yêu và hóa giải căng thẳng.",
+      advice: "Nghiêm túc hơn trong các cam kết hôn nhân, tạo sự tin cậy vững bền cho bạn đời."
+    },
+    female: {
+      overview: "Nữ tuổi Thân thông minh, tháo vát, vừa giỏi việc xã hội vừa chu toàn việc nhà.",
+      advice: "Lắng nghe tâm tư của bạn đời nhiều hơn, tránh tranh luận thắng thua trong gia đình."
+    }
+  },
+  9: {
+    male: {
+      overview: "Nam tuổi Dậu chu toàn, ngăn nắp, có tinh thần trách nhiệm kinh tế cao với mái ấm.",
+      advice: "Giảm bớt sự cầu toàn và tính chỉ trích vụn vặt, học cách bao dung với khuyết điểm nhỏ."
+    },
+    female: {
+      overview: "Nữ tuổi Dậu hết lòng chăm sóc chồng con, khéo tay quán xuyến việc nhà chu tất.",
+      advice: "Tránh cằn nhằn việc nhỏ, tạo không gian thư thái vui vẻ sau giờ làm việc cho cả hai."
+    }
+  },
+  10: {
+    male: {
+      overview: "Nam tuổi Tuất chung thủy tuyệt đối, luôn bảo bọc che chở và sống rất có trách nhiệm.",
+      advice: "Cởi mở chia sẻ cảm xúc nhiều hơn, tránh im lặng chịu đựng một mình."
+    },
+    female: {
+      overview: "Nữ tuổi Tuất son sắt thủy chung, biết đồng cam cộng khổ, là điểm tựa bình yên của gia đình.",
+      advice: "Lạc quan hơn trong suy nghĩ, tránh lo lắng thái quá về tương lai chưa tới."
+    }
+  },
+  11: {
+    male: {
+      overview: "Nam tuổi Hợi bao dung, hiền hòa, không chấp nhặt, đem lại sự an vui và đủ đầy cho vợ con.",
+      advice: "Chủ động hơn trong việc vun đắp tình cảm lãng mạn, rèn luyện sức khỏe đều đặn."
+    },
+    female: {
+      overview: "Nữ tuổi Hợi vượng phu ích tử, tâm tính từ hòa, mang lại phúc khí ngập tràn cho ngôi nhà.",
+      advice: "Biết cân bằng chi tiêu gia đình, giữ vững tinh thần lạc quan tự tin vốn có."
+    }
+  }
+};
+
+const LIFE_STAGES_BY_GENDER_DATA: Record<number, Record<"male" | "female", LifeStageFortune[]>> = {
+  0: {
+    male: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Tích Lũy Kinh Nghiệm & Khởi Sự",
+        overview: "Thời kỳ nhiều biến động và trải nghiệm, đầu óc nhanh nhạy giúp bạn sớm nắm bắt thời cơ lập nghiệp.",
+        careerFinance: "Tài chính lúc đầu thăng trầm, có những bài học quý báu về đầu tư và chọn đối tác.",
+        familyLove: "Đường tình duyên có đôi chút lận đận ban đầu, sau 26 tuổi dần ổn định."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Gây Dựng Cơ Đồ & Phát Đạt",
+        overview: "Giai đoạn hoàng kim nở rộ, kinh nghiệm dày dặn kết hợp mưu lược giúp bạn tạo dựng sự nghiệp vững chắc.",
+        careerFinance: "Công danh thăng tiến vượt bậc, tài lộc dồi dào, tích lũy được điền sản lớn.",
+        familyLove: "Gia đình yên ấm, vợ chồng đồng lòng phát triển kinh tế, con cái ngoan ngoãn."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Hưởng Phúc An Nhàn & Đức Lưu Quang",
+        overview: "Cuộc sống viên mãn, thảnh thơi hưởng thành quả lao động cả đời, con cháu thành danh.",
+        careerFinance: "Tài sản dồi dào, kinh tế vững chãi, chuyển giao kinh nghiệm cho thế hệ sau.",
+        familyLove: "Gia đạo đề huề, con cháu sum vầy hiếu thảo, tâm an trí sáng."
+      }
+    ],
+    female: [
+      {
+        stage: "Tiền vận",
+        ageRange: "Dưới 30 tuổi",
+        title: "Học Hỏi & Khẳng Định Bản Thân",
+        overview: "Tuổi trẻ chăm chỉ, tháo vát, sớm tự lập và có định hướng công việc rõ ràng.",
+        careerFinance: "Thu nhập ổn định, biết chi tiêu tiết kiệm và tích lũy thông minh.",
+        familyLove: "Được nhiều người theo đuổi, tình duyên tươi đẹp, sớm tìm được bến đỗ bình yên."
+      },
+      {
+        stage: "Trung vận",
+        ageRange: "31 - 50 tuổi",
+        title: "Vượng Phu Ích Tử & Sung Túc",
+        overview: "Thời kỳ đỉnh cao của tài lộc và hạnh phúc, gia đình và sự nghiệp đều thăng hoa rực rỡ.",
+        careerFinance: "Tay hòm chìa khóa tài tình, kinh tế gia đình ngày một phát đạt hưng vượng.",
+        familyLove: "Chồng thành đạt, con cái chăm ngoan đỗ đạt, gia đạo luôn ấm êm hòa thuận."
+      },
+      {
+        stage: "Hậu vận",
+        ageRange: "Từ 51 tuổi trở đi",
+        title: "Phúc Lộc Viên Mãn & An Nhiên",
+        overview: "Tuổi già thảnh thơi, không phải lo âu về vật chất, hưởng trọn phúc đức trời ban.",
+        careerFinance: "Điền sản sung túc, của ăn của để dồi dào.",
+        familyLove: "Con cháu thành đạt hiếu thảo, gia tộc rạng rỡ danh tiếng."
+      }
+    ]
+  }
+};
+
+// Generic fallback generator for life stages for other animals
+function getLifeStagesForAnimal(chiIdx: number, gender: "male" | "female"): LifeStageFortune[] {
+  if (LIFE_STAGES_BY_GENDER_DATA[chiIdx]?.[gender]) {
+    return LIFE_STAGES_BY_GENDER_DATA[chiIdx][gender];
+  }
+  const isMale = gender === "male";
+  return [
+    {
+      stage: "Tiền vận",
+      ageRange: "Dưới 30 tuổi",
+      title: isMale ? "Xông Pha Trải Nghiệm & Lập Thân" : "Rèn Giũa Tài Năng & Khởi Đầu Thuận Lợi",
+      overview: "Thời kỳ học hỏi, tích lũy vốn sống và đối mặt với thử thách để tôi luyện bản lĩnh vững vàng.",
+      careerFinance: "Tài chính bước đầu gây dựng, có lúc lên bổng xuống trầm nhưng tôi luyện ý chí kiên định.",
+      familyLove: "Tình cảm tuổi trẻ nồng nhiệt, qua vài mối duyên sẽ tìm thấy người bạn đời đích thực."
+    },
+    {
+      stage: "Trung vận",
+      ageRange: "31 - 50 tuổi",
+      title: isMale ? "Đại Vận Hanh Thông & Khẳng Định Vị Thế" : "Gia Đạo Hưng Vượng & Sự Nghiệp Viên Mãn",
+      overview: "Giai đoạn hoàng kim rực rỡ nhất trong cuộc đời, thiên thời địa lợi nhân hòa đều tụ hội.",
+      careerFinance: "Công việc kinh doanh thăng tiến, nắm giữ trọng trách, tiền tài tích lũy vững chãi.",
+      familyLove: "Vợ chồng hòa hợp đồng tâm, con cái học hành đỗ đạt, gia đạo luôn tràn đầy tiếng cười."
+    },
+    {
+      stage: "Hậu vận",
+      ageRange: "Từ 51 tuổi trở đi",
+      title: "An Nhàn Hưởng Phúc & Di Sản Trường Tồn",
+      overview: "Cuộc sống an nhiên tự tại, hưởng thụ thành quả sự nghiệp, phúc lộc trường tồn.",
+      careerFinance: "Của cải điền sản vững vàng, sống dư dả không bận tâm gánh nặng cơm áo gạo tiền.",
+      familyLove: "Con cháu vinh hiển, gia tộc hưng thịnh, tinh thần thanh thản bình an."
+    }
+  ];
+}
+
+export function getSaoHan2026(lunarAge: number, gender: "male" | "female"): SaoHan2026Info {
+  const saoNam = [
+    { name: "La Hầu", type: "Hung tinh" as const, desc: "Chủ về khẩu thiệt thị phi, hao tài tốn của, bệnh mắt tai, cần đặc biệt lưu ý tháng Giêng và tháng 7 Âm lịch." },
+    { name: "Thổ Tú", type: "Trung tinh" as const, desc: "Khởi đầu có chút trắc trở gian nan nhưng hậu vận hanh thông. Cần giữ gia đạo hòa thuận, kỵ tháng 4 và 8 Âm lịch." },
+    { name: "Thủy Diệu", type: "Cát tinh" as const, desc: "Cát tinh chủ về tài lộc hưng thịnh, có hỷ sự bất ngờ, song cần chú ý khi đi lại vùng sông nước, cẩn trọng tháng 4 và 8." },
+    { name: "Thái Bạch", type: "Hung tinh" as const, desc: "Hung tinh hao tài nặng nhất ('Thái Bạch quét sạch cửa nhà'). Cần giữ gìn tài chính chặt chẽ, tránh vay mượn mạo hiểm, kỵ tháng 5." },
+    { name: "Thái Dương", type: "Cát tinh" as const, desc: "Đại cát tinh rực rỡ nhất cho Nam mạng. Vượng khí công danh thăng tiến, kinh doanh bội thu, may mắn đỉnh điểm tháng 6 và 10." },
+    { name: "Vân Hớn", type: "Trung tinh" as const, desc: "Vận thế bình hòa, tránh nóng nảy và bảo thủ, giữ gìn lời ăn tiếng nói nơi công sở để tránh thị phi, cẩn trọng tháng 2 và 8." },
+    { name: "Kế Đô", type: "Hung tinh" as const, desc: "Ám muội, buồn phiền, hao tài nhẹ, cần giữ tâm thái bình an và làm nhiều việc thiện tích đức, kỵ tháng 3 và 9." },
+    { name: "Thái Âm", type: "Cát tinh" as const, desc: "Cát tinh chủ về danh lợi song toàn, được quý nhân nâng đỡ, toại nguyện ước mơ cầu tài, tháng 9 Âm lịch vượng phát nhất." },
+    { name: "Mộc Đức", type: "Cát tinh" as const, desc: "Cát tinh may mắn về hôn nhân, tài lộc phát đạt, được bạn bè đối tác tương trợ, tháng Chạp (tháng 12) đắc tài đắc lộc." }
+  ];
+
+  const saoNu = [
+    { name: "Kế Đô", type: "Hung tinh" as const, desc: "Hung tinh lớn đối với Nữ mạng, dễ vướng thị phi tình cảm, bệnh vặt, cần giữ tâm an tịnh, cẩn trọng tháng 3 và tháng 9 Âm lịch." },
+    { name: "Vân Hớn", type: "Trung tinh" as const, desc: "Vận thế trung bình, cần chú ý sức khỏe sinh sản, việc bếp núc lửa nước, tránh khẩu thiệt tranh cãi, kỵ tháng 2 và 8." },
+    { name: "Mộc Đức", type: "Cát tinh" as const, desc: "Cát tinh mang lại an vui, gia đạo hòa thuận êm ấm, có tin vui về con cái hoặc sự nghiệp, đặc biệt vượng tháng 10 và 12." },
+    { name: "Thái Âm", type: "Cát tinh" as const, desc: "Đệ nhất cát tinh cho Nữ mạng, tài chính dồi dào, tình cảm thăng hoa, mưu sự lớn dễ thành công rực rỡ, tháng 9 Âm lịch may mắn nhất." },
+    { name: "Thổ Tú", type: "Trung tinh" as const, desc: "Có chút trăn trở lo toan trong nội tâm, xuất hành cần cẩn trọng và giữ gìn hòa khí gia đình, kỵ tháng 4 và 8." },
+    { name: "La Hầu", type: "Hung tinh" as const, desc: "Dễ gặp chuyện phiền muộn, cần đề phòng thị phi nói xấu sau lưng, giữ gìn sức khỏe tai mắt, kỵ tháng Giêng và tháng 7." },
+    { name: "Thái Dương", type: "Cát tinh" as const, desc: "Cát tinh mang lại sự tự tin, tháo vát, công việc làm ăn buôn bán hanh thông, gia đạo bình an, vượng tháng 6 và 10." },
+    { name: "Thái Bạch", type: "Hung tinh" as const, desc: "Hạn hao tài tốn của, tránh cho vay mượn hoặc đầu tư rủi ro cao, chú ý sức khỏe đường hô hấp, kỵ tháng 5 Âm lịch." },
+    { name: "Thủy Diệu", type: "Cát tinh" as const, desc: "Cát tinh chủ về hỷ khí, tài lộc dồi dào, tình duyên êm đẹp, tuy nhiên tránh đi sông biển xa vào tháng 4 và 8." }
+  ];
+
+  const saoIdx = ((lunarAge - 10) % 9 + 9) % 9;
+  const sao = gender === "male" ? saoNam[saoIdx] : saoNu[saoIdx];
+
+  const hanList = [
+    { name: "Huỳnh Tuyền", desc: "Hạn chủ về sức khỏe, kỵ đi lại đường sông nước, đề phòng bệnh đau đầu chóng mặt." },
+    { name: "Tam Kheo", desc: "Hạn chủ về tay chân xương khớp, đau mắt, cần chú ý khi vận động thể thao hay đi lại ban đêm." },
+    { name: "Ngũ Thổ (Ngũ Hộ)", desc: "Hạn về thị phi, tâm lý lo âu bất an, tránh tin người nhẹ dạ hay bảo lãnh người khác." },
+    { name: "Thiên Tinh", desc: "Hạn chủ về ăn uống, ngộ độc thực phẩm, đề phòng kiện tụng hay tai bay vạ gió." },
+    { name: "Toán Tận", desc: "Đại hạn về tiền bạc, cẩn trọng cướp giật, mất mát tài sản bất ngờ, không nên mang theo nhiều tiền bạc." },
+    { name: "Thiên La", desc: "Hạn tâm lý, mất ngủ, áp lực tinh thần, cần giữ hòa khí vợ chồng tránh mâu thuẫn lục đục." },
+    { name: "Địa Võng", desc: "Đề phòng tiểu nhân ghen ghét vu oan, tránh đi xa vào ban đêm hay dính líu việc bao đồng." },
+    { name: "Diêm Vương", desc: "Kỵ phụ nữ ốm đau hoặc sinh nở, nhưng lại có lộc lớn cho người làm ăn kinh doanh buôn bán." }
+  ];
+
+  const hanIdx = ((lunarAge - 18) % 8 + 8) % 8;
+  const han = hanList[hanIdx];
+
+  const isGoodSao = sao.type === "Cát tinh";
+  const yearOverview = `Năm 2026 (Bính Ngọ), tuổi mụ của bạn là ${lunarAge} tuổi. Bạn được chiếu mệnh bởi sao ${sao.name} (${sao.type}) và gặp hạn niên ${han.name}. ${isGoodSao ? "Vận trình năm nay có nhiều cát khí hanh thông, công việc và tài chính có nhiều bước tiến thuận lợi nếu biết nắm bắt thời cơ." : "Năm nay cần chú trọng dĩ hòa vi quý, thận trọng trong việc đầu tư lớn và chăm sóc sức khỏe gia đình để hóa nguy thành an."}`;
+
+  const favorableMonths = isGoodSao ? [1, 4, 6, 8, 10, 12] : [2, 6, 10];
+  const cautionMonths = sao.name === "Thái Bạch" ? [5] :
+                        sao.name === "La Hầu" ? [1, 7] :
+                        sao.name === "Kế Đô" ? [3, 9] :
+                        sao.name === "Thổ Tú" ? [4, 8] : [5, 7];
+
+  return {
+    lunarAge,
+    sao: sao.name,
+    saoType: sao.type,
+    saoDescription: sao.desc,
+    han: han.name,
+    hanDescription: han.desc,
+    yearOverview,
+    favorableMonths,
+    cautionMonths
+  };
+}
+
+export function getDetailedBirthFortune(profile: UserBirthProfile): DetailedBirthFortune {
+  let solarDay = profile.day;
+  let solarMonth = profile.month;
+  let solarYear = profile.year;
+
+  if (profile.isLunar) {
+    const solarRes = convertLunarToSolar(profile.day, profile.month, profile.year, false);
+    if (solarRes) {
+      solarDay = solarRes.day;
+      solarMonth = solarRes.month;
+      solarYear = solarRes.year;
+    }
+  }
+
+  const lunarDate = getLunarDate(solarDay, solarMonth, solarYear);
+  const personalProfile = getPersonalProfile(profile.year);
+  const isMale = profile.gender === "male";
+  const cungPhi = isMale ? personalProfile.cungMenh.menhNam : personalProfile.cungMenh.menhNu;
+  const cungPhiGroup = isMale ? personalProfile.cungMenh.nhomNam : personalProfile.cungMenh.nhomNu;
+  const cungPhiElement = cungPhi.includes("Thủy") ? "Thủy" :
+                         cungPhi.includes("Hỏa") ? "Hỏa" :
+                         cungPhi.includes("Kim") ? "Kim" :
+                         cungPhi.includes("Mộc") ? "Mộc" : "Thổ";
+
+  const batTrachDirections = getBatTrachDetails(cungPhi);
+  const westernZodiac = getWesternZodiac(solarDay, solarMonth);
+  const numerology = calculateLifePathNumber(solarDay, solarMonth, solarYear);
+
+  const chiIdx = personalProfile.chiIndex;
+  const personality = PERSONALITY_BY_GENDER_DATA[chiIdx]?.[profile.gender] || {
+    title: isMale ? "Quân Tử Trực Trọng" : "Thục Nữ Chu Toàn",
+    coreTraits: "Thông minh, đĩnh đạc, có tinh thần cầu tiến và ý chí phấn đấu mạnh mẽ.",
+    strengths: "Kiên nhẫn, chân thành, có tinh thần trách nhiệm cao đối với gia đình và xã hội.",
+    socialStyle: "Dễ gần, biết lắng nghe và luôn nhận được sự tôn trọng từ bạn bè, đồng nghiệp."
+  };
+
+  const marriageData = MARRIAGE_BY_GENDER_DATA[chiIdx]?.[profile.gender];
+  const loveMarriage = {
+    overview: marriageData?.overview || "Tình duyên êm đẹp, đời sống hôn nhân viên mãn nếu biết thấu hiểu và sẻ chia cùng bạn đời.",
+    bestAges: personalProfile.tamHop.concat([personalProfile.lucHop]),
+    challengingAges: personalProfile.tuHanhXung,
+    advice: marriageData?.advice || "Dĩ hòa vi quý, tôn trọng không gian riêng của người bạn đời sẽ giúp mái ấm mãi đong đầy hạnh phúc."
+  };
+
+  const lifeStages = getLifeStagesForAnimal(chiIdx, profile.gender);
+  const lunarAge = 2026 - profile.year + 1;
+  const saoHan2026 = getSaoHan2026(lunarAge, profile.gender);
+
+  return {
+    profile,
+    solarDate: { day: solarDay, month: solarMonth, year: solarYear },
+    lunarDate,
+    personalProfile,
+    cungPhi,
+    cungPhiGroup,
+    cungPhiElement,
+    batTrachDirections,
+    westernZodiac,
+    numerology,
+    personalityByGender: personality,
+    loveMarriage,
+    lifeStages,
+    saoHan2026
   };
 }
