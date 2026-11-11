@@ -2566,88 +2566,88 @@ const HOUR_CHI_TRAITS: Record<number, {
   childrenLateLife: string;
 }> = {
   0: {
-    title: "Thủy Nhuận Thiên Hà • Minh Châu Xuất Hải",
-    overview: "Sinh vào giờ Tý (23h-1h) là thời khắc Âm cực sinh Dương, vạn vật bắt đầu chuyển mình đón vận hội mới. Người sinh giờ này mang trí tuệ uyên bác, nhạy bén thời cuộc.",
-    personality: "Thông minh sắc sảo, giàu mưu lược, khả năng quan sát tinh tường và độc lập tự chủ từ sớm.",
-    careerWealth: "Có duyên với thương mại, tài chính, công nghệ hoặc quản trị. Trung vận dễ nắm bắt cơ hội lớn để bứt phá tài sản.",
-    childrenLateLife: "Cung Tử Tức vượng khí, con cái hiếu thảo thông tuệ; hậu vận an nhàn, phúc lộc dồi dào."
+    title: "Trí Tuệ Sắc Bén • Tự Lập Thành Công",
+    overview: "Sinh vào giờ Tý (23:00 - 00:59) là thời khắc chuyển giao sang ngày mới. Người sinh giờ này có đầu óc nhạy bén, suy nghĩ thấu đáo và biết nắm bắt cơ hội sớm.",
+    personality: "Thông minh, sắc sảo, quan sát tinh tế và có tính tự lập từ nhỏ.",
+    careerWealth: "Phù hợp với kinh doanh, tài chính, công nghệ hoặc quản lý. Từ sau tuổi 30 dễ nắm bắt cơ hội lớn để tích lũy tài sản.",
+    childrenLateLife: "Đường con cái thuận lợi, con ngoan và hiếu thảo; tuổi già an nhàn, đủ đầy."
   },
   1: {
-    title: "Kim Ngưu Canh Điền • Kiên Tâm Đại Thành",
-    overview: "Sinh vào giờ Sửu (1h-3h) là lúc đất trời tĩnh lặng tích tụ nguyên khí. Người sinh giờ Sửu có ý chí bền bỉ phi thường, làm việc gì cũng chắc chắn tới cùng.",
-    personality: "Điềm tĩnh, thực tế, trọng chữ tín, nội tâm sâu sắc, không bao giờ khuất phục trước nghịch cảnh.",
-    careerWealth: "Hợp điền sản, đầu tư dài hạn, kỹ thuật, xây dựng hoặc quản lý vận hành. Tiền bạc tích tụ ngày một dày theo năm tháng.",
-    childrenLateLife: "Con cái ngoan ngoãn, tự lập sớm; tuổi già có của ăn của để và điền trạch vững vàng."
+    title: "Kiên Trì Bền Bỉ • Hậu Vận Sung Túc",
+    overview: "Sinh vào giờ Sửu (01:00 - 02:59) là lúc đất trời tĩnh lặng. Người sinh giờ Sửu có ý chí bền bỉ, làm việc gì cũng chắc chắn và có trách nhiệm tới cùng.",
+    personality: "Điềm tĩnh, thực tế, giữ chữ tín, ít nói nhưng làm nhiều và rất kiên cường trước khó khăn.",
+    careerWealth: "Hợp với đầu tư dài hạn, bất động sản, kỹ thuật, xây dựng hoặc vận hành. Tiền bạc tích lũy chắc chắn theo thời gian.",
+    childrenLateLife: "Con cái ngoan ngoãn, tự lập sớm; tuổi già có nhà cửa, đất đai vững vàng."
   },
   2: {
-    title: "Bình Minh Hổ Khiếu • Quyền Uy Khai Vận",
-    overview: "Sinh vào giờ Dần (3h-5h) là thời khắc dương khí bừng tỉnh nơi chân trời. Người sinh giờ Dần mang khí phách tiên phong, dám nghĩ dám làm.",
-    personality: "Quyết đoán, nhiệt huyết, có tố chất thủ lĩnh bẩm sinh, thẳng thắn và giàu lòng nghĩa hiệp.",
-    careerWealth: "Thuận lợi khởi nghiệp, lãnh đạo tổ chức, kinh doanh tự do hoặc mở rộng thị trường mới. Lộc phát mạnh từ tuổi 32 trở đi.",
-    childrenLateLife: "Con cái mạnh mẽ, thành đạt, làm rạng danh gia tộc; hậu vận có danh vọng và uy tín cao."
+    title: "Bản Lĩnh Tiên Phong • Sự Nghiệp Vững Vàng",
+    overview: "Sinh vào giờ Dần (03:00 - 04:59) là lúc bình minh sắp ló rạng. Người sinh giờ Dần có chí tiến thủ lớn, mạnh mẽ và dám nghĩ dám làm.",
+    personality: "Quyết đoán, nhiệt huyết, có tố chất dẫn dắt tập thể, thẳng thắn và trọng nghĩa khí.",
+    careerWealth: "Thuận lợi tự mở đường lập nghiệp, quản lý đội nhóm hoặc kinh doanh. Sự nghiệp phát triển mạnh từ tuổi 32 trở đi.",
+    childrenLateLife: "Con cái mạnh mẽ, thành đạt; hậu vận có uy tín và vị thế vững chắc."
   },
   3: {
-    title: "Hồng Nhật Đông Thăng • Quý Nhân Tương Trợ",
-    overview: "Sinh vào giờ Mão (5h-7h) khi mặt trời vừa ló rạng, vạn vật đón ánh bình minh tươi sáng. Bản mệnh sinh giờ này phúc khí thanh tao, đi đâu cũng gặp quý nhân.",
-    personality: "Nhã nhặn, tinh tế, khéo léo đắc nhân tâm, tư duy sáng tạo và giàu lòng nhân ái.",
-    careerWealth: "Ngoại giao rộng mở, rất hợp văn hóa, giáo dục, nghệ thuật, y dược, dịch vụ cao cấp hoặc tư vấn chiến lược.",
-    childrenLateLife: "Gia đạo êm ấm thuận hòa, con cái hiếu thuận; hậu vận thanh nhàn, hưởng phúc trời ban."
+    title: "Mặt Trời Đón Nắng • Quý Nhân Giúp Đỡ",
+    overview: "Sinh vào giờ Mão (05:00 - 06:59) khi mặt trời vừa mọc, vạn vật đón ánh sáng mới. Người sinh giờ này thường có phúc khí tốt, ra ngoài hay gặp người tốt giúp đỡ.",
+    personality: "Nhã nhặn, tinh tế, ứng xử khéo léo, giàu lòng nhân ái và được nhiều người quý mến.",
+    careerWealth: "Giao tiếp rộng mở, rất hợp với giáo dục, văn hóa, nghệ thuật, y dược, dịch vụ hoặc tư vấn chuyên môn.",
+    childrenLateLife: "Gia đình êm ấm thuận hòa, con cái hiếu thảo; tuổi già thanh nhàn, bình yên."
   },
   4: {
-    title: "Phi Long Tại Thiên • Hoài Bão Lớn Lao",
-    overview: "Sinh vào giờ Thìn (7h-9h) khi nắng sớm rực rỡ bốn phương. Người sinh giờ Thìn mang tầm nhìn xa rộng, khí chất đĩnh đạc và khát vọng vươn lên đỉnh cao.",
-    personality: "Tự tin, năng động, trọng danh dự, có khả năng quy tụ nhân tâm và giải quyết việc lớn.",
-    careerWealth: "Sự nghiệp có bước nhảy vọt ngoạn mục ở trung vận, vượng cả Chính Quan lẫn Chính Tài, dễ nắm giữ trọng trách.",
-    childrenLateLife: "Đường con cái hiển vinh, gia门 hưng thịnh; hậu vận phú quý song toàn."
+    title: "Hoài Bão Lớn Lao • Công Danh Rộng Mở",
+    overview: "Sinh vào giờ Thìn (07:00 - 08:59) khi nắng sớm ban mai trải rộng. Người sinh giờ Thìn có tầm nhìn xa, tự tin và luôn nỗ lực vươn lên vị trí cao.",
+    personality: "Năng động, đĩnh đạc, trọng danh dự, có khả năng kết nối mọi người và giải quyết việc lớn.",
+    careerWealth: "Sự nghiệp có bước tiến mạnh ở tuổi trung niên, thuận lợi cả về chức vụ lẫn thu nhập.",
+    childrenLateLife: "Con cái học hành đỗ đạt, gia đình hưng thịnh; hậu vận sung túc, viên mãn."
   },
   5: {
-    title: "Nam Phong Tụ Lộc • Trí Tuệ Thâm Sâu",
-    overview: "Sinh vào giờ Tỵ (9h-11h) khi dương hỏa đang đà hưng vượng. Người sinh giờ Tỵ có trực giác nhạy bén, đầu óc phân tích sắc sảo và biết nắm bắt thời cơ vàng.",
-    personality: "Khôn khéo, sâu sắc, hành sự kín kẽ, bề ngoài điềm đạm nhưng bên trong luôn có kế sách chu toàn.",
-    careerWealth: "Giỏi đầu tư, kinh doanh thương mại, nghiên cứu chuyên sâu hoặc tài chính. Tài lộc đến từ cả công việc chính lẫn nguồn thu phụ.",
-    childrenLateLife: "Con cái thông minh hiếu học, gia đình sung túc; tuổi già an vui viên mãn."
+    title: "Nhạy Bén Thời Cơ • Vượng Lộc Kinh Doanh",
+    overview: "Sinh vào giờ Tỵ (09:00 - 10:59) khi ánh nắng đang lên cao. Người sinh giờ Tỵ có trực giác nhạy bén, suy nghĩ sâu sắc và biết chớp thời cơ tốt.",
+    personality: "Khôn khéo, cẩn trọng, bề ngoài điềm đạm nhưng bên trong luôn có kế hoạch rõ ràng.",
+    careerWealth: "Giỏi đầu tư, buôn bán thương mại, tài chính hoặc nghiên cứu chuyên môn. Có cả nguồn thu chính lẫn nghề tay trái.",
+    childrenLateLife: "Con cái thông minh hiếu học, gia đình khá giả; tuổi già an vui."
   },
   6: {
-    title: "Nhật Chính Trung Thiên • Quang Minh Rực Rỡ",
-    overview: "Sinh vào giờ Ngọ (11h-13h) là lúc mặt trời đứng bóng, dương khí cực thịnh. Bản mệnh sinh giờ Ngọ có tâm hồn hào sảng, chính trực và tràn đầy sinh lực.",
-    personality: "Nhiệt thành, phóng khoáng, quang minh lỗi lạc, có sức truyền cảm hứng mạnh mẽ cho mọi người xung quanh.",
-    careerWealth: "Danh tiếng dễ vang xa, hợp các ngành truyền thông, quản lý, kinh doanh, đối ngoại hoặc nghệ thuật biểu đạt.",
-    childrenLateLife: "Hậu vận rực rỡ, con cháu đông vui thành đạt, cuộc sống tuổi già đầy đủ vật chất lẫn tinh thần."
+    title: "Năng Lượng Rực Rỡ • Danh Tiếng Vang Xa",
+    overview: "Sinh vào giờ Ngọ (11:00 - 12:59) lúc mặt trời đứng bóng. Người sinh giờ Ngọ sống nhiệt thành, ngay thẳng, tràn đầy năng lượng tích cực.",
+    personality: "Hào sảng, cởi mở, thẳng thắn, dễ tạo thiện cảm và truyền cảm hứng cho người xung quanh.",
+    careerWealth: "Dễ tạo dựng tên tuổi trong công việc, hợp quản lý, kinh doanh, truyền thông, đối ngoại hoặc nghệ thuật.",
+    childrenLateLife: "Hậu vận rực rỡ, con cháu đông vui thành đạt, đời sống vật chất và tinh thần đều đầy đủ."
   },
   7: {
-    title: "Thổ Hậu Tàng Kim • Phúc Lộc Bền Lâu",
-    overview: "Sinh vào giờ Mùi (13h-15h) khi nắng chiều dịu lại, đất đai ấm áp nuôi dưỡng vạn vật. Người sinh giờ Mùi có hậu phúc lớn, càng về sau càng thịnh vượng.",
-    personality: "Điềm đạm, bao dung, chu đáo, kiên trì và có năng khiếu thẩm mỹ cũng như quản lý tài sản rất tốt.",
-    careerWealth: "Tài vận ổn định, vượng điền trạch nhà đất, hợp bất động sản, y tế, giáo dục, ẩm thực hoặc quản trị tài chính.",
-    childrenLateLife: "Gia đình hòa목, con cái hiếu nghĩa, hậu vận tích lũy được cơ ngơi vững chắc."
+    title: "Điềm Đạm Chắc Chắn • Vượng Lộc Nhà Đất",
+    overview: "Sinh vào giờ Mùi (13:00 - 14:59) khi nắng chiều dịu nhẹ. Người sinh giờ Mùi sống tình cảm, cẩn thận, càng về trung và hậu vận càng phát đạt.",
+    personality: "Điềm đạm, bao dung, chu đáo, kiên nhẫn và biết cách quản lý tiền bạc, tài sản.",
+    careerWealth: "Thu nhập ổn định, rất có duyên tích lũy nhà đất, hợp bất động sản, y tế, giáo dục, ẩm thực hoặc tài chính.",
+    childrenLateLife: "Gia đình hòa thuận, con cái hiếu thảo, hậu vận có cơ ngơi vững chắc."
   },
   8: {
-    title: "Kim Phong Tống Sảng • Ứng Biến Tài Tình",
-    overview: "Sinh vào giờ Thân (15h-17h) khi gió thu mát lành, trí tuệ minh mẫn. Người sinh giờ Thân cực kỳ linh hoạt, đa tài và giỏi xoay chuyển cục diện.",
-    personality: "Nhanh nhạy, hoạt ngôn, sáng tạo, thích khám phá cái mới và thích nghi nhanh với mọi môi trường.",
-    careerWealth: "Đắc lộc phương xa hoặc qua giao thương quốc tế, công nghệ, thương mại điện tử, logistics, tài chính.",
-    childrenLateLife: "Con cái năng động, tài giỏi; hậu vận thảnh thơi đi du lịch và tận hưởng thành quả."
+    title: "Nhanh Nhạy Đa Tài • Phát Triển Phương Xa",
+    overview: "Sinh vào giờ Thân (15:00 - 16:59) khi gió chiều mát mẻ, đầu óc minh mẫn. Người sinh giờ Thân linh hoạt, đa tài và thích nghi rất nhanh.",
+    personality: "Nhanh trí, giao tiếp tốt, sáng tạo, thích học hỏi điều mới và xoay xở giỏi trong mọi hoàn cảnh.",
+    careerWealth: "Đi xa lập nghiệp hoặc làm việc liên quan đến giao thương, công nghệ, thương mại, vận tải, tài chính rất thuận lợi.",
+    childrenLateLife: "Con cái năng động, giỏi giang; tuổi già thảnh thơi tận hưởng thành quả."
   },
   9: {
-    title: "Hoàng Hôn Tụ Bảo • Tinh Hoa Kết Trái",
-    overview: "Sinh vào giờ Dậu (17h-19h) là thời khắc thu hoạch thành quả sau một ngày dài. Bản mệnh sinh giờ Dậu có số hưởng lộc tinh hoa, làm việc chu toàn tỉ mỉ.",
-    personality: "Nguyên tắc, thẩm mỹ tinh tế, trọng chữ tín, cầu toàn và rất biết cách quản lý tiền bạc.",
-    careerWealth: "Vượng Thiên Tài & Chính Tài, hợp tài chính ngân hàng, trang sức, luật, kiểm toán, nghệ thuật hoặc kinh doanh cao cấp.",
-    childrenLateLife: "Cung Tử Tức tốt đẹp, con cái nên người; hậu vận an nhàn, tài khố sung túc."
+    title: "Chu Toàn Tỉ Mỉ • Giữ Vững Tài Lộc",
+    overview: "Sinh vào giờ Dậu (17:00 - 18:59) là giờ thu hoạch sau một ngày lao động. Người sinh giờ Dậu làm việc chu đáo, có số giữ được tiền của.",
+    personality: "Nguyên tắc, thẩm mỹ tốt, trọng chữ tín, cẩn thận và quản lý chi tiêu rất khéo.",
+    careerWealth: "Thuận lợi về tiền bạc, hợp tài chính ngân hàng, kế toán, kiểm toán, pháp lý, nghệ thuật hoặc kinh doanh.",
+    childrenLateLife: "Đường con cái tốt đẹp, con cái nên người; hậu vận an nhàn, kinh tế vững vàng."
   },
   10: {
-    title: "Tinh Hà Chiếu Mệnh • Trung Nghĩa Vững Vàng",
-    overview: "Sinh vào giờ Tuất (19h-21h) khi đèn hoa lên sáng, gia đình sum họp. Người sinh giờ Tuất sống rất trọng tình nghĩa, có trách nhiệm cao và trực giác tâm linh nhạy bén.",
-    personality: "Chính trực, thủy chung, kiên định, biết lo xa và luôn là chỗ dựa vững chắc cho người thân.",
-    careerWealth: "Sự nghiệp bền vững nhờ uy tín cá nhân, hợp quản lý, kỹ thuật, y dược, bất động sản hoặc dịch vụ cộng đồng.",
-    childrenLateLife: "Vợ chồng đồng lòng, con cháu hiếu thảo quây quần; tuổi già bình an phúc thọ."
+    title: "Trọng Tình Trọng Nghĩa • Gia Đạo Bình An",
+    overview: "Sinh vào giờ Tuất (19:00 - 20:59) khi mọi người sum họp bên gia đình. Người sinh giờ Tuất sống chân thành, có trách nhiệm cao và biết lo xa.",
+    personality: "Chính trực, chung thủy, kiên định, luôn hết lòng bảo vệ và chăm lo cho người thân.",
+    careerWealth: "Sự nghiệp bền vững nhờ chữ tín, hợp quản lý, kỹ thuật, y dược, bất động sản hoặc công việc xã hội.",
+    childrenLateLife: "Vợ chồng đồng lòng, con cháu hiếu thảo quây quần; tuổi già bình an, mạnh khỏe."
   },
   11: {
-    title: "Phúc Hải Dung Nạp • An Nhiên Tự Tại",
-    overview: "Sinh vào giờ Hợi (21h-23h) khi vạn vật nghỉ ngơi trong sự bình yên. Người sinh giờ Hợi có thiên tính hiền hòa, tấm lòng độ lượng nên dễ chiêu cảm phúc báo lớn.",
-    personality: "Nhân hậu, khoan dung, lạc quan, sống tình cảm và có duyên ngầm thu hút quý nhân giúp đỡ.",
-    careerWealth: "Lộc tự nhiên tìm đến, ít phải bon chen cực nhọc, hợp thương mại, ẩm thực, du lịch, tài chính hoặc sáng tạo.",
-    childrenLateLife: "Con đàn cháu đống, gia đạo ấm êm, hậu vận hưởng trọn phúc lộc thọ."
+    title: "Phúc Hậu An Nhiên • Hưởng Lộc Trời Ban",
+    overview: "Sinh vào giờ Hợi (21:00 - 22:59) khi đêm về yên tĩnh. Người sinh giờ Hợi có tính tình hiền hòa, rộng lượng nên hay gặp may mắn tự nhiên.",
+    personality: "Nhân hậu, bao dung, lạc quan, sống tình cảm và luôn được bạn bè, đồng nghiệp yêu quý.",
+    careerWealth: "Tài lộc đến tự nhiên, ít phải bon chen vất vả, hợp thương mại, ẩm thực, du lịch, tài chính hoặc dịch vụ.",
+    childrenLateLife: "Con cháu sum vầy, gia đình ấm êm, hậu vận hưởng trọn phúc lộc."
   }
 };
 
@@ -2705,27 +2705,27 @@ export function buildFourPillarsAndHourFortune(
   };
 
   const yearPillar = makePillar(
-    "Trụ Năm (Niên Trụ)",
-    "Cội rễ Tổ tiên • Tiền vận (1 - 16 tuổi)",
+    "Trụ Năm (Năm sinh)",
+    "1 - 16 tuổi • Gia đình & Niên thiếu",
     yearCanIdx,
     yearChiIdx,
-    "Biểu trưng cho phúc đức gia tộc, nền tảng xuất thân và vận khí thuở thiếu thời."
+    "Thể hiện phúc đức dòng họ, nền tảng gia đình và vận may thuở nhỏ."
   );
 
   const monthPillar = makePillar(
-    "Trụ Tháng (Nguyệt Trụ)",
-    "Cha mẹ & Huynh đệ • Thanh vận (17 - 32 tuổi)",
+    "Trụ Tháng (Tháng sinh)",
+    "17 - 32 tuổi • Cha mẹ & Lập nghiệp",
     monthCanIdx,
     monthChiIdx,
-    "Quyết định khí tiết mùa sinh (Nguyệt Lệnh), môi trường lập nghiệp và sức bật tuổi trẻ."
+    "Thể hiện môi trường trưởng thành, sự hỗ trợ của người thân và sức bật tuổi trẻ."
   );
 
   const dayPillar = makePillar(
-    "Trụ Ngày (Nhật Chủ)",
-    "Bản mệnh & Bạn đời • Trung vận (33 - 48 tuổi)",
+    "Trụ Ngày (Ngày sinh)",
+    "33 - 48 tuổi • Bản thân & Hôn nhân",
     dayCanIdx,
     dayChiIdx,
-    "Thiên Can ngày là Nhật Chủ (bản thân), Địa Chi ngày là Cung Phu Thê (hôn nhân & nội tâm)."
+    "Đại diện trực tiếp cho tính cách cốt lõi của bạn, người bạn đời và giai đoạn sự nghiệp chính."
   );
 
   const hasValidHour = typeof birthHour === "number" && birthHour >= 0 && birthHour <= 11;
@@ -2734,11 +2734,11 @@ export function buildFourPillarsAndHourFortune(
 
   const hourPillar = hasValidHour
     ? makePillar(
-        "Trụ Giờ (Thời Trụ)",
-        "Con cái & Thành tựu • Hậu vận (49+ tuổi)",
+        "Trụ Giờ (Giờ sinh)",
+        "Từ 49 tuổi • Con cái & Hậu vận",
         hourCanIdx,
         effectiveHourChi,
-        "Biểu trưng cho cung Tử Tức (con cái), phúc lộc tích lũy, tài sản hậu vận và tuổi già."
+        "Thể hiện phúc lộc đường con cái, tài sản tích lũy được và cuộc sống tuổi già."
       )
     : null;
 
@@ -2769,9 +2769,7 @@ export function buildFourPillarsAndHourFortune(
     FiveElement.THO
   ];
 
-  // Tìm hành sinh cho Nhật Chủ (Ấn Tinh) và hành cùng Nhật Chủ (Tỷ Kiếp)
   const generatingToNhatChu = allElements.find((el) => elementGenerates(el, nhatChuEl)) || nhatChuEl;
-  // Hành Nhật Chủ sinh ra (Thực Thương), hành Nhật Chủ khắc (Tài Tinh), hành khắc Nhật Chủ (Quan Sát)
   const generatedByNhatChu = allElements.find((el) => elementGenerates(nhatChuEl, el)) || nhatChuEl;
   const controlledByNhatChu = allElements.find((el) => elementOvercomes(nhatChuEl, el)) || nhatChuEl;
   const controllingNhatChu = allElements.find((el) => elementOvercomes(el, nhatChuEl)) || nhatChuEl;
@@ -2789,10 +2787,6 @@ export function buildFourPillarsAndHourFortune(
     nhatChuStrength = "Thân Nhược";
   }
 
-  // Hỷ Dụng Thần:
-  // - Nếu Thân Nhược: cần Ấn Tinh (sinh扶) và Tỷ Kiếp (trợ thân)
-  // - Nếu Thân Vượng: cần Thực Thương (tiết tú), Tài Tinh (hao thân đắc tài), Quan Sát (chế thân)
-  // - Nếu Trung Hòa: ưu tiên hành bị khuyết (count === 0) hoặc hành sinh trợ bản mệnh
   const lackingElements = allElements.filter((el) => counts[el] === 0);
   const maxCount = Math.max(...allElements.map((el) => counts[el]));
   const dominantElements = allElements.filter((el) => counts[el] === maxCount);
@@ -2813,16 +2807,20 @@ export function buildFourPillarsAndHourFortune(
 
   const nhatChuElLabel = elementLabel(nhatChuEl);
   const dungThanLabels = hyDungThan.map(elementLabel).join(" & ");
-  const lackingLabels = lackingElements.length > 0 ? lackingElements.map(elementLabel).join(", ") : "Không khuyết (Ngũ hành đủ 5 hành)";
+  const dominantLabels = dominantElements.map(elementLabel).join(", ");
+  const lackingLabels =
+    lackingElements.length > 0
+      ? `đang thiếu hành ${lackingElements.map(elementLabel).join(", ")}`
+      : "có đủ cả 5 hành Kim - Mộc - Thủy - Hỏa - Thổ";
 
   const nhatChuDescription =
     nhatChuStrength === "Thân Vượng"
-      ? `Nhật Chủ ${dayPillar.can} (${nhatChuElLabel}) đắc lệnh/đắc trợ nên thuộc cách cục Thân Vượng: Nội lực dồi dào, ý chí tự chủ mạnh mẽ, dám đương đầu thử thách lớn.`
+      ? `Năng lượng ngày sinh của bạn thuộc hành ${nhatChuElLabel} (Can ${dayPillar.can}) có nội lực mạnh mẽ: Bạn có tính tự chủ cao, quyết đoán, chịu được áp lực lớn và thích tự mình làm chủ công việc.`
       : nhatChuStrength === "Thân Nhược"
-      ? `Nhật Chủ ${dayPillar.can} (${nhatChuElLabel}) thuộc cách cục Thân Nhược: Tính cách tinh tế, linh hoạt, giàu sự thấu cảm; khi có quý nhân, đội ngũ hợp tác và bổ sung Dụng Thần (${dungThanLabels}) sẽ phát huy tối đa tài năng.`
-      : `Nhật Chủ ${dayPillar.can} (${nhatChuElLabel}) đạt trạng thái Thân Trung Hòa quý hiếm: Ngũ hành cân bằng, tâm tính điềm đạm, cuộc đời ít biến động cực đoan và dễ đạt sự viên mãn.`;
+      ? `Năng lượng ngày sinh của bạn thuộc hành ${nhatChuElLabel} (Can ${dayPillar.can}) thiên về sự mềm mỏng, tinh tế: Bạn giỏi lắng nghe, giàu sự thấu cảm; khi làm việc cùng đội nhóm hoặc có người đồng hành hợp mệnh sẽ phát huy tối đa tài năng.`
+      : `Năng lượng ngày sinh của bạn thuộc hành ${nhatChuElLabel} (Can ${dayPillar.can}) đạt độ cân bằng hài hòa: Tính tình điềm đạm, biết tiến biết lùi đúng lúc, cuộc sống ít gặp biến cố cực đoan.`;
 
-  const dungThanAdvice = `Bát Tự của bạn có Nhật Chủ là ${dayPillar.can} (${nhatChuElLabel} - ${nhatChuStrength}), hành khuyết trong tứ trụ: ${lackingLabels}. Hỷ Dụng Thần quan trọng nhất để cân bằng mệnh cục và kích hoạt đại vận là hành ${dungThanLabels}. Nên ưu tiên trang phục, phụ kiện, phương hướng và đối tác mang năng lượng hành ${dungThanLabels}.`;
+  const dungThanAdvice = `Tổng hợp 4 trụ sinh cho thấy bạn nhiều năng lượng hành ${dominantLabels} và ${lackingLabels}. Để cân bằng bản mệnh và thu hút may mắn, bạn nên bổ sung thêm hành ${dungThanLabels} qua màu sắc trang phục, hướng làm việc hoặc chọn đối tác hợp tác.`;
 
   const fourPillars: FourPillarsBatTu = {
     yearPillar,
@@ -2862,14 +2860,14 @@ export function buildFourPillarsAndHourFortune(
     lyThuanPhong: ltpBirth,
     destinyTitle: hourTrait.title,
     coreOverview: hasValidHour
-      ? `${hourTrait.overview} Bạn sinh vào giờ ${CAN[hourCanIdx]} ${CHI[effectiveHourChi]} (${hourNAp}), thuộc ${isHoangDaoBirthHour ? "Giờ Hoàng Đạo đại cát" : "Giờ Hắc Đạo cần rèn luyện bản lĩnh"} và trúng cung "${ltpBirth.name}" của Lý Thuần Phong.`
-      : `Hiện bạn chưa chọn Giờ Sinh cụ thể. Nếu bổ sung Giờ Sinh (Trụ Giờ - Thời Trụ), hệ thống sẽ hoàn thiện đủ 8 chữ Tứ Trụ Bát Tự để luận giải chính xác cung Tử Tức (con cái) và hậu vận từ 49 tuổi trở đi.`,
+      ? `${hourTrait.overview} Bạn sinh vào giờ ${CAN[hourCanIdx]} ${CHI[effectiveHourChi]} (mệnh giờ: ${hourNAp}), thuộc ${isHoangDaoBirthHour ? "Giờ Hoàng Đạo tốt lành, ra đời dễ gặp may mắn và quý nhân nâng đỡ" : "Giờ Hắc Đạo, chủ về người có nghị lực tự lập mạnh mẽ, tự tay gây dựng cơ đồ vững chắc"}.`
+      : `Hiện bạn chưa chọn Giờ Sinh cụ thể. Hãy chọn Giờ Sinh để hệ thống luận giải chính xác hơn về đường con cái, tài sản tích lũy và cuộc sống tuổi già.`,
     personalityTrait: hourTrait.personality,
     careerWealth: hourTrait.careerWealth,
     childrenAndLateLife: hourTrait.childrenLateLife
   };
 
-  // Tổng hợp Phân Tích Chuyên Sâu Toàn Diện (Gemini 3.8 Flash High • 8 Phương Diện)
+  // Tổng hợp Luận Giải Chi Tiết Bằng AI (8 Phương Diện Cuộc Đời)
   const genderLabel = gender === "male" ? "Nam mạng" : "Nữ mạng";
   const goodDirs = getBatTrachDetails(cungPhi)
     .filter((d) => d.isGood)
@@ -2879,139 +2877,139 @@ export function buildFourPillarsAndHourFortune(
   const deepAspects: DeepFortuneAspect[] = [
     {
       id: "battu_nguhanh",
-      title: "1. Tứ Trụ Bát Tự & Cân Bằng Ngũ Hành (Hỷ Dụng Thần)",
-      badge: `${nhatChuStrength} • Dụng thần ${dungThanLabels}`,
+      title: "1. Bản Mệnh 4 Trụ Sinh & Ngũ Hành Cần Bổ Sung",
+      badge: `Nên bổ sung hành ${dungThanLabels}`,
       icon: "☯️",
       summary: `${nhatChuDescription} ${dungThanAdvice}`,
       details: [
-        `• Niên Trụ (Trụ Năm - ${yearPillar.canChi}): Mệnh ${yearPillar.napAm} (${elementLabel(yearPillar.napAmElement)}). Đại diện cho phúc phần tổ tiên và 16 năm đầu đời. Thiên can ${yearPillar.can} (${elementLabel(yearPillar.canElement)}) kết hợp Địa chi ${yearPillar.chi} (${elementLabel(yearPillar.chiElement)}) tạo nền tảng tự lập vững chắc.`,
-        `• Nguyệt Trụ (Trụ Tháng - ${monthPillar.canChi}): Mệnh ${monthPillar.napAm} (${elementLabel(monthPillar.napAmElement)}). Nguyệt Lệnh tháng ${lunarDate.month} Âm lịch chi phối trực tiếp khí lực của mệnh cục trong giai đoạn lập nghiệp 17 - 32 tuổi.`,
-        `• Nhật Trụ (Nhật Chủ - ${dayPillar.canChi}): Mệnh ${dayPillar.napAm} (${elementLabel(dayPillar.napAmElement)}). Nhật nguyên ${dayPillar.can} thuộc hành ${nhatChuElLabel} tọa trên chi ${dayPillar.chi} (${elementLabel(dayPillar.chiElement)}), phản ánh cốt cách nội tâm và cung Hôn Nhân.`,
+        `• Năm sinh (${yearPillar.canChi} - ${yearPillar.napAm}): Cho thấy thời niên thiếu (1 - 16 tuổi) bạn là người sớm có ý thức tự lập, được thừa hưởng nền tảng đạo đức tốt từ gia đình.`,
+        `• Tháng sinh (${monthPillar.canChi} - ${monthPillar.napAm}): Giai đoạn 17 - 32 tuổi là thời kỳ năng động học hỏi, va chạm thực tế để định hình nghề nghiệp vững chắc.`,
+        `• Ngày sinh (${dayPillar.canChi} - ${dayPillar.napAm}): Giai đoạn 33 - 48 tuổi là thời kỳ chín muồi nhất của bản lĩnh cá nhân, hôn nhân ổn định và sự nghiệp đi vào quỹ đạo phát triển.`,
         hasValidHour
-          ? `• Thời Trụ (Trụ Giờ - ${birthHourFortune.hourCanChi}): Sinh giờ ${hourOption.chi} (${hourOption.range}), nạp âm ${birthHourFortune.hourNapAm}. Đây là cung Quả (kết quả hậu vận & con cái), bổ sung hành ${elementLabel(elementOfCan(hourCanIdx))} và ${elementLabel(elementOfChi(effectiveHourChi))} vào Bát Tự.`
-          : `• Thời Trụ (Trụ Giờ): Đang khuyết thông tin giờ sinh. Hãy chọn Giờ Sinh để mở khóa trọn vẹn 8 chữ Bát Tự (Tứ Trụ).`
+          ? `• Giờ sinh (Giờ ${hourOption.chi} ${hourOption.range} • ${birthHourFortune.hourCanChi}): Bổ sung thêm hành ${elementLabel(elementOfCan(hourCanIdx))} và ${elementLabel(elementOfChi(effectiveHourChi))}, giúp hậu vận từ 49 tuổi trở đi an nhàn, con cái hiếu thuận.`
+          : `• Giờ sinh: Bạn có thể chọn thêm giờ sinh ở trên để xem chi tiết hơn về giai đoạn hậu vận (từ 49 tuổi trở đi).`
       ],
-      actionableAdvice: `Kích hoạt Hỷ Dụng Thần hành ${dungThanLabels}: sử dụng vật dụng, trang phục tương ứng với hành ${dungThanLabels} và kết giao với người có Bát Tự vượng hành này để bổ khuyết mệnh cục.`
+      actionableAdvice: `Ưu tiên sử dụng đồ vật, trang phục hoặc không gian sống mang màu sắc của hành ${dungThanLabels} để tiếp thêm sinh khí và sự may mắn.`
     },
     {
       id: "tinhcach_tamly",
-      title: "2. Tâm Lý Chiều Sâu, Khí Chất & Thiên Phú Bẩm Sinh",
-      badge: `Nhật chủ ${dayPillar.can} ${nhatChuElLabel} • Số ${numerology.lifePathNumber}`,
+      title: "2. Tính Cách, Nội Tâm & Điểm Mạnh Bẩm Sinh",
+      badge: `Mệnh ${elementLabel(personalProfile.element)} • Số chủ đạo ${numerology.lifePathNumber}`,
       icon: "🧠",
-      summary: `Sự giao thoa giữa Nhật Chủ ${dayPillar.can} (${nhatChuElLabel}), bản mệnh ${personalProfile.napAm}, Số Chủ Đạo ${numerology.lifePathNumber} và cung ${westernZodiac.name} tạo nên một ${genderLabel} vừa có chiều sâu nội tâm phương Đông vừa có tư duy quyết đoán hiện đại.`,
+      summary: `Kết hợp giữa tuổi ${personalProfile.canChi} (${personalProfile.napAm}), Số Chủ Đạo ${numerology.lifePathNumber} và cung ${westernZodiac.name} tạo nên một ${genderLabel} vừa sống trọng tình nghĩa vừa có tư duy thực tế, độc lập.`,
       details: [
-        `• Cốt cách Nhật Chủ (${dayPillar.can} - ${nhatChuElLabel}): ${
+        `• Nét tính cách nổi bật: ${
           nhatChuEl === FiveElement.MOC
-            ? "Giàu lòng nhân ái, có ý chí vươn lên mạnh mẽ như cây đại thụ, trọng đạo lý và luôn hướng tới sự phát triển."
+            ? "Giàu lòng nhân ái, có chí tiến thủ vươn lên mạnh mẽ, sống ngay thẳng và luôn hướng tới sự phát triển."
             : nhatChuEl === FiveElement.HOA
-            ? "Nhiệt huyết, lễ nghĩa, thông minh sáng suốt, giàu sức truyền cảm hứng và luôn muốn tỏa sáng."
+            ? "Nhiệt tình, cởi mở, thông minh nhanh nhạy, giàu năng lượng tích cực và dễ truyền cảm hứng cho tập thể."
             : nhatChuEl === FiveElement.THO
-            ? "Đôn hậu, trầm ổn, giữ chữ tín vàng ngọc, bao dung và là điểm tựa vững chãi cho tập thể."
+            ? "Điềm đạm, chín chắn, trọng chữ tín, bao dung và luôn là chỗ dựa đáng tin cậy cho gia đình, bạn bè."
             : nhatChuEl === FiveElement.KIM
-            ? "Cương nghị, sắc bén, trọng nghĩa khí, làm việc có nguyên tắc rõ ràng và quyết đoán khi xử lý đại sự."
-            : "Linh hoạt, trí tuệ thâm sâu, ứng biến khéo léo như dòng nước và có tầm nhìn chiến lược."
+            ? "Rõ ràng, quyết đoán, làm việc có nguyên tắc, trọng nghĩa khí và kiên định khi xử lý việc lớn."
+            : "Khéo léo, linh hoạt, suy nghĩ sâu sắc, dễ thích nghi với hoàn cảnh mới và có tầm nhìn xa."
         }`,
-        `• Ảnh hưởng Giờ Sinh (${hasValidHour ? `Giờ ${hourOption.chi} ${hourOption.range}` : "Tam Trụ"}): ${birthHourFortune.personalityTrait}`,
-        `• Giao thoa Đông - Tây: Con số chủ đạo ${numerology.lifePathNumber} (${numerology.title}) kết hợp nguyên tố ${westernZodiac.element} của cung ${westernZodiac.name} giúp bạn sở hữu trực giác nhạy bén cùng khả năng tự phục hồi mạnh mẽ sau thử thách.`
+        `• Điểm riêng theo giờ sinh (${hasValidHour ? `Giờ ${hourOption.chi} ${hourOption.range}` : "Tham chiếu"}): ${birthHourFortune.personalityTrait}`,
+        `• Năng khiếu bẩm sinh: Sở hữu thế mạnh của người mang Số Chủ Đạo ${numerology.lifePathNumber} (${numerology.strengths.slice(0, 3).join(", ")}) kết hợp sự nhạy bén của cung ${westernZodiac.name}.`
       ],
-      actionableAdvice: `Phát huy thế mạnh cốt lõi (${numerology.strengths.slice(0, 2).join(", ")}) và rèn luyện sự cân bằng cảm xúc để tránh tiêu hao năng lượng vào những chi tiết vụn vặt.`
+      actionableAdvice: `Phát huy sự quyết đoán và thế mạnh chuyên môn, đồng thời dành thời gian thư giãn để tránh tự tạo áp lực cầu toàn quá mức.`
     },
     {
       id: "sunghiep_congdanh",
-      title: "3. Công Danh, Sự Nghiệp & Định Hướng Ngành Nghề Đại Cát",
-      badge: `Vượng vận 30 - 50 tuổi`,
+      title: "3. Công Việc, Sự Nghiệp & Ngành Nghề Phù Hợp",
+      badge: `Phát triển mạnh 30 - 50 tuổi`,
       icon: "🚀",
-      summary: `Dựa trên Tứ Trụ Bát Tự và Dụng Thần ${dungThanLabels}, ${genderLabel} tuổi ${personalProfile.canChi} phát triển rực rỡ nhất khi kết hợp chuyên môn sâu với khả năng quản trị và xây dựng uy tín cá nhân.`,
+      summary: `${genderLabel} tuổi ${personalProfile.canChi} dễ đạt thành tựu cao khi làm các công việc đòi hỏi sự uy tín, chuyên môn vững hoặc quản lý điều hành.`,
       details: [
-        `• Ngành nghề hợp Dụng Thần (${dungThanLabels}) & Thần Số Học: ${numerology.idealCareers.join(", ")}.`,
-        `• Lộ trình thăng tiến theo Trụ Tháng (${monthPillar.canChi}) & Trụ Ngày (${dayPillar.canChi}): Giai đoạn 22 - 30 tuổi là thời kỳ tích lũy kinh nghiệm và mở rộng nhân mạch; từ 32 - 48 tuổi (Trung vận) bước vào đại vận hoàng kim, dễ đảm nhận vị trí quản lý hoặc làm chủ.`,
-        `• Quý nhân trợ lực trong công việc: Hợp tác ăn ý nhất với người tuổi ${personalProfile.tamHop.join(", ")} (Tam Hợp) và tuổi ${personalProfile.lucHop} (Lục Hợp).`
+        `• Ngành nghề phù hợp nhất: ${numerology.idealCareers.join(", ")}.`,
+        `• Lộ trình phát triển: Từ 22 - 30 tuổi là giai đoạn tích lũy kinh nghiệm và xây dựng mối quan hệ; từ 32 - 48 tuổi vận trình mở rộng, thuận lợi thăng tiến hoặc mở rộng kinh doanh riêng.`,
+        `• Tuổi hợp làm ăn, cộng tác: Làm việc ăn ý và dễ sinh lời nhất khi kết hợp với người tuổi ${personalProfile.tamHop.join(", ")} (Tam Hợp) hoặc tuổi ${personalProfile.lucHop} (Lục Hợp).`
       ],
-      actionableAdvice: `Khi ký kết hợp đồng lớn hoặc khai trương dự án, hãy chọn ngày Hoàng Đạo thuộc hành ${dungThanLabels} và ngồi quay mặt về hướng Sinh Khí (${getBatTrachDetails(cungPhi)[0]?.direction || "Đông Nam"}).`
+      actionableAdvice: `Khi ngồi làm việc hoặc ký kết hợp đồng quan trọng, nên ưu tiên quay mặt về hướng ${getBatTrachDetails(cungPhi)[0]?.direction || "Đông Nam"} (hướng Sinh Khí) để công việc hanh thông.`
     },
     {
       id: "tailoc_dientrach",
-      title: "4. Tài Lộc, Điền Trạch (Nhà Đất) & Chiến Lược Tích Sản",
-      badge: `Tài tinh hành ${elementLabel(controlledByNhatChu)}`,
+      title: "4. Tiền Bạc, Nhà Đất & Cách Quản Lý Tài Chính",
+      badge: `Vượng lộc tích lũy`,
       icon: "💰",
-      summary: `Trong Bát Tự của bạn, Tài Tinh thuộc hành ${elementLabel(controlledByNhatChu)}. ${birthHourFortune.careerWealth}`,
+      summary: `${birthHourFortune.careerWealth}`,
       details: [
-        `• Cấu trúc Chính Tài & Thiên Tài: Bản mệnh ${personalProfile.napAm} kết hợp Nhật Chủ ${dayPillar.canChi} cho thấy dòng tiền chính đến từ năng lực chuyên môn vững vàng, đồng thời có lộc bất ngờ từ đầu tư hoặc bất động sản khi bước vào trung vận.`,
-        `• Cung Điền Trạch (Bất động sản): Với Cung Phi ${cungPhi} (${cungPhiGroup}), bạn rất có duyên tích lũy nhà đất. Mua nhà, mở văn phòng hoặc đầu tư đất đai hướng ${goodDirs} sẽ giữ vững tài khố, gia sản sinh sôi.`,
-        `• Quản trị rủi ro tài chính: Tránh cho vay mượn thiếu giấy tờ bảo đảm vào các năm/tháng xung tuổi (${personalProfile.tuHanhXung.join(", ")}) để bảo toàn thành quả.`
+        `• Nguồn thu nhập: Mệnh ${personalProfile.napAm} giúp bạn có nguồn thu vững vàng từ công việc chính; khi bước vào trung niên dễ có thêm lộc từ đầu tư hoặc kinh doanh phụ.`,
+        `• Vận may nhà đất (Điền sản): Thuộc cung ${cungPhi} (${cungPhiGroup}), bạn có duyên tạo dựng nhà cửa, đất đai. Chọn mua nhà hoặc mở cửa hàng theo các hướng ${goodDirs} sẽ rất tụ lộc.`,
+        `• Lưu ý giữ tiền: Hạn chế đứng ra bảo lãnh vay nợ hoặc đầu tư mạo hiểm cùng người thuộc nhóm tuổi xung (${personalProfile.tuHanhXung.join(", ")}).`
       ],
-      actionableAdvice: `Áp dụng nguyên tắc phân bổ tài sản thành 3 phần: Tích sản dài hạn (bất động sản/vàng), Đầu tư phát triển sự nghiệp theo hành ${dungThanLabels}, và Quỹ dự phòng thanh khoản.`
+      actionableAdvice: `Nên chia thu nhập thành 3 phần rõ ràng: Tích lũy tài sản an toàn (nhà đất/tiết kiệm), Đầu tư phát triển công việc, và Quỹ dự phòng gia đình.`
     },
     {
       id: "tinhduyen_giadao",
-      title: "5. Tình Duyên, Hôn Nhân & Phúc Đức Con Cái (Cung Tử Tức)",
-      badge: `Cung Phu Thê chi ${dayPillar.chi}`,
+      title: "5. Tình Duyên, Hôn Nhân & Đường Con Cái",
+      badge: `Gia đạo & Con cái`,
       icon: "❤️",
-      summary: `Nhật Chi (chi ngày sinh) là ${dayPillar.chi} (${elementLabel(dayPillar.chiElement)}) đóng vai trò Cung Phu Thê; Thời Trụ (${hasValidHour ? birthHourFortune.hourCanChi : "Giờ sinh"}) là Cung Tử Tức biểu thị đường con cái và phúc phần hậu vận.`,
+      summary: `Ngày sinh (${dayPillar.canChi}) và Giờ sinh (${hasValidHour ? `Giờ ${hourOption.chi}` : "Tham chiếu"}) cho thấy bạn là người sống tình cảm, luôn đặt sự bình yên của gia đình lên hàng đầu.`,
       details: [
-        `• Luận Cung Phu Thê (Ngày ${dayPillar.canChi}): Bạn là người trọng tình cảm, khi đã gắn bó thì hết lòng vun đắp cho tổ ấm. Người bạn đời lý tưởng thường có tính cách chín chắn, biết sẻ chia và hỗ trợ đắc lực cho sự nghiệp của bạn.`,
-        `• Độ tuổi đại hợp lương duyên: Hòa hợp nhất với tuổi ${personalProfile.tamHop.concat([personalProfile.lucHop]).join(", ")}. Nếu kết duyên với tuổi thuộc nhóm ${personalProfile.tuHanhXung.join(", ")}, hai bên chỉ cần nhường nhịn và dùng phong thủy hướng bếp/giường ngủ chuẩn Bát Trạch là hóa giải êm đẹp.`,
-        `• Luận Cung Tử Tức & Hậu Vận theo Giờ Sinh: ${birthHourFortune.childrenAndLateLife}`
+        `• Đời sống hôn nhân: Bạn trân trọng sự thủy chung và thấu hiểu. Người bạn đời phù hợp thường là người chín chắn, biết lắng nghe và cùng bạn vun vén kinh tế gia đình.`,
+        `• Tuổi hợp kết duyên: Hòa hợp nhất với tuổi ${personalProfile.tamHop.concat([personalProfile.lucHop]).join(", ")}. Nếu kết hôn với tuổi ${personalProfile.tuHanhXung.join(", ")}, hai vợ chồng chỉ cần nhường nhịn nhau và đặt giường ngủ, hướng bếp hợp phong thủy là êm ấm.`,
+        `• Đường con cái & Tuổi già: ${birthHourFortune.childrenAndLateLife}`
       ],
-      actionableAdvice: `Đặt giường ngủ quay về hướng Thiên Y (${getBatTrachDetails(cungPhi)[1]?.direction}) hoặc Diên Niên (${getBatTrachDetails(cungPhi)[2]?.direction}) để gia đạo luôn hòa thuận, gắn kết keo sơn.`
+      actionableAdvice: `Đặt đầu giường ngủ quay về hướng ${getBatTrachDetails(cungPhi)[1]?.direction} (Thiên Y) hoặc ${getBatTrachDetails(cungPhi)[2]?.direction} (Diên Niên) để gia đình luôn êm ấm, gắn kết.`
     },
     {
       id: "suckhoe_tangphu",
-      title: "6. Sức Khỏe Đông Y & Tạng Phủ Theo Ngũ Hành Bát Tự",
-      badge: `Chú ý hành ${lackingElements.length > 0 ? lackingElements.map(elementLabel).join(", ") : elementLabel(dominantElements[0])}`,
+      title: "6. Sức Khỏe & Chế Độ Sinh Hoạt Cần Lưu Ý",
+      badge: `Chăm sóc sức khỏe`,
       icon: "🌿",
-      summary: `Theo Y Lý Đông Phương, sự vượng suy của Ngũ Hành trong Bát Tự tương ứng trực tiếp với Ngũ Tạng: Kim (Phế/Hô hấp), Mộc (Can/Gan mật), Thủy (Thận/Thính giác), Hỏa (Tâm/Tim mạch), Thổ (Tỳ Vị/Tiêu hóa).`,
+      summary: `Dựa trên sự phân bố Ngũ Hành trong ngày giờ sinh, bạn có nền tảng thể lực tốt nhưng cần chú ý cân bằng giữa làm việc và nghỉ ngơi.`,
       details: [
-        `• Tạng phủ cần lưu tâm: Do Bát Tự của bạn vượng hành ${dominantElements.map(elementLabel).join(", ")} và ${lackingElements.length > 0 ? `khuyết hành ${lackingElements.map(elementLabel).join(", ")}` : "cần cân bằng khí huyết"}, nên chú ý chăm sóc hệ ${
+        `• Cơ quan cần lưu tâm: Do bản mệnh nhiều hành ${dominantLabels}${lackingElements.length > 0 ? ` và thiếu hành ${lackingElements.map(elementLabel).join(", ")}` : ""}, bạn nên chú ý chăm sóc ${
           lackingElements.includes(FiveElement.THUY) || dominantElements.includes(FiveElement.THO)
-            ? "thận, tiết niệu, xương khớp và giấc ngủ sâu"
+            ? "thận, xương khớp, uống đủ nước và giữ giấc ngủ sâu"
             : lackingElements.includes(FiveElement.HOA) || dominantElements.includes(FiveElement.THUY)
-            ? "tuần hoàn tim mạch, huyết áp và giữ ấm cơ thể"
+            ? "tim mạch, huyết áp và giữ ấm cơ thể khi thời tiết thay đổi"
             : lackingElements.includes(FiveElement.MOC) || dominantElements.includes(FiveElement.KIM)
-            ? "gan mật, thị lực mắt và giải tỏa căng thẳng thần kinh"
+            ? "gan mật, mắt (hạn chế nhìn màn hình quá lâu) và thư giãn thần kinh"
             : lackingElements.includes(FiveElement.KIM)
-            ? "hô hấp, phổi, cổ họng và làn da"
-            : "tiêu hóa, dạ dày (tỳ vị) và chế độ ăn uống đúng giờ"
+            ? "đường hô hấp, cổ họng, phổi và làn da"
+            : "hệ tiêu hóa, dạ dày và duy trì thói quen ăn uống đúng giờ"
         }.`,
-        `• Nhịp sinh học theo Giờ Sinh: Hạn chế thức quá khuya sau 23h (Giờ Tý - lúc Đởm và Can tạo huyết), duy trì vận động ngoài trời buổi sáng để hấp thu dương khí.`,
-        `• Lưu ý sức khỏe năm 2026: Niên hạn năm nay là hạn ${saoHan2026.han} — ${saoHan2026.hanDescription}`
+        `• Thói quen tốt theo giờ sinh: Hạn chế thức khuya sau 23h đêm, dành 20 - 30 phút vận động nhẹ buổi sáng để lưu thông khí huyết.`,
+        `• Lưu ý trong năm 2026: Năm nay gặp hạn ${saoHan2026.han} — ${saoHan2026.hanDescription}`
       ],
-      actionableAdvice: `Duy trì chế độ dinh dưỡng cân bằng ngũ sắc, uống đủ nước, tập thở sâu hoặc thể thao 30 phút mỗi ngày để điều hòa âm dương khí huyết.`
+      actionableAdvice: `Ăn uống cân bằng, bổ sung nhiều rau xanh, uống đủ nước và khám sức khỏe định kỳ để cơ thể luôn dẻo dai.`
     },
     {
       id: "daivan_luunien2026",
-      title: "7. Đại Vận Cuộc Đời & Chiến Lược Lưu Niên 2026 (Bính Ngọ)",
+      title: "7. Dự Báo Vận Trình Năm 2026 (Bính Ngọ)",
       badge: `Sao ${saoHan2026.sao} • Hạn ${saoHan2026.han}`,
       icon: "🔮",
       summary: `${saoHan2026.yearOverview}`,
       details: [
-        `• Tương quan Lưu Niên 2026 (Bính Ngọ - Thiên Hà Thủy) với Bản Mệnh (${personalProfile.canChi} - ${personalProfile.napAm}): Năm 2026 mang nạp âm Thiên Hà Thủy (Nước trên trời), ${
+        `• Đánh giá chung năm 2026: Năm Bính Ngọ mang mệnh Thủy (Thiên Hà Thủy), ${
           elementGenerates(FiveElement.THUY, personalProfile.element)
-            ? "tương sinh trực tiếp cho bản mệnh của bạn — báo hiệu một năm có quý nhân phù trợ, cơ hội mở rộng tầm nhìn và đón nhận tin vui."
+            ? "tương sinh tốt với bản mệnh của bạn — báo hiệu một năm có quý nhân giúp đỡ, thuận lợi học hỏi và mở rộng công việc."
             : personalProfile.element === FiveElement.THUY
-            ? "tỷ hòa cùng hành Thủy với bản mệnh — vận khí vững vàng, thuận lợi củng cố vị thế và liên kết đối tác."
+            ? "cùng hành Thủy với bản mệnh — công việc ổn định, thuận lợi củng cố các mối quan hệ hợp tác."
             : elementOvercomes(personalProfile.element, FiveElement.THUY)
-            ? "bản mệnh chế khắc được hành năm — chủ về năm nhiều việc phải gánh vác nhưng càng nỗ lực càng thu hoạch được tài lộc xứng đáng."
-            : "đòi hỏi sự kiên nhẫn, lấy nhu thắng cương, chuẩn bị kỹ lưỡng trước mọi quyết định đầu tư lớn."
+            ? "bản mệnh làm chủ được vận khí năm — tuy công việc bận rộn hơn nhưng càng chăm chỉ càng thu được thành quả xứng đáng."
+            : "nên ưu tiên sự an toàn, chuẩn bị kỹ trước khi đầu tư lớn và giữ hòa khí trong giao tiếp."
         }`,
-        `• Nhịp vận 4 Quý năm 2026: Tháng đại cát thuận lợi nhất để bứt phá là các tháng ${saoHan2026.favorableMonths.map((m) => `${m} ÂL`).join(", ")}. Các tháng cần giữ tâm bình hòa, cẩn trọng chi tiêu là tháng ${saoHan2026.cautionMonths.map((m) => `${m} ÂL`).join(", ")}.`,
-        `• Tầm nhìn Đại Vận 10 năm tới: Khi bước qua mỗi cột mốc 10 năm, sự kết hợp giữa Nhật Chủ ${dayPillar.canChi} và Thời Trụ ${birthHourFortune.hourCanChi} giúp hậu vận của bạn ngày càng ổn định và thịnh vượng.`
+        `• Tháng tốt và tháng cần lưu ý năm 2026: Các tháng thuận lợi nhất là tháng ${saoHan2026.favorableMonths.map((m) => `${m} Âm lịch`).join(", ")}. Các tháng nên cẩn trọng lời nói, chi tiêu là tháng ${saoHan2026.cautionMonths.map((m) => `${m} Âm lịch`).join(", ")}.`,
+        `• Xu hướng dài hạn: Càng về trung vận và hậu vận, sự nghiệp và tài chính của bạn càng đi vào sự ổn định, vững chắc.`
       ],
-      actionableAdvice: `Đầu năm hoặc đầu mỗi tháng Âm lịch nên làm nhiều việc thiện, giúp đỡ người xung quanh để tăng trưởng phúc đức — 'Đức năng thắng số', hóa hung thành cát.`
+      actionableAdvice: `Đầu năm hoặc các ngày Rằm, Mùng 1 nên làm nhiều việc thiện, giúp đỡ người xung quanh để tâm an và tăng thêm phúc lộc.`
     },
     {
       id: "phongthuy_caivan",
-      title: "8. Cẩm Nang Phong Thủy Cải Vận Cá Nhân Hóa",
+      title: "8. Cẩm Nang Phong Thủy May Mắn Hàng Ngày",
       badge: `Cung ${cungPhi} • ${cungPhiGroup}`,
       icon: "🧭",
-      summary: `Tổng hợp pháp khí, màu sắc, phương hướng và khung giờ vàng dành riêng cho ${genderLabel} sinh ${hasValidHour ? `giờ ${hourOption.chi}, ` : ""}ngày ${solarDate.day}/${solarDate.month}/${solarDate.year}.`,
+      summary: `Tổng hợp màu sắc, phương hướng, con số và khung giờ đẹp hợp riêng với ${genderLabel} sinh ngày ${solarDate.day}/${solarDate.month}/${solarDate.year}.`,
       details: [
-        `• Màu sắc Hỷ Dụng Thần & Bản Mệnh: ${personalProfile.luckyColors}. Hạn chế lạm dụng màu: ${personalProfile.unluckyColors}.`,
-        `• Phương hướng Đại Cát Bát Trạch (${cungPhi}): ${goodDirs}.`,
-        `• Con số may mắn kích hoạt năng lượng: Số chủ đạo ${numerology.lifePathNumber} kết hợp các số ngũ hành ${personalProfile.luckyNumbers.join(", ")}.`,
-        `• Khung giờ Hoàng Đạo hợp tuổi xuất hành/giao dịch: Ưu tiên các khung giờ Tam Hợp với tuổi ${CHI[personalProfile.chiIndex]} (Giờ ${personalProfile.tamHop.join(", Giờ ")}) và Giờ Lục Hợp (Giờ ${personalProfile.lucHop}).`
+        `• Màu sắc mang lại may mắn: ${personalProfile.luckyColors}. Màu nên hạn chế dùng nhiều: ${personalProfile.unluckyColors}.`,
+        `• Hướng tốt hợp tuổi (${cungPhi}): ${goodDirs}.`,
+        `• Con số may mắn: Số chủ đạo ${numerology.lifePathNumber} và các số ${personalProfile.luckyNumbers.join(", ")}.`,
+        `• Khung giờ tốt để xuất hành, giao dịch: Giờ ${personalProfile.tamHop.join(", Giờ ")} (Tam Hợp) và Giờ ${personalProfile.lucHop} (Lục Hợp).`
       ],
-      actionableAdvice: `Bố trí không gian làm việc gọn gàng, nhiều ánh sáng tự nhiên, đặt một chậu cây xanh hoặc vật phẩm phong thủy hợp hành ${dungThanLabels} ở góc ${getBatTrachDetails(cungPhi)[0]?.direction || "Đông Nam"} để tụ khí sinh tài.`
+      actionableAdvice: `Giữ bàn làm việc và nhà cửa thông thoáng, có thể đặt một chậu cây nhỏ hoặc vật trang trí hợp hành ${dungThanLabels} ở hướng ${getBatTrachDetails(cungPhi)[0]?.direction || "Đông Nam"} để thu hút vượng khí.`
     }
   ];
 
@@ -3024,11 +3022,11 @@ export function buildFourPillarsAndHourFortune(
   const overallScore = Math.min(98, Math.max(75, baseScore));
 
   const deepAnalysis: DeepFortuneAnalysis = {
-    modelVersion: "gemini-3.8-flash",
-    thinkingMode: "HIGH (Phân tích đa chiều Bát Tự • Tử Vi • Bát Trạch • Thần Số Học)",
-    overallHeadline: `${genderLabel} ${personalProfile.canChi} (${personalProfile.napAm}) • Nhật Chủ ${dayPillar.canChi} • ${birthHourFortune.destinyTitle}`,
+    modelVersion: "AI",
+    thinkingMode: "Luận giải chi tiết bằng AI",
+    overallHeadline: `${genderLabel} tuổi ${personalProfile.canChi} (${personalProfile.birthYear} • ${personalProfile.napAm})${hasValidHour ? ` — Sinh giờ ${hourOption.chi} (${hourOption.range})` : ""}`,
     overallScore,
-    executiveSummary: `Lá số của bạn hội tụ ${hasValidHour ? `đầy đủ Tứ Trụ Bát Tự: Năm ${yearPillar.canChi} — Tháng ${monthPillar.canChi} — Ngày ${dayPillar.canChi} — Giờ ${birthHourFortune.hourCanChi}` : `Tam Trụ: Năm ${yearPillar.canChi} — Tháng ${monthPillar.canChi} — Ngày ${dayPillar.canChi}`}. Nhật Chủ ${dayPillar.can} (${nhatChuElLabel}) thuộc cách cục ${nhatChuStrength}, lấy hành ${dungThanLabels} làm Hỷ Dụng Thần. Kết hợp Cung Phi ${cungPhi} (${cungPhiGroup}) và Số Chủ Đạo ${numerology.lifePathNumber}, bạn là người có chiều sâu trí tuệ, tiền vận rèn luyện bản lĩnh, trung vận và hậu vận phát đạt bền vững cả về danh tiếng lẫn điền sản.`,
+    executiveSummary: `Dựa trên đầy đủ thông tin ${hasValidHour ? `4 trụ: Năm ${yearPillar.canChi}, Tháng ${monthPillar.canChi}, Ngày ${dayPillar.canChi}, Giờ ${birthHourFortune.hourCanChi}` : `Năm ${yearPillar.canChi}, Tháng ${monthPillar.canChi}, Ngày ${dayPillar.canChi}`}, bản mệnh của bạn thuộc hành ${elementLabel(personalProfile.element)} (${personalProfile.napAm}), cung ${cungPhi} (${cungPhiGroup}) và mang Số Chủ Đạo ${numerology.lifePathNumber}. Bạn là người có ý chí tự lập, sống trọng chữ tín; thời trẻ rèn luyện kinh nghiệm, từ trung niên (sau 32 tuổi) đến hậu vận công việc và tài sản ngày càng vững vàng. Bổ sung thêm yếu tố hành ${dungThanLabels} sẽ giúp bạn đón nhiều may mắn và thuận lợi nhất.`,
     aspects: deepAspects
   };
 

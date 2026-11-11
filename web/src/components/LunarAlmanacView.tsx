@@ -146,21 +146,21 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
     }
   }, [effectiveProfile]);
 
-  // Kết quả phân tích chuyên sâu Gemini 3.8 Flash High (ưu tiên kết quả vừa chạy hoặc cache, fallback có sẵn)
-  const { activeDeepAnalysis, aiSource } = useMemo(() => {
+  // Kết quả luận giải chi tiết bằng AI (ưu tiên kết quả vừa chạy hoặc cache, fallback có sẵn)
+  const activeDeepAnalysis = useMemo(() => {
     if (!detailedFortune) {
-      return { activeDeepAnalysis: null, aiSource: "gemini-3.8-flash-builtin" as const };
+      return null;
     }
     const key = getFortuneProfileCacheKey(detailedFortune);
     const inMemory = aiResultsByKey[key];
     if (inMemory) {
-      return { activeDeepAnalysis: inMemory.analysis, aiSource: inMemory.source };
+      return inMemory.analysis;
     }
     const cached = getCachedGeminiFortune(detailedFortune);
     if (cached) {
-      return { activeDeepAnalysis: cached, aiSource: "gemini-3.8-flash-live" as const };
+      return cached;
     }
-    return { activeDeepAnalysis: detailedFortune.deepAnalysis, aiSource: "gemini-3.8-flash-builtin" as const };
+    return detailedFortune.deepAnalysis;
   }, [detailedFortune, aiResultsByKey]);
 
   const handleTriggerGeminiDeepAnalysis = async (forceRefresh = true) => {
@@ -513,11 +513,11 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                     isDarkTheme ? "bg-amber-500/30 text-amber-200 border border-amber-400/40" : "bg-amber-500/20 text-amber-800"
                   }`}>
-                    Tứ Trụ Bát Tự
+                    Luận giải bằng AI
                   </span>
                 </div>
                 <p className={`text-xs mt-1 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                  Nhập giới tính, giờ sinh, ngày tháng năm sinh để Gemini 3.8 Flash High luận giải Tứ Trụ Bát Tự, Tử Vi trọn đời & Bát Trạch!
+                  Nhập giới tính, giờ sinh, ngày tháng năm sinh để nhận luận giải chi tiết bằng AI về vận mệnh, tử vi trọn đời và phong thủy!
                 </p>
               </>
             )}
@@ -1620,21 +1620,21 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950">
-                        Gợi Ý Bói Tứ Trụ Bát Tự Chuẩn Xác Nhất
+                        Gợi Ý Nhập Đủ Thông Tin Sinh
                       </span>
                       <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                         isDarkTheme ? "bg-purple-500/25 text-purple-200 border-purple-400/40" : "bg-purple-100 text-purple-800 border-purple-300"
                       }`}>
-                        Gemini 3.8 Flash High
+                        Luận giải chi tiết bằng AI
                       </span>
                     </div>
                     <h4 className="text-sm sm:text-base font-black mt-1.5">
                       {!userProfile
                         ? "Hãy nhập đầy đủ Giới tính, Giờ sinh, Ngày, Tháng, Năm sinh để luận giải chi tiết tất cả các mặt!"
-                        : "Bạn chưa chọn Giờ Sinh (Trụ Giờ)! Hãy bổ sung Giờ Sinh để hoàn thiện đủ 4 trụ Bát Tự (Năm - Tháng - Ngày - Giờ)."}
+                        : "Bạn chưa chọn Giờ Sinh! Hãy bổ sung Giờ Sinh để xem đầy đủ cả 4 cột mốc cuộc đời (Năm - Tháng - Ngày - Giờ)."}
                     </h4>
                     <p className={`text-xs mt-1 leading-relaxed font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                      Trong Tử Vi Đẩu Số & Bát Tự Tử Bình, <strong>Giờ sinh (Thời Trụ)</strong> cùng <strong>Ngày, Tháng, Năm sinh và Giới tính</strong> quyết định trực tiếp đến <strong>Hỷ Dụng Thần, Khuyết Ngũ Hành, Cung Tử Tức (con cái) và Hậu Vận</strong>.
+                      Khi có đủ <strong>Giờ sinh, Ngày, Tháng, Năm sinh và Giới tính</strong>, hệ thống sẽ tính chính xác <strong>ngũ hành đang thiếu, màu sắc may mắn, đường con cái và vận mệnh hậu vận (từ 49 tuổi trở đi)</strong>.
                     </p>
                   </div>
                 </div>
@@ -1665,7 +1665,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
               {detailedFortune && (
                 <div className="mt-4 pt-3.5 border-t border-amber-500/20">
                   <span className={`text-[11px] font-bold block mb-2 ${isDarkTheme ? "text-amber-200" : "text-amber-900"}`}>
-                    ⚡ Chọn nhanh Giờ Sinh của bạn để mở khóa Trụ Giờ (Thời Trụ) ngay lập tức:
+                    ⚡ Chọn nhanh Giờ Sinh của bạn để xem luận giải theo giờ sinh ngay lập tức:
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-1.5">
                     {BIRTH_HOUR_OPTIONS.map((h) => (
@@ -1697,11 +1697,11 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
               <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-4 font-bold text-3xl">
                 🔮
               </div>
-              <h3 className="text-xl sm:text-2xl font-black mb-2">Bói Tử Vi & Tứ Trụ Bát Tự Chuyên Sâu (Gemini 3.8 Flash High)</h3>
+              <h3 className="text-xl sm:text-2xl font-black mb-2">Luận Giải Tử Vi & Vận Mệnh Chi Tiết Bằng AI</h3>
               <p className={`text-xs sm:text-sm max-w-lg mx-auto mb-6 leading-relaxed font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                Khám phá bản mệnh toàn diện theo <strong>Giới tính</strong> và <strong>Giờ, Ngày, Tháng, Năm sinh</strong>:
-                Phân tích 8 chữ Tứ Trụ Bát Tự & Hỷ Dụng Thần bằng <strong>Gemini 3.8 Flash High</strong>, Bát Trạch phong thủy theo giới tính,
-                Tử Vi 3 thời kỳ Tiền - Trung - Hậu vận, Thần Số Học Pythagoras, Cung Hoàng Đạo và Sao Hạn năm 2026 (Bính Ngọ).
+                Khám phá vận mệnh toàn diện theo <strong>Giới tính</strong> và <strong>Giờ, Ngày, Tháng, Năm sinh</strong>:
+                <strong> Luận giải chi tiết bằng AI</strong> về tính cách, sự nghiệp, tài lộc, tình duyên, hướng nhà hợp tuổi,
+                Tử Vi 3 giai đoạn cuộc đời, Thần Số Học, Cung Hoàng Đạo và Vận Hạn năm 2026.
               </p>
               <button
                 onClick={openProfileModal}
@@ -1781,7 +1781,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                         Sinh ngày <strong>{detailedFortune.solarDate.day}/{detailedFortune.solarDate.month}/{detailedFortune.solarDate.year}</strong> (Dương lịch) • Âm lịch: ngày <strong>{detailedFortune.lunarDate.day}/{detailedFortune.lunarDate.month}</strong> năm <strong>{detailedFortune.lunarDate.yearCanChi} ({detailedFortune.lunarDate.year})</strong>
                       </p>
                       <div className={`text-[11px] mt-0.5 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                        Tứ Trụ Bát Tự: Năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong> • Tháng <strong>{detailedFortune.lunarDate.monthCanChi}</strong> • Ngày <strong>{detailedFortune.lunarDate.dayCanChi}</strong> • Giờ <strong>{detailedFortune.birthHourFortune.hasBirthHour ? detailedFortune.birthHourFortune.hourCanChi : `${detailedFortune.birthHourFortune.hourCanChi} (tham chiếu)`}</strong>
+                        4 cột mốc sinh: Năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong> • Tháng <strong>{detailedFortune.lunarDate.monthCanChi}</strong> • Ngày <strong>{detailedFortune.lunarDate.dayCanChi}</strong> • Giờ <strong>{detailedFortune.birthHourFortune.hasBirthHour ? detailedFortune.birthHourFortune.hourCanChi : `${detailedFortune.birthHourFortune.hourCanChi} (tham khảo)`}</strong>
                       </div>
                     </div>
                   </div>
@@ -1847,10 +1847,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                 }`}
               >
                 {[
-                  { id: "deep_ai" as const, label: "Luận Giải Chuyên Sâu (Gemini 3.8)", icon: "✨", tag: "Tứ Trụ & Toàn Diện" },
-                  { id: "battrach" as const, label: "Bát Trạch Phong Thủy", icon: "🧭", tag: "Theo Giới Tính" },
-                  { id: "lifestages" as const, label: "Tử Vi Trọn Đời", icon: "📜", tag: "3 Thời Kỳ & Tình Duyên" },
-                  { id: "numerology" as const, label: "Thần Số Học", icon: "🔢", tag: "Số Chủ Đạo Pythagoras" },
+                  { id: "deep_ai" as const, label: "Luận Giải Chi Tiết Bằng AI", icon: "✨", tag: "Toàn Diện 8 Mặt" },
+                  { id: "battrach" as const, label: "Hướng Hợp Phong Thủy", icon: "🧭", tag: "Theo Giới Tính" },
+                  { id: "lifestages" as const, label: "Tử Vi Trọn Đời", icon: "📜", tag: "3 Giai Đoạn & Tình Duyên" },
+                  { id: "numerology" as const, label: "Thần Số Học", icon: "🔢", tag: "Số Chủ Đạo" },
                   { id: "zodiac" as const, label: "Cung Hoàng Đạo", icon: "♈", tag: "Phương Tây" },
                   { id: "year2026" as const, label: "Vận Hạn 2026", icon: "🔮", tag: "Năm Bính Ngọ" }
                 ].map((cat) => (
@@ -1871,10 +1871,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                 ))}
               </div>
 
-              {/* 0. PHÂN TÍCH CHUYÊN SÂU TOÀN DIỆN BẰNG GEMINI 3.8 FLASH HIGH & TỨ TRỤ BÁT TỰ */}
+              {/* 0. LUẬN GIẢI CHI TIẾT BẰNG AI THEO GIỜ, NGÀY, THÁNG, NĂM SINH */}
               {fortuneCategory === "deep_ai" && activeDeepAnalysis && (
                 <div className="space-y-6">
-                  {/* Khối 1: Bảng Lá Số Tứ Trụ Bát Tự (Năm - Tháng - Ngày - Giờ) & Cân Bằng Ngũ Hành */}
+                  {/* Khối 1: Bản Mệnh Theo 4 Cột Mốc Sinh (Năm - Tháng - Ngày - Giờ) & Cân Bằng Ngũ Hành */}
                   <div
                     className={`p-6 sm:p-7 rounded-3xl backdrop-blur-xl border shadow-xl ${
                       isDarkTheme ? "bg-slate-900/65 border-white/15 text-white" : "bg-white/90 border-slate-200 text-slate-900"
@@ -1884,16 +1884,22 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950">
-                            Lá Số Bát Tự Tử Bình (4 Trụ 8 Chữ)
+                            4 Cột Mốc Sinh (Năm • Tháng • Ngày • Giờ)
                           </span>
                           <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
                             isDarkTheme ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40" : "bg-emerald-50 text-emerald-800 border-emerald-300"
                           }`}>
-                            Nhật Chủ: {detailedFortune.fourPillars.nhatChuCan} ({elementLabel(detailedFortune.fourPillars.nhatChuElement)}) • {detailedFortune.fourPillars.nhatChuStrength}
+                            Hành ngày sinh: {elementLabel(detailedFortune.fourPillars.nhatChuElement)} ({detailedFortune.fourPillars.nhatChuCan}) • {
+                              detailedFortune.fourPillars.nhatChuStrength === "Thân Vượng"
+                                ? "Nội lực mạnh mẽ"
+                                : detailedFortune.fourPillars.nhatChuStrength === "Thân Nhược"
+                                ? "Cần quý nhân trợ lực"
+                                : "Khí lực cân bằng"
+                            }
                           </span>
                         </div>
                         <h3 className="text-base sm:text-lg font-black mt-1.5">
-                          Tứ Trụ Mệnh Cục Theo Giờ, Ngày, Tháng, Năm Sinh
+                          Bản Mệnh Từng Giai Đoạn Theo Giờ, Ngày, Tháng, Năm Sinh
                         </h3>
                       </div>
 
@@ -1908,11 +1914,11 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                         <Clock className="w-3.5 h-3.5" />
                         {detailedFortune.birthHourFortune.hasBirthHour
                           ? `Đổi giờ sinh (Giờ ${detailedFortune.birthHourFortune.hourChi})`
-                          : "Chọn Giờ Sinh để mở Trụ Giờ"}
+                          : "Chọn Giờ Sinh"}
                       </button>
                     </div>
 
-                    {/* 4 Cột Tứ Trụ: Năm - Tháng - Ngày - Giờ */}
+                    {/* 4 Cột: Năm - Tháng - Ngày - Giờ */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
                       {[
                         detailedFortune.fourPillars.yearPillar,
@@ -1933,18 +1939,18 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                             >
                               <div>
                                 <div className="text-xs font-black uppercase text-amber-500">
-                                  Trụ Giờ (Thời Trụ)
+                                  Trụ Giờ (Giờ sinh)
                                 </div>
                                 <div className={`text-[11px] font-medium mt-0.5 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-                                  Con cái & Hậu vận (49+ tuổi)
+                                  Từ 49 tuổi • Con cái & Hậu vận
                                 </div>
                                 <div className="my-4 py-3 px-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-center">
                                   <span className="text-sm font-black block">⏰ Chưa chọn Giờ Sinh</span>
-                                  <span className="text-[11px] mt-0.5 block">Bấm để chọn giờ sinh Âm lịch</span>
+                                  <span className="text-[11px] mt-0.5 block">Bấm để chọn khung giờ sinh</span>
                                 </div>
                               </div>
                               <p className={`text-[11px] leading-relaxed ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                                Tham chiếu mặc định: Giờ {detailedFortune.birthHourFortune.hourChi} ({detailedFortune.birthHourFortune.hourCanChi}).
+                                Đang tạm tính theo Giờ {detailedFortune.birthHourFortune.hourChi} ({detailedFortune.birthHourFortune.hourCanChi}).
                               </p>
                             </div>
                           );
@@ -1971,7 +1977,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                                 </span>
                                 {isDayPillar && (
                                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500 text-slate-950">
-                                    Nhật Chủ
+                                    Trụ Chính
                                   </span>
                                 )}
                               </div>
@@ -1984,12 +1990,12 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                                   {pillar.canChi}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 text-[11px] font-bold flex-wrap">
-                                  <span>Can {pillar.can}: {elementLabel(pillar.canElement)}</span>
+                                  <span>Can {pillar.can} ({elementLabel(pillar.canElement)})</span>
                                   <span>•</span>
-                                  <span>Chi {pillar.chi}: {elementLabel(pillar.chiElement)}</span>
+                                  <span>Chi {pillar.chi} ({elementLabel(pillar.chiElement)})</span>
                                 </div>
                                 <div className={`text-[11px] mt-1 font-semibold ${isDarkTheme ? "text-emerald-300" : "text-emerald-700"}`}>
-                                  Nạp âm: {pillar.napAm} ({elementLabel(pillar.napAmElement)})
+                                  Mệnh: {pillar.napAm} (Hành {elementLabel(pillar.napAmElement)})
                                 </div>
                               </div>
                             </div>
@@ -2002,11 +2008,11 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                       })}
                     </div>
 
-                    {/* Biểu đồ Cân Bằng Ngũ Hành & Hỷ Dụng Thần */}
+                    {/* Biểu đồ Cân Bằng Ngũ Hành & Hành Nên Bổ Sung */}
                     <div className="mt-5 pt-5 border-t border-black/5 dark:border-white/10 grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
                       <div className="lg:col-span-7 space-y-2.5">
                         <div className="text-xs font-extrabold uppercase tracking-wider text-amber-500">
-                          Phân Bố Ngũ Hành Trong Tứ Trụ Bát Tự
+                          Số Lượng Ngũ Hành Trong Giờ, Ngày, Tháng, Năm Sinh
                         </div>
                         <div className="grid grid-cols-5 gap-2">
                           {([FiveElement.KIM, FiveElement.MOC, FiveElement.THUY, FiveElement.HOA, FiveElement.THO] as const).map((el) => {
@@ -2023,7 +2029,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                                     : count === 0
                                     ? isDarkTheme
                                       ? "bg-rose-500/15 border-rose-400/40 text-rose-200"
-                                      : "bg-rose-50 border-rose-200 text-rose-900"
+                                    : "bg-rose-50 border-rose-200 text-rose-900"
                                     : isDarkTheme
                                     ? "bg-slate-900/80 border-white/15 text-slate-100"
                                     : "bg-slate-50 border-slate-200 text-slate-800"
@@ -2033,7 +2039,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                                 <div className="text-xs font-black mt-0.5">{FIVE_ELEMENT_META[el].label}</div>
                                 <div className="text-sm font-black mt-0.5">{count}</div>
                                 <div className="text-[10px] font-bold mt-0.5">
-                                  {isDungThan ? "🌟 Dụng thần" : count === 0 ? "Khuyết" : "Đủ"}
+                                  {isDungThan ? "🌟 Nên bổ sung" : count === 0 ? "Đang thiếu" : "Đầy đủ"}
                                 </div>
                               </div>
                             );
@@ -2048,7 +2054,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                       >
                         <div className="font-black text-sm text-emerald-500 dark:text-emerald-300 flex items-center gap-1.5">
                           <Sparkles className="w-4 h-4" />
-                          Hỷ Dụng Thần: Hành {detailedFortune.fourPillars.hyDungThan.map(elementLabel).join(" & ")}
+                          Ngũ Hành Mang Lại May Mắn: Hành {detailedFortune.fourPillars.hyDungThan.map(elementLabel).join(" & ")}
                         </div>
                         <p className="leading-relaxed">
                           {detailedFortune.fourPillars.dungThanAdvice}
@@ -2057,7 +2063,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                     </div>
                   </div>
 
-                  {/* Khối 2: Luận Giải Chuyên Biệt Theo Giờ Sinh (Thời Trụ & Lý Thuần Phong) */}
+                  {/* Khối 2: Luận Giải Chi Tiết Theo Giờ Sinh */}
                   <div
                     className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
                       isDarkTheme ? "bg-slate-900/60 border-white/15 text-white" : "bg-white/90 border-slate-200 text-slate-900"
@@ -2065,10 +2071,12 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                       <h3 className="text-sm sm:text-base font-black flex items-center gap-2 text-amber-500">
-                        <Clock className="w-5 h-5" />
-                        Luận Giải Giờ Sinh ({detailedFortune.birthHourFortune.hasBirthHour
-                          ? `Giờ ${detailedFortune.birthHourFortune.hourChi} ${detailedFortune.birthHourFortune.hourRange} • ${detailedFortune.birthHourFortune.hourCanChi}`
-                          : `Tham Chiếu Giờ ${detailedFortune.birthHourFortune.hourChi}`}) — {detailedFortune.birthHourFortune.destinyTitle}
+                        <Clock className="w-5 h-5 shrink-0" />
+                        <span>
+                          Ý Nghĩa Giờ Sinh ({detailedFortune.birthHourFortune.hasBirthHour
+                            ? `Giờ ${detailedFortune.birthHourFortune.hourChi} ${detailedFortune.birthHourFortune.hourRange}`
+                            : `Tạm tính Giờ ${detailedFortune.birthHourFortune.hourChi}`}) — {detailedFortune.birthHourFortune.destinyTitle}
+                        </span>
                       </h3>
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
@@ -2076,14 +2084,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                             ? "bg-amber-500/20 text-amber-300 border-amber-400/40"
                             : isDarkTheme ? "bg-white/10 text-slate-200 border-white/15" : "bg-slate-100 text-slate-700 border-slate-200"
                         }`}>
-                          {detailedFortune.birthHourFortune.isHoangDaoHour ? "🌟 Sinh Giờ Hoàng Đạo" : "Sinh Giờ Hắc Đạo (Tự lập kiên cường)"}
-                        </span>
-                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
-                          detailedFortune.birthHourFortune.lyThuanPhong.isGood
-                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40"
-                            : isDarkTheme ? "bg-white/10 text-slate-200 border-white/15" : "bg-slate-100 text-slate-700 border-slate-200"
-                        }`}>
-                          Cung giờ: {detailedFortune.birthHourFortune.lyThuanPhong.name}
+                          {detailedFortune.birthHourFortune.isHoangDaoHour ? "🌟 Sinh vào Giờ Hoàng Đạo (Thuận lợi)" : "💪 Sinh vào Giờ Tự Lập (Bản lĩnh kiên cường)"}
                         </span>
                       </div>
                     </div>
@@ -2094,21 +2095,21 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
                       <div className={`p-3.5 rounded-2xl border ${isDarkTheme ? "bg-slate-900/80 border-white/15 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-700"}`}>
-                        <strong className="text-amber-500 dark:text-amber-300 block mb-1">✨ Khí chất theo giờ sinh:</strong>
+                        <strong className="text-amber-500 dark:text-amber-300 block mb-1">✨ Tính cách theo giờ sinh:</strong>
                         {detailedFortune.birthHourFortune.personalityTrait}
                       </div>
                       <div className={`p-3.5 rounded-2xl border ${isDarkTheme ? "bg-slate-900/80 border-white/15 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-700"}`}>
-                        <strong className="text-emerald-500 dark:text-emerald-300 block mb-1">💼 Tài vận & Sự nghiệp:</strong>
+                        <strong className="text-emerald-500 dark:text-emerald-300 block mb-1">💼 Công việc & Tiền bạc:</strong>
                         {detailedFortune.birthHourFortune.careerWealth}
                       </div>
                       <div className={`p-3.5 rounded-2xl border ${isDarkTheme ? "bg-slate-900/80 border-white/15 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-700"}`}>
-                        <strong className="text-indigo-500 dark:text-indigo-300 block mb-1">👨‍👩‍👧‍👦 Đường con cái & Hậu vận:</strong>
+                        <strong className="text-indigo-500 dark:text-indigo-300 block mb-1">👨‍👩‍👧‍👦 Con cái & Tuổi già:</strong>
                         {detailedFortune.birthHourFortune.childrenAndLateLife}
                       </div>
                     </div>
                   </div>
 
-                  {/* Khối 3: Phân Tích Chuyên Sâu Toàn Diện 8 Phương Diện Bằng Gemini 3.8 Flash High */}
+                  {/* Khối 3: Luận Giải Chi Tiết Bằng AI (8 Phương Diện Cuộc Đời) */}
                   <div
                     className={`p-6 sm:p-8 rounded-3xl backdrop-blur-xl border shadow-xl ${
                       isDarkTheme
@@ -2121,19 +2122,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-xs">
                             <BrainCircuit className="w-3.5 h-3.5" />
-                            Gemini 3.8 Flash High • Thinking Level: HIGH
-                          </span>
-                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
-                            aiSource === "gemini-3.8-flash-live"
-                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40"
-                              : isDarkTheme
-                              ? "bg-indigo-500/25 text-indigo-200 border-indigo-400/40"
-                              : "bg-indigo-100 text-indigo-800 border-indigo-300"
-                          }`}>
-                            {aiSource === "gemini-3.8-flash-live" ? "⚡ Cloud AI Live" : "⚡ Có sẵn (Built-in Deep Bát Tự Engine)"}
+                            Luận Giải Chi Tiết Bằng AI
                           </span>
                           <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-400/40">
-                            Chỉ số Cát Mệnh: {activeDeepAnalysis.overallScore}/100
+                            Điểm Hòa Hợp Bản Mệnh: {activeDeepAnalysis.overallScore}/100
                           </span>
                         </div>
                         <h3 className="text-lg sm:text-xl font-black mt-2">
@@ -2149,8 +2141,8 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                         <RefreshCw className={`w-4 h-4 ${isAnalyzingAi ? "animate-spin" : ""}`} />
                         <span>
                           {isAnalyzingAi
-                            ? "Gemini 3.8 Flash High đang suy luận..."
-                            : "Phân Tích Chuyên Sâu Bằng Gemini 3.8 Flash High"}
+                            ? "AI đang phân tích chi tiết..."
+                            : "Luận Giải Chi Tiết Lại Bằng AI"}
                         </span>
                       </button>
                     </div>
@@ -2162,7 +2154,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                       }`}
                     >
                       <strong className="text-amber-500 dark:text-amber-300 block mb-1">
-                        📌 Tổng Luận Mệnh Cục (Giờ • Ngày • Tháng • Năm • Giới Tính):
+                        📌 Tóm Tắt Tổng Quan Bản Mệnh:
                       </strong>
                       {activeDeepAnalysis.executiveSummary}
                     </div>
@@ -2815,14 +2807,14 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
             </div>
 
             <p className={`text-xs mb-4 leading-relaxed font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-              Nhập <strong>Giới tính</strong>, <strong>Giờ sinh</strong> và <strong>Ngày, Tháng, Năm sinh</strong> để hệ thống và <strong>Gemini 3.8 Flash High</strong> phân tích chính xác Tứ Trụ Bát Tự (8 chữ), Hỷ Dụng Thần, Cung Phi Bát Trạch, Thần Số Học, Cung Hoàng Đạo và Tử Vi trọn đời.
+              Nhập <strong>Giới tính</strong>, <strong>Giờ sinh</strong> và <strong>Ngày, Tháng, Năm sinh</strong> để nhận <strong>Luận giải chi tiết bằng AI</strong> về vận mệnh, ngũ hành may mắn, hướng hợp tuổi, Thần Số Học, Cung Hoàng Đạo và Tử Vi trọn đời.
             </p>
 
             <div className="space-y-4">
               {/* Chọn Giới Tính */}
               <div>
                 <label className={`block text-xs font-bold mb-1.5 ${isDarkTheme ? "text-slate-100" : "text-slate-800"}`}>
-                  Giới tính (Quyết định Cung Phi Bát Trạch & Đại Vận):
+                  Giới tính (Dùng để tính Cung mệnh & hướng phong thủy):
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
                   <button
@@ -2955,16 +2947,16 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                 </div>
               </div>
 
-              {/* Ô Nhập Giờ Sinh (12 Canh Giờ Âm Lịch - Trụ Giờ Bát Tự) */}
+              {/* Ô Nhập Giờ Sinh (12 Canh Giờ Âm Lịch) */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className={`block text-xs font-bold ${isDarkTheme ? "text-slate-100" : "text-slate-800"}`}>
-                    ⏰ Giờ sinh (Mở khóa Trụ Giờ Bát Tự & Cung Tử Tức):
+                    ⏰ Giờ sinh (Xem tính cách, đường con cái & hậu vận):
                   </label>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     isDarkTheme ? "bg-purple-500/20 text-purple-300" : "bg-purple-100 text-purple-800"
                   }`}>
-                    12 Canh Giờ Âm Lịch
+                    12 Khung Giờ Trong Ngày
                   </span>
                 </div>
                 <select
@@ -2979,7 +2971,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                       {h.emoji} Giờ {h.chi} ({h.range}) — {h.periodLabel}
                     </option>
                   ))}
-                  <option value={-1}>❓ Chưa rõ giờ sinh (Chỉ luận Tam Trụ Năm - Tháng - Ngày)</option>
+                  <option value={-1}>❓ Chưa rõ giờ sinh (Chỉ tính theo Năm - Tháng - Ngày sinh)</option>
                 </select>
               </div>
 
@@ -3039,7 +3031,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
                     <div>• Thần số học: <strong className={isDarkTheme ? "text-sky-300 font-bold" : "text-sky-700 font-bold"}>Số {modalPreviewFortune.numerology.lifePathNumber}</strong> ({modalPreviewFortune.numerology.title.split(" & ")[0]})</div>
                     <div>• Giờ sinh: <strong className={isDarkTheme ? "text-purple-300 font-bold" : "text-purple-700 font-bold"}>{tempBirthHour >= 0 ? `Giờ ${modalPreviewFortune.birthHourFortune.hourChi} (${modalPreviewFortune.birthHourFortune.hourCanChi})` : "Chưa rõ giờ"}</strong></div>
                     <div className={`col-span-2 pt-1.5 border-t border-black/10 dark:border-white/10 text-[11px] ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                      • Tứ Trụ Bát Tự: <strong className="text-slate-900 dark:text-white font-bold">Năm {modalPreviewFortune.fourPillars.yearPillar.canChi} • Tháng {modalPreviewFortune.fourPillars.monthPillar.canChi} • Ngày {modalPreviewFortune.fourPillars.dayPillar.canChi} {tempBirthHour >= 0 ? `• Giờ ${modalPreviewFortune.birthHourFortune.hourCanChi}` : ""}</strong> (Dụng thần: <strong className={isDarkTheme ? "text-emerald-300" : "text-emerald-700"}>{modalPreviewFortune.fourPillars.hyDungThan.map(elementLabel).join(" & ")}</strong>)
+                      • 4 cột mốc sinh: <strong className="text-slate-900 dark:text-white font-bold">Năm {modalPreviewFortune.fourPillars.yearPillar.canChi} • Tháng {modalPreviewFortune.fourPillars.monthPillar.canChi} • Ngày {modalPreviewFortune.fourPillars.dayPillar.canChi} {tempBirthHour >= 0 ? `• Giờ ${modalPreviewFortune.birthHourFortune.hourCanChi}` : ""}</strong> (Hành bổ trợ: <strong className={isDarkTheme ? "text-emerald-300" : "text-emerald-700"}>{modalPreviewFortune.fourPillars.hyDungThan.map(elementLabel).join(" & ")}</strong>)
                     </div>
                   </div>
                 </div>

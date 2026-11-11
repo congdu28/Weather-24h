@@ -90,44 +90,44 @@ export async function analyzeFortuneWithGemini38FlashHigh(
 
   if (apiKey && apiKey.startsWith("AIza")) {
     try {
-      const prompt = `Bạn là Đại sư Tử Vi Đẩu Số, Tứ Trụ Bát Tự (Tử Bình), Phong Thủy Bát Trạch và Thần Số Học hàng đầu Việt Nam.
-Hãy sử dụng tư duy chuyên sâu (High Thinking) để luận giải toàn diện tất cả các mặt cuộc đời cho gia chủ với thông tin lá số sau:
+      const prompt = `Bạn là chuyên gia Tử Vi, Tứ Trụ Bát Tự, Phong Thủy Bát Trạch và Thần Số Học hàng đầu Việt Nam.
+Hãy phân tích chi tiết tất cả các mặt cuộc đời cho gia chủ với thông tin lá số sau (viết bằng tiếng Việt gần gũi, dễ hiểu, rõ ràng, tránh dùng các thuật ngữ Hán Việt quá học thuật gây khó hiểu):
 
 - Giới tính: ${genderText}
 - Ngày sinh Dương lịch: ${solarDate.day}/${solarDate.month}/${solarDate.year}
 - Ngày sinh Âm lịch: Ngày ${lunarDate.day} tháng ${lunarDate.month}${lunarDate.isLeapMonth ? " (Nhuận)" : ""} năm ${lunarDate.yearCanChi} (${lunarDate.year})
 - Giờ sinh: ${hourText}
-- Tứ Trụ Bát Tự:
-  + Trụ Năm (Niên Trụ): ${fourPillars.yearPillar.canChi} (${fourPillars.yearPillar.napAm})
-  + Trụ Tháng (Nguyệt Trụ): ${fourPillars.monthPillar.canChi} (${fourPillars.monthPillar.napAm})
-  + Trụ Ngày (Nhật Chủ): ${fourPillars.dayPillar.canChi} (${fourPillars.dayPillar.napAm}) - Nhật nguyên ${fourPillars.nhatChuCan} (${elementLabel(fourPillars.nhatChuElement)}) thuộc cách cục ${fourPillars.nhatChuStrength}
-  + Trụ Giờ (Thời Trụ): ${birthHourFortune.hourCanChi} (${birthHourFortune.hourNapAm})
-- Ngũ hành khuyết: ${lackingText} | Hỷ Dụng Thần: ${dungThanText}
+- 4 Trụ Sinh (Năm - Tháng - Ngày - Giờ):
+  + Năm sinh: ${fourPillars.yearPillar.canChi} (${fourPillars.yearPillar.napAm})
+  + Tháng sinh: ${fourPillars.monthPillar.canChi} (${fourPillars.monthPillar.napAm})
+  + Ngày sinh: ${fourPillars.dayPillar.canChi} (${fourPillars.dayPillar.napAm}) - Hành ngày sinh: ${elementLabel(fourPillars.nhatChuElement)}
+  + Giờ sinh: ${birthHourFortune.hourCanChi} (${birthHourFortune.hourNapAm})
+- Ngũ hành khuyết: ${lackingText} | Ngũ hành cần bổ sung để may mắn: ${dungThanText}
 - Mệnh Nạp Âm năm sinh: ${personalProfile.napAm} (Mệnh ${elementLabel(personalProfile.element)})
 - Cung Phi Bát Trạch: Cung ${cungPhi} (${cungPhiGroup})
 - Con số chủ đạo Pythagoras: Số ${numerology.lifePathNumber} (${numerology.title})
 - Cung Hoàng Đạo: ${westernZodiac.name} (${westernZodiac.element})
 - Sao Hạn năm 2026 (Bính Ngọ): ${saoHan2026.lunarAge} tuổi mụ, Sao ${saoHan2026.sao} (${saoHan2026.saoType}), Hạn ${saoHan2026.han}.
 
-Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau (viết bằng tiếng Việt chuẩn mực, sâu sắc, giàu tính học thuật tử vi nhưng dễ hiểu, thiết thực):
+Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau:
 {
-  "overallHeadline": "Tiêu đề khái quát lá số (ngắn gọn, uyên bác)",
+  "overallHeadline": "${genderText} tuổi ${personalProfile.canChi} (${personalProfile.birthYear} • ${personalProfile.napAm})",
   "overallScore": 90,
-  "executiveSummary": "Đoạn tổng kết toàn cục lá số dựa trên Giờ, Ngày, Tháng, Năm sinh và Giới tính (khoảng 3-4 câu sâu sắc)",
+  "executiveSummary": "Đoạn tổng kết toàn cục lá số dựa trên Giờ, Ngày, Tháng, Năm sinh và Giới tính (khoảng 3-4 câu dễ hiểu, thiết thực)",
   "aspects": [
     {
       "id": "battu_nguhanh",
-      "title": "1. Tứ Trụ Bát Tự & Cân Bằng Ngũ Hành (Hỷ Dụng Thần)",
-      "badge": "${fourPillars.nhatChuStrength} • Dụng thần ${dungThanText}",
+      "title": "1. Bản Mệnh 4 Trụ Sinh & Ngũ Hành Cần Bổ Sung",
+      "badge": "Nên bổ sung hành ${dungThanText}",
       "icon": "☯️",
-      "summary": "Luận giải tổng quan cấu trúc 4 trụ Năm - Tháng - Ngày - Giờ",
+      "summary": "Luận giải tổng quan 4 cột mốc Năm - Tháng - Ngày - Giờ sinh và cách cân bằng ngũ hành",
       "details": ["Chi tiết 1...", "Chi tiết 2...", "Chi tiết 3...", "Chi tiết 4..."],
-      "actionableAdvice": "Lời khuyên ứng dụng Dụng Thần cụ thể"
+      "actionableAdvice": "Lời khuyên ứng dụng cụ thể"
     },
     {
       "id": "tinhcach_tamly",
-      "title": "2. Tâm Lý Chiều Sâu, Khí Chất & Thiên Phú Bẩm Sinh",
-      "badge": "Nhật chủ ${fourPillars.nhatChuCan} • Giờ ${birthHourFortune.hourChi}",
+      "title": "2. Tính Cách, Nội Tâm & Điểm Mạnh Bẩm Sinh",
+      "badge": "Mệnh ${elementLabel(personalProfile.element)} • Số ${numerology.lifePathNumber}",
       "icon": "🧠",
       "summary": "...",
       "details": ["...", "...", "..."],
@@ -135,8 +135,8 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau (viết b
     },
     {
       "id": "sunghiep_congdanh",
-      "title": "3. Công Danh, Sự Nghiệp & Định Hướng Ngành Nghề Đại Cát",
-      "badge": "Lộ trình công danh",
+      "title": "3. Công Việc, Sự Nghiệp & Ngành Nghề Phù Hợp",
+      "badge": "Phát triển 30 - 50 tuổi",
       "icon": "🚀",
       "summary": "...",
       "details": ["...", "...", "..."],
@@ -144,8 +144,8 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau (viết b
     },
     {
       "id": "tailoc_dientrach",
-      "title": "4. Tài Lộc, Điền Trạch (Nhà Đất) & Chiến Lược Tích Sản",
-      "badge": "Tài vận & Điền sản",
+      "title": "4. Tiền Bạc, Nhà Đất & Cách Quản Lý Tài Chính",
+      "badge": "Tài lộc & Nhà đất",
       "icon": "💰",
       "summary": "...",
       "details": ["...", "...", "..."],
@@ -153,8 +153,8 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau (viết b
     },
     {
       "id": "tinhduyen_giadao",
-      "title": "5. Tình Duyên, Hôn Nhân & Phúc Đức Con Cái (Cung Tử Tức)",
-      "badge": "Phu Thê & Tử Tức",
+      "title": "5. Tình Duyên, Hôn Nhân & Đường Con Cái",
+      "badge": "Gia đạo & Con cái",
       "icon": "❤️",
       "summary": "...",
       "details": ["...", "...", "..."],
@@ -162,8 +162,8 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau (viết b
     },
     {
       "id": "suckhoe_tangphu",
-      "title": "6. Sức Khỏe Đông Y & Tạng Phủ Theo Ngũ Hành Bát Tự",
-      "badge": "Y lý ngũ hành",
+      "title": "6. Sức Khỏe & Chế Độ Sinh Hoạt Cần Lưu Ý",
+      "badge": "Chăm sóc sức khỏe",
       "icon": "🌿",
       "summary": "...",
       "details": ["...", "...", "..."],
@@ -171,7 +171,7 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau (viết b
     },
     {
       "id": "daivan_luunien2026",
-      "title": "7. Đại Vận Cuộc Đời & Chiến Lược Lưu Niên 2026 (Bính Ngọ)",
+      "title": "7. Dự Báo Vận Trình Năm 2026 (Bính Ngọ)",
       "badge": "Sao ${saoHan2026.sao} • Hạn ${saoHan2026.han}",
       "icon": "🔮",
       "summary": "...",
@@ -180,7 +180,7 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau (viết b
     },
     {
       "id": "phongthuy_caivan",
-      "title": "8. Cẩm Nang Phong Thủy Cải Vận Cá Nhân Hóa",
+      "title": "8. Cẩm Nang Phong Thủy May Mắn Hàng Ngày",
       "badge": "Cung ${cungPhi}",
       "icon": "🧭",
       "summary": "...",
@@ -220,8 +220,8 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau (viết b
           const parsed = JSON.parse(rawText);
           if (parsed && Array.isArray(parsed.aspects) && parsed.aspects.length >= 6) {
             const finalResult: DeepFortuneAnalysis = {
-              modelVersion: "gemini-3.8-flash",
-              thinkingMode: "HIGH (Gemini 3.8 Flash High • Phân tích Tứ Trụ Bát Tự chuyên sâu)",
+              modelVersion: "AI",
+              thinkingMode: "Luận giải chi tiết bằng AI",
               overallHeadline: parsed.overallHeadline || fortune.deepAnalysis.overallHeadline,
               overallScore: Number(parsed.overallScore) || fortune.deepAnalysis.overallScore,
               executiveSummary: parsed.executiveSummary || fortune.deepAnalysis.executiveSummary,
