@@ -23,8 +23,17 @@ import {
   UserBirthProfile,
   DetailedBirthFortune,
   getDetailedBirthFortune,
-  elementLabel
+  elementLabel,
+  BIRTH_HOUR_OPTIONS,
+  FiveElement,
+  FIVE_ELEMENT_META,
+  DeepFortuneAnalysis
 } from "../utils/lunarAlmanac";
+import {
+  analyzeFortuneWithGemini38FlashHigh,
+  getCachedGeminiFortune,
+  getFortuneProfileCacheKey
+} from "../services/geminiFortuneService";
 import {
   Calendar,
   Compass,
@@ -47,7 +56,9 @@ import {
   Shield,
   TrendingUp,
   Zap,
-  Star
+  Star,
+  RefreshCw,
+  BrainCircuit
 } from "lucide-react";
 import { DailyForecast } from "../types/weather";
 import { getWeatherCondition } from "../services/weatherApi";
@@ -57,11 +68,12 @@ import { usePersistentState } from "../utils/usePersistentState";
 interface Props {
   isDarkTheme?: boolean;
   dailyForecast?: DailyForecast[];
+  geminiApiKey?: string;
 }
 
 const emptySubscribe = () => () => {};
 
-export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: Props) {
+export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, geminiApiKey }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [activeSubTab, setActiveSubTab] = useState<"day" | "month" | "good_days" | "fortune" | "converter">("day");
 
@@ -70,6 +82,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
   const [birthYear, setBirthYear] = usePersistentState<number>("weather24h_birth_year", 0);
   const [showBirthProfileModal, setShowBirthProfileModal] = useState<boolean>(false);
   const [filterPersonalMatch, setFilterPersonalMatch] = useState<boolean>(true);
+  const [showFortunePromptBanner, setShowFortunePromptBanner] = useState<boolean>(true);
 
   // Client mounted state for createPortal (SSR safe via useSyncExternalStore)
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
@@ -84,15 +97,22 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
     }
   }, [showBirthProfileModal]);
 
-  // State tạm thời cho Modal thiết lập ngày sinh & giới tính
+  // State tạm thời cho Modal thiết lập ngày, tháng, năm, giờ sinh & giới tính
   const [tempGender, setTempGender] = useState<"male" | "female">("male");
   const [tempDay, setTempDay] = useState<number>(15);
   const [tempMonth, setTempMonth] = useState<number>(6);
   const [tempYear, setTempYear] = useState<number>(1990);
   const [tempIsLunar, setTempIsLunar] = useState<boolean>(false);
+  const [tempBirthHour, setTempBirthHour] = useState<number>(6); // Mặc định Giờ Ngọ (11:00 - 12:59), -1 là chưa rõ giờ
 
   // Phân mục bên trong Tab 5 (Bói Tử Vi & Vận Mệnh)
-  const [fortuneCategory, setFortuneCategory] = useState<"battrach" | "lifestages" | "numerology" | "zodiac" | "year2026">("battrach");
+  const [fortuneCategory, setFortuneCategory] = useState<"deep_ai" | "battrach" | "lifestages" | "numerology" | "zodiac" | "year2026">("deep_ai");
+
+  // State cho phân tích chuyên sâu bằng Gemini 3.8 Flash High
+  const [aiResultsByKey, setAiResultsByKey] = useState<
+    Record<string, { analysis: DeepFortuneAnalysis; source: "gemini-3.8-flash-live" | "gemini-3.8-flash-builtin" }>
+  >({});
+  const [isAnalyzingAi, setIsAnalyzingAi] = useState<boolean>(false);
 
   // Hồ sơ hợp nhất đảm bảo tương thích ngược nếu trước đó đã lưu birthYear
   const effectiveProfile: UserBirthProfile | null = useMemo(() => {
@@ -105,7 +125,18 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
     return null;
   }, [userProfile, birthYear]);
 
-  // Chi tiết luận giải tử vi vận mệnh theo giới tính & ngày tháng năm sinh
+  // Kiểm tra xem người dùng đã nhập đầy đủ thông tin (bao gồm cả Giờ sinh) chưa
+  const isProfileCompleteWithHour = useMemo(() => {
+    return Boolean(
+      userProfile &&
+        userProfile.year >= 1900 &&
+        typeof userProfile.birthHour === "number" &&
+        userProfile.birthHour >= 0 &&
+        userProfile.birthHour <= 11
+    );
+  }, [userProfile]);
+
+  // Chi tiết luận giải tử vi vận mệnh theo giới tính & giờ, ngày, tháng, năm sinh
   const detailedFortune: DetailedBirthFortune | null = useMemo(() => {
     if (!effectiveProfile) return null;
     try {
@@ -115,6 +146,38 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
     }
   }, [effectiveProfile]);
 
+  // Kết quả phân tích chuyên sâu Gemini 3.8 Flash High (ưu tiên kết quả vừa chạy hoặc cache, fallback có sẵn)
+  const { activeDeepAnalysis, aiSource } = useMemo(() => {
+    if (!detailedFortune) {
+      return { activeDeepAnalysis: null, aiSource: "gemini-3.8-flash-builtin" as const };
+    }
+    const key = getFortuneProfileCacheKey(detailedFortune);
+    const inMemory = aiResultsByKey[key];
+    if (inMemory) {
+      return { activeDeepAnalysis: inMemory.analysis, aiSource: inMemory.source };
+    }
+    const cached = getCachedGeminiFortune(detailedFortune);
+    if (cached) {
+      return { activeDeepAnalysis: cached, aiSource: "gemini-3.8-flash-live" as const };
+    }
+    return { activeDeepAnalysis: detailedFortune.deepAnalysis, aiSource: "gemini-3.8-flash-builtin" as const };
+  }, [detailedFortune, aiResultsByKey]);
+
+  const handleTriggerGeminiDeepAnalysis = async (forceRefresh = true) => {
+    if (!detailedFortune || isAnalyzingAi) return;
+    setIsAnalyzingAi(true);
+    try {
+      const key = getFortuneProfileCacheKey(detailedFortune);
+      const res = await analyzeFortuneWithGemini38FlashHigh(detailedFortune, geminiApiKey, forceRefresh);
+      setAiResultsByKey((prev) => ({
+        ...prev,
+        [key]: res
+      }));
+    } finally {
+      setIsAnalyzingAi(false);
+    }
+  };
+
   const openProfileModal = () => {
     if (userProfile) {
       setTempGender(userProfile.gender);
@@ -122,18 +185,25 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
       setTempMonth(userProfile.month);
       setTempYear(userProfile.year);
       setTempIsLunar(userProfile.isLunar || false);
+      setTempBirthHour(
+        typeof userProfile.birthHour === "number" && userProfile.birthHour >= -1 && userProfile.birthHour <= 11
+          ? userProfile.birthHour
+          : 6
+      );
     } else if (birthYear >= 1900 && birthYear <= 2100) {
       setTempGender("male");
       setTempDay(15);
       setTempMonth(6);
       setTempYear(birthYear);
       setTempIsLunar(false);
+      setTempBirthHour(6);
     } else {
       setTempGender("male");
       setTempDay(15);
       setTempMonth(6);
       setTempYear(1990);
       setTempIsLunar(false);
+      setTempBirthHour(6);
     }
     setShowBirthProfileModal(true);
   };
@@ -152,11 +222,22 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
       month: tempMonth,
       year: tempYear,
       gender: tempGender,
-      isLunar: tempIsLunar
+      isLunar: tempIsLunar,
+      birthHour: tempBirthHour >= 0 ? tempBirthHour : undefined
     };
     setUserProfile(p);
     setBirthYear(tempYear);
     setShowBirthProfileModal(false);
+  };
+
+  const handleQuickSelectBirthHour = (hourChiIdx: number) => {
+    const base = effectiveProfile || { day: 15, month: 6, year: 1990, gender: "male" as const, isLunar: false };
+    const updated: UserBirthProfile = {
+      ...base,
+      birthHour: hourChiIdx
+    };
+    setUserProfile(updated);
+    setBirthYear(updated.year);
   };
 
   const handleClearProfile = () => {
@@ -173,12 +254,13 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
         month: tempMonth,
         year: tempYear,
         gender: tempGender,
-        isLunar: tempIsLunar
+        isLunar: tempIsLunar,
+        birthHour: tempBirthHour >= 0 ? tempBirthHour : undefined
       });
     } catch {
       return null;
     }
-  }, [effectiveTempDay, tempMonth, tempYear, tempGender, tempIsLunar]);
+  }, [effectiveTempDay, tempMonth, tempYear, tempGender, tempIsLunar, tempBirthHour]);
 
   // Lunar date for selected date
   const lunarDate: LunarDate = useMemo(() => {
@@ -375,6 +457,15 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                   }`}>
                     Mệnh {elementLabel(detailedFortune.personalProfile.element)} • {detailedFortune.personalProfile.napAm}
                   </span>
+                  {detailedFortune.birthHourFortune.hasBirthHour && (
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                      isDarkTheme
+                        ? "bg-purple-500/25 text-purple-200 border-purple-400/50"
+                        : "bg-purple-500/15 text-purple-800 border-purple-400/40"
+                    }`}>
+                      ⏰ Giờ {detailedFortune.birthHourFortune.hourChi} ({detailedFortune.birthHourFortune.hourCanChi})
+                    </span>
+                  )}
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
                     isDarkTheme
                       ? "bg-indigo-500/25 text-indigo-200 border-indigo-400/50"
@@ -418,15 +509,15 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
             ) : (
               <>
                 <div className="text-sm font-black flex items-center gap-2">
-                  <span>Chưa thiết lập ngày sinh & giới tính</span>
+                  <span>Chưa thiết lập giờ, ngày, tháng, năm sinh & giới tính</span>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                     isDarkTheme ? "bg-amber-500/30 text-amber-200 border border-amber-400/40" : "bg-amber-500/20 text-amber-800"
                   }`}>
-                    Cá nhân hóa
+                    Tứ Trụ Bát Tự
                   </span>
                 </div>
                 <p className={`text-xs mt-1 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                  Nhập giới tính, ngày tháng năm sinh để xem tử vi trọn đời, Bát Trạch phong thủy, thần số học và ngày hợp tuổi!
+                  Nhập giới tính, giờ sinh, ngày tháng năm sinh để Gemini 3.8 Flash High luận giải Tứ Trụ Bát Tự, Tử Vi trọn đời & Bát Trạch!
                 </p>
               </>
             )}
@@ -441,7 +532,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               : "bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950"
           }`}
         >
-          {detailedFortune ? "Đổi thông tin sinh" : profile ? `Đổi tuổi (${profile.birthYear})` : "Nhập ngày sinh & giới tính ›"}
+          {detailedFortune ? "Đổi giờ & ngày sinh" : profile ? `Đổi tuổi (${profile.birthYear})` : "Nhập giờ & ngày sinh ›"}
         </button>
       </div>
 
@@ -494,7 +585,10 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
           Tìm Ngày Tốt
         </button>
         <button
-          onClick={() => setActiveSubTab("fortune")}
+          onClick={() => {
+            setActiveSubTab("fortune");
+            setShowFortunePromptBanner(true);
+          }}
           className={`flex-1 min-w-[125px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
             activeSubTab === "fortune"
               ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 font-black"
@@ -1506,9 +1600,94 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
         </div>
       )}
 
-      {/* 5. BÓI TỬ VI & VẬN MỆNH CHI TIẾT THEO GIỚI TÍNH, NGÀY THÁNG NĂM SINH */}
+      {/* 5. BÓI TỬ VI & VẬN MỆNH CHI TIẾT THEO GIỚI TÍNH, GIỜ, NGÀY, THÁNG, NĂM SINH */}
       {activeSubTab === "fortune" && (
         <div className="space-y-6">
+          {/* Gợi ý người dùng nhập đầy đủ thông tin (Giới tính + Giờ + Ngày + Tháng + Năm sinh) khi bấm vào tab xem bói */}
+          {(!isProfileCompleteWithHour && showFortunePromptBanner) && (
+            <div
+              className={`p-5 sm:p-6 rounded-3xl border backdrop-blur-xl shadow-lg transition-all ${
+                isDarkTheme
+                  ? "bg-gradient-to-r from-amber-500/20 via-purple-950/35 to-slate-900 border-amber-400/45 text-white"
+                  : "bg-gradient-to-r from-amber-50 via-orange-50/80 to-indigo-50/70 border-amber-300 text-slate-900"
+              }`}
+            >
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-2xl bg-amber-500 text-slate-950 flex items-center justify-center font-black text-xl shrink-0 shadow-md">
+                    ✨
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                        Gợi Ý Bói Tứ Trụ Bát Tự Chuẩn Xác Nhất
+                      </span>
+                      <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                        isDarkTheme ? "bg-purple-500/25 text-purple-200 border-purple-400/40" : "bg-purple-100 text-purple-800 border-purple-300"
+                      }`}>
+                        Gemini 3.8 Flash High
+                      </span>
+                    </div>
+                    <h4 className="text-sm sm:text-base font-black mt-1.5">
+                      {!userProfile
+                        ? "Hãy nhập đầy đủ Giới tính, Giờ sinh, Ngày, Tháng, Năm sinh để luận giải chi tiết tất cả các mặt!"
+                        : "Bạn chưa chọn Giờ Sinh (Trụ Giờ)! Hãy bổ sung Giờ Sinh để hoàn thiện đủ 4 trụ Bát Tự (Năm - Tháng - Ngày - Giờ)."}
+                    </h4>
+                    <p className={`text-xs mt-1 leading-relaxed font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
+                      Trong Tử Vi Đẩu Số & Bát Tự Tử Bình, <strong>Giờ sinh (Thời Trụ)</strong> cùng <strong>Ngày, Tháng, Năm sinh và Giới tính</strong> quyết định trực tiếp đến <strong>Hỷ Dụng Thần, Khuyết Ngũ Hành, Cung Tử Tức (con cái) và Hậu Vận</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+                  <button
+                    onClick={openProfileModal}
+                    className="px-4 py-2.5 rounded-2xl text-xs font-black bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-md transition-all flex items-center gap-1.5"
+                  >
+                    <Clock className="w-4 h-4" />
+                    Nhập Đầy Đủ Giờ & Ngày Sinh ›
+                  </button>
+                  {detailedFortune && (
+                    <button
+                      onClick={() => setShowFortunePromptBanner(false)}
+                      className={`p-2 rounded-xl text-xs transition-all ${
+                        isDarkTheme ? "hover:bg-white/10 text-slate-300" : "hover:bg-slate-200 text-slate-600"
+                      }`}
+                      title="Ẩn gợi ý"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Thanh chọn nhanh 12 Canh Giờ Sinh ngay tại chỗ nếu đã có năm/ngày sinh */}
+              {detailedFortune && (
+                <div className="mt-4 pt-3.5 border-t border-amber-500/20">
+                  <span className={`text-[11px] font-bold block mb-2 ${isDarkTheme ? "text-amber-200" : "text-amber-900"}`}>
+                    ⚡ Chọn nhanh Giờ Sinh của bạn để mở khóa Trụ Giờ (Thời Trụ) ngay lập tức:
+                  </span>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-1.5">
+                    {BIRTH_HOUR_OPTIONS.map((h) => (
+                      <button
+                        key={h.chiIndex}
+                        onClick={() => handleQuickSelectBirthHour(h.chiIndex)}
+                        className={`px-2.5 py-1.5 rounded-xl text-left text-[11px] font-bold border transition-all flex items-center justify-between ${
+                          isDarkTheme
+                            ? "bg-slate-900/80 hover:bg-amber-500/25 text-slate-100 border-white/15 hover:border-amber-400/50"
+                            : "bg-white/90 hover:bg-amber-100 text-slate-800 border-slate-200 hover:border-amber-400"
+                        }`}
+                      >
+                        <span>{h.emoji} Giờ {h.chi}</span>
+                        <span className={`text-[10px] ${isDarkTheme ? "text-slate-300" : "text-slate-500"}`}>{h.range.replace(":00", "h").replace(":59", "h")}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {!detailedFortune ? (
             <div
               className={`p-8 sm:p-12 rounded-3xl backdrop-blur-xl border text-center shadow-xl ${
@@ -1518,22 +1697,22 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
               <div className="w-16 h-16 rounded-3xl bg-amber-500/20 text-amber-500 flex items-center justify-center mx-auto mb-4 font-bold text-3xl">
                 🔮
               </div>
-              <h3 className="text-xl sm:text-2xl font-black mb-2">Bói Tử Vi & Vận Mệnh Cá Nhân Hóa</h3>
+              <h3 className="text-xl sm:text-2xl font-black mb-2">Bói Tử Vi & Tứ Trụ Bát Tự Chuyên Sâu (Gemini 3.8 Flash High)</h3>
               <p className={`text-xs sm:text-sm max-w-lg mx-auto mb-6 leading-relaxed font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                Khám phá bản mệnh toàn diện theo <strong>Giới tính</strong> và <strong>Ngày, Tháng, Năm sinh</strong>:
-                Bát Trạch phong thủy theo giới tính, Tử Vi trọn đời 3 thời kỳ Tiền - Trung - Hậu vận, Thần Số Học Pythagoras số chủ đạo,
-                Cung Hoàng Đạo phương Tây giao thoa 12 con giáp, và dự báo Sao Hạn năm 2026 (Bính Ngọ).
+                Khám phá bản mệnh toàn diện theo <strong>Giới tính</strong> và <strong>Giờ, Ngày, Tháng, Năm sinh</strong>:
+                Phân tích 8 chữ Tứ Trụ Bát Tự & Hỷ Dụng Thần bằng <strong>Gemini 3.8 Flash High</strong>, Bát Trạch phong thủy theo giới tính,
+                Tử Vi 3 thời kỳ Tiền - Trung - Hậu vận, Thần Số Học Pythagoras, Cung Hoàng Đạo và Sao Hạn năm 2026 (Bính Ngọ).
               </p>
               <button
                 onClick={openProfileModal}
                 className="px-6 py-3 rounded-2xl font-black text-sm bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 shadow-lg shadow-amber-500/25 transition-all inline-flex items-center gap-2"
               >
                 <User className="w-4 h-4" />
-                Nhập Ngày Sinh & Giới Tính Để Mở Lá Số ›
+                Nhập Giờ, Ngày, Tháng, Năm Sinh & Giới Tính ›
               </button>
 
               <div className="mt-8 pt-6 border-t border-black/5 dark:border-white/10">
-                <span className={`text-xs font-bold block mb-3 ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>Hoặc chọn nhanh năm sinh phổ biến:</span>
+                <span className={`text-xs font-bold block mb-3 ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>Hoặc chọn nhanh năm sinh phổ biến (sau đó có thể chọn thêm giờ/ngày sinh):</span>
                 <div className="flex items-center justify-center gap-2 flex-wrap max-w-xl mx-auto">
                   {[1988, 1989, 1990, 1991, 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003].map((y) => {
                     const p = getPersonalProfile(y);
@@ -1541,7 +1720,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                       <button
                         key={y}
                         onClick={() => {
-                          setUserProfile({ day: 15, month: 6, year: y, gender: "male", isLunar: false });
+                          setUserProfile({ day: 15, month: 6, year: y, gender: "male", isLunar: false, birthHour: 6 });
                           setBirthYear(y);
                         }}
                         className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all ${
@@ -1590,12 +1769,19 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                         <h2 className="text-xl sm:text-2xl font-black">
                           Tuổi {detailedFortune.personalProfile.canChi} ({detailedFortune.personalProfile.birthYear})
                         </h2>
+                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                          isDarkTheme ? "bg-purple-500/25 text-purple-200 border-purple-400/40" : "bg-purple-100 text-purple-800 border-purple-300"
+                        }`}>
+                          ⏰ {detailedFortune.birthHourFortune.hasBirthHour
+                            ? `Giờ ${detailedFortune.birthHourFortune.hourChi} (${detailedFortune.birthHourFortune.hourRange})`
+                            : "Chưa chọn giờ sinh"}
+                        </span>
                       </div>
                       <p className={`text-xs sm:text-sm mt-1 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
                         Sinh ngày <strong>{detailedFortune.solarDate.day}/{detailedFortune.solarDate.month}/{detailedFortune.solarDate.year}</strong> (Dương lịch) • Âm lịch: ngày <strong>{detailedFortune.lunarDate.day}/{detailedFortune.lunarDate.month}</strong> năm <strong>{detailedFortune.lunarDate.yearCanChi} ({detailedFortune.lunarDate.year})</strong>
                       </p>
                       <div className={`text-[11px] mt-0.5 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                        Tứ Trụ Can Chi: Năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong> • Tháng <strong>{detailedFortune.lunarDate.monthCanChi}</strong> • Ngày <strong>{detailedFortune.lunarDate.dayCanChi}</strong>
+                        Tứ Trụ Bát Tự: Năm <strong>{detailedFortune.lunarDate.yearCanChi}</strong> • Tháng <strong>{detailedFortune.lunarDate.monthCanChi}</strong> • Ngày <strong>{detailedFortune.lunarDate.dayCanChi}</strong> • Giờ <strong>{detailedFortune.birthHourFortune.hasBirthHour ? detailedFortune.birthHourFortune.hourCanChi : `${detailedFortune.birthHourFortune.hourCanChi} (tham chiếu)`}</strong>
                       </div>
                     </div>
                   </div>
@@ -1605,7 +1791,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     className="px-4 py-2.5 rounded-2xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 transition-all shadow-md shrink-0 self-end lg:self-center flex items-center gap-1.5"
                   >
                     <User className="w-4 h-4" />
-                    Sửa thông tin sinh
+                    Sửa giờ & ngày sinh
                   </button>
                 </div>
 
@@ -1661,6 +1847,7 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 }`}
               >
                 {[
+                  { id: "deep_ai" as const, label: "Luận Giải Chuyên Sâu (Gemini 3.8)", icon: "✨", tag: "Tứ Trụ & Toàn Diện" },
                   { id: "battrach" as const, label: "Bát Trạch Phong Thủy", icon: "🧭", tag: "Theo Giới Tính" },
                   { id: "lifestages" as const, label: "Tử Vi Trọn Đời", icon: "📜", tag: "3 Thời Kỳ & Tình Duyên" },
                   { id: "numerology" as const, label: "Thần Số Học", icon: "🔢", tag: "Số Chủ Đạo Pythagoras" },
@@ -1683,6 +1870,362 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                   </button>
                 ))}
               </div>
+
+              {/* 0. PHÂN TÍCH CHUYÊN SÂU TOÀN DIỆN BẰNG GEMINI 3.8 FLASH HIGH & TỨ TRỤ BÁT TỰ */}
+              {fortuneCategory === "deep_ai" && activeDeepAnalysis && (
+                <div className="space-y-6">
+                  {/* Khối 1: Bảng Lá Số Tứ Trụ Bát Tự (Năm - Tháng - Ngày - Giờ) & Cân Bằng Ngũ Hành */}
+                  <div
+                    className={`p-6 sm:p-7 rounded-3xl backdrop-blur-xl border shadow-xl ${
+                      isDarkTheme ? "bg-slate-900/65 border-white/15 text-white" : "bg-white/90 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-amber-500/20">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-black uppercase px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                            Lá Số Bát Tự Tử Bình (4 Trụ 8 Chữ)
+                          </span>
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                            isDarkTheme ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40" : "bg-emerald-50 text-emerald-800 border-emerald-300"
+                          }`}>
+                            Nhật Chủ: {detailedFortune.fourPillars.nhatChuCan} ({elementLabel(detailedFortune.fourPillars.nhatChuElement)}) • {detailedFortune.fourPillars.nhatChuStrength}
+                          </span>
+                        </div>
+                        <h3 className="text-base sm:text-lg font-black mt-1.5">
+                          Tứ Trụ Mệnh Cục Theo Giờ, Ngày, Tháng, Năm Sinh
+                        </h3>
+                      </div>
+
+                      <button
+                        onClick={openProfileModal}
+                        className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition-all self-start sm:self-center flex items-center gap-1.5 ${
+                          isDarkTheme
+                            ? "bg-white/10 hover:bg-white/15 text-amber-300 border-amber-400/40"
+                            : "bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300"
+                        }`}
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        {detailedFortune.birthHourFortune.hasBirthHour
+                          ? `Đổi giờ sinh (Giờ ${detailedFortune.birthHourFortune.hourChi})`
+                          : "Chọn Giờ Sinh để mở Trụ Giờ"}
+                      </button>
+                    </div>
+
+                    {/* 4 Cột Tứ Trụ: Năm - Tháng - Ngày - Giờ */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                      {[
+                        detailedFortune.fourPillars.yearPillar,
+                        detailedFortune.fourPillars.monthPillar,
+                        detailedFortune.fourPillars.dayPillar,
+                        detailedFortune.fourPillars.hourPillar
+                      ].map((pillar, idx) => {
+                        if (!pillar) {
+                          return (
+                            <div
+                              key="missing-hour"
+                              onClick={openProfileModal}
+                              className={`p-4 rounded-2xl border border-dashed cursor-pointer transition-all flex flex-col justify-between ${
+                                isDarkTheme
+                                  ? "bg-amber-500/10 border-amber-400/50 hover:bg-amber-500/15 text-amber-100"
+                                  : "bg-amber-50/70 border-amber-400 hover:bg-amber-100/70 text-amber-950"
+                              }`}
+                            >
+                              <div>
+                                <div className="text-xs font-black uppercase text-amber-500">
+                                  Trụ Giờ (Thời Trụ)
+                                </div>
+                                <div className={`text-[11px] font-medium mt-0.5 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+                                  Con cái & Hậu vận (49+ tuổi)
+                                </div>
+                                <div className="my-4 py-3 px-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-center">
+                                  <span className="text-sm font-black block">⏰ Chưa chọn Giờ Sinh</span>
+                                  <span className="text-[11px] mt-0.5 block">Bấm để chọn giờ sinh Âm lịch</span>
+                                </div>
+                              </div>
+                              <p className={`text-[11px] leading-relaxed ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
+                                Tham chiếu mặc định: Giờ {detailedFortune.birthHourFortune.hourChi} ({detailedFortune.birthHourFortune.hourCanChi}).
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        const isDayPillar = idx === 2;
+                        return (
+                          <div
+                            key={pillar.pillarName}
+                            className={`p-4 rounded-2xl border flex flex-col justify-between ${
+                              isDayPillar
+                                ? isDarkTheme
+                                  ? "bg-gradient-to-br from-amber-500/20 via-slate-900 to-slate-900 border-amber-400/60 ring-1 ring-amber-400/30"
+                                  : "bg-gradient-to-br from-amber-50 via-white to-orange-50/60 border-amber-400 ring-1 ring-amber-300"
+                                : isDarkTheme
+                                ? "bg-slate-900/85 border-white/15"
+                                : "bg-slate-50/90 border-slate-200"
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-1">
+                                <span className={`text-xs font-black uppercase ${isDayPillar ? "text-amber-500 dark:text-amber-300" : isDarkTheme ? "text-slate-200" : "text-slate-800"}`}>
+                                  {pillar.pillarName}
+                                </span>
+                                {isDayPillar && (
+                                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-500 text-slate-950">
+                                    Nhật Chủ
+                                  </span>
+                                )}
+                              </div>
+                              <div className={`text-[11px] font-medium mt-0.5 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+                                {pillar.subTitle}
+                              </div>
+
+                              <div className="my-3 py-2.5 px-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/5 dark:border-white/10">
+                                <div className="text-lg font-black text-amber-600 dark:text-amber-300">
+                                  {pillar.canChi}
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 text-[11px] font-bold flex-wrap">
+                                  <span>Can {pillar.can}: {elementLabel(pillar.canElement)}</span>
+                                  <span>•</span>
+                                  <span>Chi {pillar.chi}: {elementLabel(pillar.chiElement)}</span>
+                                </div>
+                                <div className={`text-[11px] mt-1 font-semibold ${isDarkTheme ? "text-emerald-300" : "text-emerald-700"}`}>
+                                  Nạp âm: {pillar.napAm} ({elementLabel(pillar.napAmElement)})
+                                </div>
+                              </div>
+                            </div>
+
+                            <p className={`text-[11px] leading-relaxed ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
+                              {pillar.meaning}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Biểu đồ Cân Bằng Ngũ Hành & Hỷ Dụng Thần */}
+                    <div className="mt-5 pt-5 border-t border-black/5 dark:border-white/10 grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                      <div className="lg:col-span-7 space-y-2.5">
+                        <div className="text-xs font-extrabold uppercase tracking-wider text-amber-500">
+                          Phân Bố Ngũ Hành Trong Tứ Trụ Bát Tự
+                        </div>
+                        <div className="grid grid-cols-5 gap-2">
+                          {([FiveElement.KIM, FiveElement.MOC, FiveElement.THUY, FiveElement.HOA, FiveElement.THO] as const).map((el) => {
+                            const count = detailedFortune.fourPillars.elementCounts[el] || 0;
+                            const isDungThan = detailedFortune.fourPillars.hyDungThan.includes(el);
+                            return (
+                              <div
+                                key={el}
+                                className={`p-2.5 rounded-2xl border text-center ${
+                                  isDungThan
+                                    ? isDarkTheme
+                                      ? "bg-emerald-500/20 border-emerald-400/50 text-white"
+                                      : "bg-emerald-50 border-emerald-300 text-slate-900"
+                                    : count === 0
+                                    ? isDarkTheme
+                                      ? "bg-rose-500/15 border-rose-400/40 text-rose-200"
+                                      : "bg-rose-50 border-rose-200 text-rose-900"
+                                    : isDarkTheme
+                                    ? "bg-slate-900/80 border-white/15 text-slate-100"
+                                    : "bg-slate-50 border-slate-200 text-slate-800"
+                                }`}
+                              >
+                                <div className="text-base">{FIVE_ELEMENT_META[el].emoji}</div>
+                                <div className="text-xs font-black mt-0.5">{FIVE_ELEMENT_META[el].label}</div>
+                                <div className="text-sm font-black mt-0.5">{count}</div>
+                                <div className="text-[10px] font-bold mt-0.5">
+                                  {isDungThan ? "🌟 Dụng thần" : count === 0 ? "Khuyết" : "Đủ"}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div
+                        className={`lg:col-span-5 p-4 rounded-2xl border text-xs space-y-1.5 ${
+                          isDarkTheme ? "bg-emerald-950/25 border-emerald-500/35 text-slate-100" : "bg-emerald-50/80 border-emerald-200 text-slate-800"
+                        }`}
+                      >
+                        <div className="font-black text-sm text-emerald-500 dark:text-emerald-300 flex items-center gap-1.5">
+                          <Sparkles className="w-4 h-4" />
+                          Hỷ Dụng Thần: Hành {detailedFortune.fourPillars.hyDungThan.map(elementLabel).join(" & ")}
+                        </div>
+                        <p className="leading-relaxed">
+                          {detailedFortune.fourPillars.dungThanAdvice}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Khối 2: Luận Giải Chuyên Biệt Theo Giờ Sinh (Thời Trụ & Lý Thuần Phong) */}
+                  <div
+                    className={`p-6 rounded-3xl backdrop-blur-xl border shadow-md ${
+                      isDarkTheme ? "bg-slate-900/60 border-white/15 text-white" : "bg-white/90 border-slate-200 text-slate-900"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                      <h3 className="text-sm sm:text-base font-black flex items-center gap-2 text-amber-500">
+                        <Clock className="w-5 h-5" />
+                        Luận Giải Giờ Sinh ({detailedFortune.birthHourFortune.hasBirthHour
+                          ? `Giờ ${detailedFortune.birthHourFortune.hourChi} ${detailedFortune.birthHourFortune.hourRange} • ${detailedFortune.birthHourFortune.hourCanChi}`
+                          : `Tham Chiếu Giờ ${detailedFortune.birthHourFortune.hourChi}`}) — {detailedFortune.birthHourFortune.destinyTitle}
+                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                          detailedFortune.birthHourFortune.isHoangDaoHour
+                            ? "bg-amber-500/20 text-amber-300 border-amber-400/40"
+                            : isDarkTheme ? "bg-white/10 text-slate-200 border-white/15" : "bg-slate-100 text-slate-700 border-slate-200"
+                        }`}>
+                          {detailedFortune.birthHourFortune.isHoangDaoHour ? "🌟 Sinh Giờ Hoàng Đạo" : "Sinh Giờ Hắc Đạo (Tự lập kiên cường)"}
+                        </span>
+                        <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                          detailedFortune.birthHourFortune.lyThuanPhong.isGood
+                            ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40"
+                            : isDarkTheme ? "bg-white/10 text-slate-200 border-white/15" : "bg-slate-100 text-slate-700 border-slate-200"
+                        }`}>
+                          Cung giờ: {detailedFortune.birthHourFortune.lyThuanPhong.name}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className={`text-xs leading-relaxed mb-4 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
+                      {detailedFortune.birthHourFortune.coreOverview}
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs">
+                      <div className={`p-3.5 rounded-2xl border ${isDarkTheme ? "bg-slate-900/80 border-white/15 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-700"}`}>
+                        <strong className="text-amber-500 dark:text-amber-300 block mb-1">✨ Khí chất theo giờ sinh:</strong>
+                        {detailedFortune.birthHourFortune.personalityTrait}
+                      </div>
+                      <div className={`p-3.5 rounded-2xl border ${isDarkTheme ? "bg-slate-900/80 border-white/15 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-700"}`}>
+                        <strong className="text-emerald-500 dark:text-emerald-300 block mb-1">💼 Tài vận & Sự nghiệp:</strong>
+                        {detailedFortune.birthHourFortune.careerWealth}
+                      </div>
+                      <div className={`p-3.5 rounded-2xl border ${isDarkTheme ? "bg-slate-900/80 border-white/15 text-slate-200" : "bg-slate-50 border-slate-200 text-slate-700"}`}>
+                        <strong className="text-indigo-500 dark:text-indigo-300 block mb-1">👨‍👩‍👧‍👦 Đường con cái & Hậu vận:</strong>
+                        {detailedFortune.birthHourFortune.childrenAndLateLife}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Khối 3: Phân Tích Chuyên Sâu Toàn Diện 8 Phương Diện Bằng Gemini 3.8 Flash High */}
+                  <div
+                    className={`p-6 sm:p-8 rounded-3xl backdrop-blur-xl border shadow-xl ${
+                      isDarkTheme
+                        ? "bg-gradient-to-br from-indigo-950/35 via-slate-900/90 to-purple-950/30 border-indigo-500/35 text-white"
+                        : "bg-gradient-to-br from-indigo-50/70 via-white to-amber-50/60 border-indigo-200 text-slate-900"
+                    }`}
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-indigo-500/20">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-black px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 shadow-xs">
+                            <BrainCircuit className="w-3.5 h-3.5" />
+                            Gemini 3.8 Flash High • Thinking Level: HIGH
+                          </span>
+                          <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                            aiSource === "gemini-3.8-flash-live"
+                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-400/40"
+                              : isDarkTheme
+                              ? "bg-indigo-500/25 text-indigo-200 border-indigo-400/40"
+                              : "bg-indigo-100 text-indigo-800 border-indigo-300"
+                          }`}>
+                            {aiSource === "gemini-3.8-flash-live" ? "⚡ Cloud AI Live" : "⚡ Có sẵn (Built-in Deep Bát Tự Engine)"}
+                          </span>
+                          <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-500 dark:text-amber-300 border border-amber-400/40">
+                            Chỉ số Cát Mệnh: {activeDeepAnalysis.overallScore}/100
+                          </span>
+                        </div>
+                        <h3 className="text-lg sm:text-xl font-black mt-2">
+                          {activeDeepAnalysis.overallHeadline}
+                        </h3>
+                      </div>
+
+                      <button
+                        onClick={() => handleTriggerGeminiDeepAnalysis(true)}
+                        disabled={isAnalyzingAi}
+                        className="px-4 py-2.5 rounded-2xl text-xs font-black bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-60 text-slate-950 shadow-md transition-all flex items-center gap-2 shrink-0 self-start lg:self-center"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isAnalyzingAi ? "animate-spin" : ""}`} />
+                        <span>
+                          {isAnalyzingAi
+                            ? "Gemini 3.8 Flash High đang suy luận..."
+                            : "Phân Tích Chuyên Sâu Bằng Gemini 3.8 Flash High"}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Executive Summary */}
+                    <div
+                      className={`mt-5 p-4 rounded-2xl border text-xs sm:text-sm leading-relaxed font-medium ${
+                        isDarkTheme ? "bg-slate-900/80 border-white/15 text-slate-100" : "bg-white/90 border-slate-200 text-slate-800"
+                      }`}
+                    >
+                      <strong className="text-amber-500 dark:text-amber-300 block mb-1">
+                        📌 Tổng Luận Mệnh Cục (Giờ • Ngày • Tháng • Năm • Giới Tính):
+                      </strong>
+                      {activeDeepAnalysis.executiveSummary}
+                    </div>
+
+                    {/* Grid 8 Phương Diện Cuộc Đời */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                      {activeDeepAnalysis.aspects.map((aspect) => (
+                        <div
+                          key={aspect.id}
+                          className={`p-5 rounded-2xl border flex flex-col justify-between space-y-3 transition-all ${
+                            isDarkTheme
+                              ? "bg-slate-900/85 border-white/15 hover:border-amber-400/40 text-slate-100"
+                              : "bg-white/95 border-slate-200 hover:border-amber-300 text-slate-900 shadow-xs"
+                          }`}
+                        >
+                          <div className="space-y-2.5">
+                            <div className="flex items-start justify-between gap-2 pb-2 border-b border-black/5 dark:border-white/10">
+                              <h4 className="text-sm font-black flex items-center gap-2 text-amber-500 dark:text-amber-300">
+                                <span className="text-base">{aspect.icon}</span>
+                                <span>{aspect.title}</span>
+                              </h4>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 border ${
+                                  isDarkTheme
+                                    ? "bg-white/10 text-slate-200 border-white/15"
+                                    : "bg-slate-100 text-slate-700 border-slate-200"
+                                }`}
+                              >
+                                {aspect.badge}
+                              </span>
+                            </div>
+
+                            <p className={`text-xs leading-relaxed font-semibold ${isDarkTheme ? "text-slate-100" : "text-slate-800"}`}>
+                              {aspect.summary}
+                            </p>
+
+                            <ul className="space-y-1.5 text-xs">
+                              {aspect.details.map((line, i) => (
+                                <li
+                                  key={i}
+                                  className={`leading-relaxed ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}
+                                >
+                                  {line}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div
+                            className={`p-3 rounded-xl border text-xs font-bold ${
+                              isDarkTheme
+                                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                                : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                            }`}
+                          >
+                            💡 Bí quyết cải vận: {aspect.actionableAdvice}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 1. BÁT TRẠCH PHONG THỦY THEO GIỚI TÍNH */}
               {fortuneCategory === "battrach" && (
@@ -2272,14 +2815,14 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
             </div>
 
             <p className={`text-xs mb-4 leading-relaxed font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-              Nhập <strong>Giới tính</strong> và <strong>Ngày, Tháng, Năm sinh</strong> để hệ thống đối chiếu chính xác Cung Phi Bát Trạch (Nam/Nữ khác nhau), Thần Số Học, Cung Hoàng Đạo và Tử Vi trọn đời.
+              Nhập <strong>Giới tính</strong>, <strong>Giờ sinh</strong> và <strong>Ngày, Tháng, Năm sinh</strong> để hệ thống và <strong>Gemini 3.8 Flash High</strong> phân tích chính xác Tứ Trụ Bát Tự (8 chữ), Hỷ Dụng Thần, Cung Phi Bát Trạch, Thần Số Học, Cung Hoàng Đạo và Tử Vi trọn đời.
             </p>
 
             <div className="space-y-4">
               {/* Chọn Giới Tính */}
               <div>
                 <label className={`block text-xs font-bold mb-1.5 ${isDarkTheme ? "text-slate-100" : "text-slate-800"}`}>
-                  Giới tính (Quyết định Cung Phi Bát Trạch):
+                  Giới tính (Quyết định Cung Phi Bát Trạch & Đại Vận):
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
                   <button
@@ -2412,9 +2955,37 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                 </div>
               </div>
 
+              {/* Ô Nhập Giờ Sinh (12 Canh Giờ Âm Lịch - Trụ Giờ Bát Tự) */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className={`block text-xs font-bold ${isDarkTheme ? "text-slate-100" : "text-slate-800"}`}>
+                    ⏰ Giờ sinh (Mở khóa Trụ Giờ Bát Tự & Cung Tử Tức):
+                  </label>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    isDarkTheme ? "bg-purple-500/20 text-purple-300" : "bg-purple-100 text-purple-800"
+                  }`}>
+                    12 Canh Giờ Âm Lịch
+                  </span>
+                </div>
+                <select
+                  value={tempBirthHour}
+                  onChange={(e) => setTempBirthHour(Number(e.target.value))}
+                  className={`w-full p-2.5 rounded-xl border text-xs font-bold focus:outline-none focus:ring-2 focus:ring-amber-500 ${
+                    isDarkTheme ? "bg-slate-800 border-white/20 text-white" : "bg-slate-50 border-slate-300 text-slate-900"
+                  }`}
+                >
+                  {BIRTH_HOUR_OPTIONS.map((h) => (
+                    <option key={h.chiIndex} value={h.chiIndex}>
+                      {h.emoji} Giờ {h.chi} ({h.range}) — {h.periodLabel}
+                    </option>
+                  ))}
+                  <option value={-1}>❓ Chưa rõ giờ sinh (Chỉ luận Tam Trụ Năm - Tháng - Ngày)</option>
+                </select>
+              </div>
+
               {/* Quick Decade Shortcuts */}
               <div className="flex items-center gap-1.5 flex-wrap">
-                <span className={`text-[11px] font-bold mr-1 ${isDarkTheme ? "text-slate-200" : "text-slate-600"}`}>Nhanh:</span>
+                <span className={`text-[11px] font-bold mr-1 ${isDarkTheme ? "text-slate-200" : "text-slate-600"}`}>Năm nhanh:</span>
                 {[1985, 1988, 1990, 1992, 1995, 1998, 2000, 2003].map((y) => (
                   <button
                     key={y}
@@ -2466,9 +3037,9 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast }: 
                     <div>• Cung phi {tempGender === "male" ? "Nam" : "Nữ"}: <strong className={isDarkTheme ? "text-emerald-300 font-bold" : "text-emerald-700 font-bold"}>{modalPreviewFortune.cungPhi} ({modalPreviewFortune.cungPhiGroup})</strong></div>
                     <div>• Cung Hoàng Đạo: <strong className={isDarkTheme ? "text-indigo-300 font-bold" : "text-indigo-700 font-bold"}>{modalPreviewFortune.westernZodiac.symbol} {modalPreviewFortune.westernZodiac.name}</strong></div>
                     <div>• Thần số học: <strong className={isDarkTheme ? "text-sky-300 font-bold" : "text-sky-700 font-bold"}>Số {modalPreviewFortune.numerology.lifePathNumber}</strong> ({modalPreviewFortune.numerology.title.split(" & ")[0]})</div>
-                    <div>• Tam hợp: <strong className={isDarkTheme ? "text-emerald-300 font-bold" : "text-emerald-700 font-bold"}>{modalPreviewFortune.personalProfile.tamHop.join(", ")}</strong></div>
+                    <div>• Giờ sinh: <strong className={isDarkTheme ? "text-purple-300 font-bold" : "text-purple-700 font-bold"}>{tempBirthHour >= 0 ? `Giờ ${modalPreviewFortune.birthHourFortune.hourChi} (${modalPreviewFortune.birthHourFortune.hourCanChi})` : "Chưa rõ giờ"}</strong></div>
                     <div className={`col-span-2 pt-1.5 border-t border-black/10 dark:border-white/10 text-[11px] ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                      • Hướng đại cát: <strong className="text-slate-900 dark:text-white font-bold">{modalPreviewFortune.batTrachDirections.filter(d => d.isGood).map(d => `${d.type}: ${d.direction}`).join(" • ")}</strong>
+                      • Tứ Trụ Bát Tự: <strong className="text-slate-900 dark:text-white font-bold">Năm {modalPreviewFortune.fourPillars.yearPillar.canChi} • Tháng {modalPreviewFortune.fourPillars.monthPillar.canChi} • Ngày {modalPreviewFortune.fourPillars.dayPillar.canChi} {tempBirthHour >= 0 ? `• Giờ ${modalPreviewFortune.birthHourFortune.hourCanChi}` : ""}</strong> (Dụng thần: <strong className={isDarkTheme ? "text-emerald-300" : "text-emerald-700"}>{modalPreviewFortune.fourPillars.hyDungThan.map(elementLabel).join(" & ")}</strong>)
                     </div>
                   </div>
                 </div>
