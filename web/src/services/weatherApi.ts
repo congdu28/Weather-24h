@@ -1059,6 +1059,70 @@ export function formatHierarchyLocation(
   };
 }
 
+interface BigDataCloudAdminItem {
+  name?: string;
+  description?: string;
+}
+
+interface BigDataCloudResponse {
+  latitude?: number;
+  longitude?: number;
+  city?: string;
+  locality?: string;
+  principalSubdivision?: string;
+  countryName?: string;
+  localityInfo?: {
+    administrative?: BigDataCloudAdminItem[];
+  };
+}
+
+function parseBigDataCloudLocation(
+  data: BigDataCloudResponse,
+  latitude: number,
+  longitude: number
+): CityLocation {
+  const city = data.city || "";
+  const locality = data.locality || "";
+  const principalSubdivision = data.principalSubdivision || "";
+  const countryName = data.countryName || "Việt Nam";
+
+  let adminWard: string | null = null;
+  let adminDistrict: string | null = null;
+  if (data.localityInfo && Array.isArray(data.localityInfo.administrative)) {
+    for (const item of data.localityInfo.administrative) {
+      const nameStr = item.name || "";
+      const descStr = item.description || "";
+      if (
+        descStr.includes("phường") ||
+        descStr.includes("xã") ||
+        nameStr.startsWith("Phường") ||
+        nameStr.startsWith("Xã")
+      ) {
+        if (!adminWard) adminWard = nameStr;
+      } else if (
+        descStr.includes("quận") ||
+        descStr.includes("huyện") ||
+        descStr.includes("thị xã")
+      ) {
+        if (!adminDistrict) adminDistrict = nameStr;
+      }
+    }
+  }
+
+  const finalWard = adminWard || (locality.includes("phường") || locality.includes("xã") ? locality : null);
+  const finalDistrict = adminDistrict || (city && !city.includes("Hồ Chí Minh") && !city.includes("Hà Nội") ? city : null);
+
+  const hierarchy = formatHierarchyLocation(finalWard, finalDistrict, principalSubdivision, countryName);
+  return {
+    name: hierarchy.name,
+    admin1: hierarchy.admin1,
+    country: hierarchy.country,
+    latitude,
+    longitude,
+    isCurrentLocation: true
+  };
+}
+
 /**
  * Tra cứu địa chỉ chi tiết theo tọa độ GPS: Cấp Xã/Phường -> Quận/Huyện -> Tỉnh/TP
  */
@@ -1071,14 +1135,18 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
     return { ...TRUONG_SA_LOCATION, isCurrentLocation: true };
   }
 
-  // 2. OpenStreetMap Nominatim với tiếng Việt đầy đủ
+  // 2. OpenStreetMap Nominatim với tiếng Việt đầy đủ (giới hạn 3.5s để không bị khựng)
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
     const osmUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&accept-language=vi`;
     const res = await fetch(osmUrl, {
+      signal: controller.signal,
       headers: {
         "User-Agent": "Weather24h-Web/1.0 (vi-VN)"
       }
     });
+    clearTimeout(timeoutId);
     if (res.ok) {
       const data = await res.json();
       if (data && data.address) {
@@ -1110,47 +1178,8 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
     const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=vi`;
     const res = await fetch(bdcUrl);
     if (res.ok) {
-      const data = await res.json();
-      const city = data.city || "";
-      const locality = data.locality || "";
-      const principalSubdivision = data.principalSubdivision || "";
-      const countryName = data.countryName || "Việt Nam";
-
-      let adminWard: string | null = null;
-      let adminDistrict: string | null = null;
-      if (data.localityInfo && Array.isArray(data.localityInfo.administrative)) {
-        for (const item of data.localityInfo.administrative) {
-          const nameStr = item.name || "";
-          const descStr = item.description || "";
-          if (
-            descStr.includes("phường") ||
-            descStr.includes("xã") ||
-            nameStr.startsWith("Phường") ||
-            nameStr.startsWith("Xã")
-          ) {
-            if (!adminWard) adminWard = nameStr;
-          } else if (
-            descStr.includes("quận") ||
-            descStr.includes("huyện") ||
-            descStr.includes("thị xã")
-          ) {
-            if (!adminDistrict) adminDistrict = nameStr;
-          }
-        }
-      }
-
-      const finalWard = adminWard || (locality.includes("phường") || locality.includes("xã") ? locality : null);
-      const finalDistrict = adminDistrict || (city && !city.includes("Hồ Chí Minh") && !city.includes("Hà Nội") ? city : null);
-
-      const hierarchy = formatHierarchyLocation(finalWard, finalDistrict, principalSubdivision, countryName);
-      return {
-        name: hierarchy.name,
-        admin1: hierarchy.admin1,
-        country: hierarchy.country,
-        latitude,
-        longitude,
-        isCurrentLocation: true
-      };
+      const data = (await res.json()) as BigDataCloudResponse;
+      return parseBigDataCloudLocation(data, latitude, longitude);
     }
   } catch (e) {
     console.warn("Lỗi BigDataCloud reverse geocode:", e);
@@ -1164,6 +1193,30 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
     longitude,
     isCurrentLocation: true
   };
+}
+
+/**
+ * Định vị nhanh theo IP (không cần quyền GPS trình duyệt) dùng khi mới vào lần đầu hoặc làm fallback.
+ */
+export async function getApproxLocationByIp(): Promise<CityLocation | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 4500);
+  try {
+    const res = await fetch(
+      "https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=vi",
+      { signal: controller.signal }
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as BigDataCloudResponse;
+    if (typeof data.latitude !== "number" || typeof data.longitude !== "number") {
+      return null;
+    }
+    return parseBigDataCloudLocation(data, data.latitude, data.longitude);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 interface GeocodingItem {

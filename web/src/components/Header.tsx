@@ -124,7 +124,8 @@ export default function Header({
       },
       (err) => {
         alert("Không thể lấy vị trí hiện tại: " + err.message);
-      }
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 180000 }
     );
   };
 

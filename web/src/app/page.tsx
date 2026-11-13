@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Header from "../components/Header";
 import AtmosphereBackground from "../components/AtmosphereBackground";
 import WeatherAtmosphereEffect from "../components/WeatherAtmosphereEffect";
@@ -33,7 +33,8 @@ import {
   DEFAULT_LOCATION,
   fetchFullWeather,
   VIETNAM_MAJOR_CITIES,
-  reverseGeocode
+  reverseGeocode,
+  getApproxLocationByIp
 } from "../services/weatherApi";
 import { RefreshCw, AlertCircle } from "lucide-react";
 
@@ -101,6 +102,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<"weather" | "lunar" | "radar">("weather");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isLocatingGps, setIsLocatingGps] = useState(false);
+  const userPickedLocationRef = useRef(false);
 
   // Sync theme (Light / Dark / System)
   useEffect(() => {
@@ -264,8 +267,9 @@ export default function Home() {
   }, [location, settings.forecastModel]);
 
   // Tự động lấy vị trí hiện tại khi người dùng mới vào lần đầu (chưa có vị trí lưu trong localStorage)
+  // Kết hợp định vị nhanh theo IP (~200ms) làm fallback ngay lập tức, sau đó nâng cấp lên tọa độ GPS chính xác nếu có quyền.
   useEffect(() => {
-    if (typeof window === "undefined" || !navigator.geolocation) return;
+    if (typeof window === "undefined") return;
     try {
       if (localStorage.getItem("weather24h_last_loc") !== null) return;
     } catch {
@@ -273,24 +277,34 @@ export default function Home() {
     }
 
     let cancelled = false;
+    let gpsResolved = false;
+
+    getApproxLocationByIp().then((ipLoc) => {
+      if (!cancelled && !gpsResolved && !userPickedLocationRef.current && ipLoc) {
+        setLocation(ipLoc);
+      }
+    });
+
+    if (!navigator.geolocation) {
+      return () => {
+        cancelled = true;
+      };
+    }
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        if (cancelled) return;
-        try {
-          if (localStorage.getItem("weather24h_last_loc") !== null) return;
-        } catch {
-          return;
-        }
+        if (cancelled || userPickedLocationRef.current) return;
+        gpsResolved = true;
 
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         try {
           const exact = await reverseGeocode(lat, lon);
-          if (!cancelled) {
+          if (!cancelled && !userPickedLocationRef.current) {
             setLocation(exact);
           }
         } catch {
-          if (!cancelled) {
+          if (!cancelled && !userPickedLocationRef.current) {
             setLocation({
               name: "Vị trí của bạn",
               country: "Việt Nam",
@@ -303,7 +317,7 @@ export default function Home() {
         }
       },
       () => {
-        // Nếu người dùng từ chối quyền định vị hoặc lỗi GPS, giữ nguyên vị trí mặc định
+        // Nếu người dùng từ chối quyền định vị hoặc lỗi GPS, giữ vị trí IP (hoặc mặc định)
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
     );
@@ -314,6 +328,7 @@ export default function Home() {
   }, [setLocation]);
 
   const handleSelectLocation = (loc: CityLocation) => {
+    userPickedLocationRef.current = true;
     setLocation(loc);
     localStorage.setItem("weather24h_last_loc", JSON.stringify(loc));
     loadWeather(loc);
@@ -380,23 +395,27 @@ export default function Home() {
   }, [toggleFavoriteCity, location]);
 
   const handleGpsLocation = () => {
+    if (isLocatingGps) return;
+    userPickedLocationRef.current = true;
+    setIsLocatingGps(true);
+
     if (!navigator.geolocation) {
-      alert("Trình duyệt không hỗ trợ GPS.");
+      getApproxLocationByIp()
+        .then((ipLoc) => {
+          if (ipLoc) {
+            handleSelectLocation(ipLoc);
+          } else {
+            alert("Trình duyệt không hỗ trợ GPS.");
+          }
+        })
+        .finally(() => setIsLocatingGps(false));
       return;
     }
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
-        handleSelectLocation({
-          name: "Đang định vị...",
-          country: "Việt Nam",
-          admin1: "GPS Tọa độ",
-          latitude: lat,
-          longitude: lon,
-          isCurrentLocation: true
-        });
-
         try {
           const exact = await reverseGeocode(lat, lon);
           handleSelectLocation(exact);
@@ -409,11 +428,21 @@ export default function Home() {
             longitude: lon,
             isCurrentLocation: true
           });
+        } finally {
+          setIsLocatingGps(false);
         }
       },
-      (err) => {
+      async (err) => {
+        const ipLoc = await getApproxLocationByIp();
+        if (ipLoc) {
+          handleSelectLocation(ipLoc);
+          setIsLocatingGps(false);
+          return;
+        }
+        setIsLocatingGps(false);
         alert("Không thể lấy vị trí hiện tại: " + err.message);
-      }
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 180000 }
     );
   };
 
@@ -472,6 +501,7 @@ export default function Home() {
             onRemoveCity={removeFavorite}
             onSelectGps={handleGpsLocation}
             onOpenSearch={() => setIsSearchOpen(true)}
+            isLocatingGps={isLocatingGps}
             isDarkTheme={isDarkTheme}
           />
         )}

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { CityLocation } from "../types/weather";
-import { Crosshair, Plus, Star, X } from "lucide-react";
+import { Crosshair, Loader2, Plus, Star, X } from "lucide-react";
 
 interface Props {
   currentCityName: string;
@@ -11,6 +11,7 @@ interface Props {
   onRemoveCity: (city: CityLocation) => void;
   onSelectGps: () => void;
   onOpenSearch: () => void;
+  isLocatingGps?: boolean;
   isDarkTheme?: boolean;
 }
 
@@ -21,6 +22,7 @@ export default function FavoriteCitiesQuickBar({
   onRemoveCity,
   onSelectGps,
   onOpenSearch,
+  isLocatingGps = false,
   isDarkTheme = true
 }: Props) {
   return (
@@ -28,14 +30,21 @@ export default function FavoriteCitiesQuickBar({
       {/* Nút GPS */}
       <button
         onClick={onSelectGps}
+        disabled={isLocatingGps}
         className={`flex items-center gap-2 px-3.5 py-2 rounded-full border text-xs sm:text-sm font-semibold shrink-0 transition-all active:scale-95 shadow-xs ${
+          isLocatingGps ? "opacity-80 cursor-wait" : "cursor-pointer"
+        } ${
           isDarkTheme
             ? "bg-white/10 hover:bg-white/20 border-white/15 text-slate-200"
             : "bg-white hover:bg-slate-50 border-slate-300 text-slate-800 shadow-sm"
         }`}
       >
-        <Crosshair className="w-4 h-4 text-sky-500" />
-        <span>Vị trí GPS</span>
+        {isLocatingGps ? (
+          <Loader2 className="w-4 h-4 text-sky-500 animate-spin" />
+        ) : (
+          <Crosshair className="w-4 h-4 text-sky-500" />
+        )}
+        <span>{isLocatingGps ? "Đang định vị..." : "Vị trí GPS"}</span>
       </button>
 
       {/* Danh sách thành phố yêu thích */}
