@@ -263,6 +263,56 @@ export default function Home() {
     };
   }, [location, settings.forecastModel]);
 
+  // Tự động lấy vị trí hiện tại khi người dùng mới vào lần đầu (chưa có vị trí lưu trong localStorage)
+  useEffect(() => {
+    if (typeof window === "undefined" || !navigator.geolocation) return;
+    try {
+      if (localStorage.getItem("weather24h_last_loc") !== null) return;
+    } catch {
+      return;
+    }
+
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        if (cancelled) return;
+        try {
+          if (localStorage.getItem("weather24h_last_loc") !== null) return;
+        } catch {
+          return;
+        }
+
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        try {
+          const exact = await reverseGeocode(lat, lon);
+          if (!cancelled) {
+            setLocation(exact);
+          }
+        } catch {
+          if (!cancelled) {
+            setLocation({
+              name: "Vị trí của bạn",
+              country: "Việt Nam",
+              admin1: "GPS Tọa độ",
+              latitude: lat,
+              longitude: lon,
+              isCurrentLocation: true
+            });
+          }
+        }
+      },
+      () => {
+        // Nếu người dùng từ chối quyền định vị hoặc lỗi GPS, giữ nguyên vị trí mặc định
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setLocation]);
+
   const handleSelectLocation = (loc: CityLocation) => {
     setLocation(loc);
     localStorage.setItem("weather24h_last_loc", JSON.stringify(loc));
