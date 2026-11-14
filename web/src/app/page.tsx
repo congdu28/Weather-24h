@@ -685,17 +685,17 @@ export default function Home() {
       />
 
       {/* Footer */}
-      <footer className="relative z-0 mt-12 border-t border-slate-500/20 pt-6 pb-10 text-center text-xs max-w-6xl mx-auto px-4">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 max-w-4xl mx-auto mb-3">
-          <div className="flex items-center gap-2">
+      <footer className="relative z-0 mt-12 border-t border-slate-500/20 pt-6 pb-8 text-xs max-w-6xl mx-auto px-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 max-w-5xl mx-auto">
+          <div className="flex items-center gap-2.5">
             <span className="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
               ☀️
             </span>
-            <div className="text-left">
+            <div className="flex items-center gap-2">
               <span className={`font-black text-xs sm:text-sm ${isDarkTheme ? "text-white" : "text-slate-900"}`}>
                 Weather 24h & Lịch Vạn Niên
               </span>
-              <span className={`text-[10px] sm:text-[11px] ml-2 px-2 py-0.5 rounded-full font-bold border ${
+              <span className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-full font-bold border ${
                 isDarkTheme
                   ? "bg-white/10 text-amber-300 border-white/15"
                   : "bg-amber-100 text-amber-800 border-amber-200"
@@ -705,7 +705,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-end">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3">
             <span
               className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border ${
                 isDarkTheme
@@ -715,21 +715,11 @@ export default function Home() {
             >
               🌦️ Open-Meteo & OpenStreetMap
             </span>
-            <span
-              className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold border ${
-                isDarkTheme
-                  ? "bg-white/5 border-white/10 text-slate-200"
-                  : "bg-slate-100 border-slate-200 text-slate-700"
-              }`}
-            >
-              🗓️ Thuật toán TS. Hồ Ngọc Đức (GMT+7)
+            <span className={`text-[11px] font-semibold tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+              © 2026 Designed by CD
             </span>
           </div>
         </div>
-
-        <p className={`text-[11px] font-semibold tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
-          © 2026 Designed by CD
-        </p>
       </footer>
     </div>
   );
