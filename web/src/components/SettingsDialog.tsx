@@ -975,6 +975,12 @@ export default function SettingsDialog({
                     </a>
                   </p>
                 </div>
+
+                <div className={`pt-3 border-t text-[11px] font-semibold tracking-wide text-center ${
+                  isDarkTheme ? "border-white/10 text-slate-400" : "border-slate-200 text-slate-500"
+                }`}>
+                  © 2027 Designed by CD
+                </div>
               </div>
             )}
           </div>
