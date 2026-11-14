@@ -727,8 +727,8 @@ export default function Home() {
           </div>
         </div>
 
-        <p className={`text-[11px] max-w-2xl mx-auto leading-relaxed ${isDarkTheme ? "text-slate-300 font-medium" : "text-slate-600 font-medium"}`}>
-          Đồng bộ giao diện bản Android APK v1.0.64 • Hỗ trợ chuẩn PWA cài đặt trực tiếp lên điện thoại & PC
+        <p className={`text-[11px] font-semibold tracking-wide ${isDarkTheme ? "text-slate-400" : "text-slate-500"}`}>
+          © 2026 Designed by CD
         </p>
       </footer>
     </div>
