@@ -27,10 +27,25 @@ export function getCachedGeminiFortune(fortune: DetailedBirthFortune): DeepFortu
   return null;
 }
 
+const GEMINI_MODEL_FALLBACKS: Array<{ id: string; useThinkingHigh: boolean }> = [
+  { id: "gemini-3.8-flash", useThinkingHigh: true },
+  { id: "gemini-4-argon", useThinkingHigh: true },
+  { id: "gemini-3.5-flash-lite", useThinkingHigh: false },
+  { id: "gemini-3.1-flash-lite", useThinkingHigh: false }
+];
+
+function parseFortuneJson(rawText: string) {
+  const cleaned = rawText
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  return JSON.parse(cleaned);
+}
+
 /**
- * Phân tích chuyên sâu lá số Tứ Trụ Bát Tự & Tử Vi bằng mô hình gemini-3.8-flash (Thinking Level: HIGH).
- * Hỗ trợ gọi trực tiếp Gemini 3.8 Flash API nếu có khóa API, đồng thời tích hợp sẵn hệ thống
- * suy luận chuyên sâu Bát Tự 8 phương diện có sẵn để luôn trả về kết quả tức thì, chi tiết và chuẩn xác.
+ * Phân tích chuyên sâu lá số Tứ Trụ Bát Tự & Tử Vi bằng Gemini API.
+ * Tự động chuyển đổi qua danh sách model dự phòng nếu model chính bị giới hạn (429) hoặc quá tải,
+ * đồng thời tích hợp sẵn hệ thống suy luận Bát Tự 8 phương diện để luôn trả về kết quả tức thì.
  */
 export async function analyzeFortuneWithGemini38FlashHigh(
   fortune: DetailedBirthFortune,
@@ -190,34 +205,49 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau:
   ]
 }`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.65,
-              responseMimeType: "application/json",
-              thinkingConfig: {
-                thinkingLevel: "HIGH"
-              }
+      for (const candidate of GEMINI_MODEL_FALLBACKS) {
+        try {
+          const generationConfig: Record<string, unknown> = {
+            temperature: 0.65,
+            responseMimeType: "application/json"
+          };
+          if (candidate.useThinkingHigh) {
+            generationConfig.thinkingConfig = {
+              thinkingLevel: "HIGH"
+            };
+          }
+
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${candidate.id}:generateContent?key=${encodeURIComponent(apiKey)}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+                generationConfig
+              })
             }
-          })
-        }
-      );
+          );
 
-      if (response.ok) {
-        const data = await response.json();
-        const rawText =
-          data?.candidates?.[0]?.content?.parts
-            ?.map((p: { text?: string }) => p.text || "")
-            .join("")
-            .trim() || "";
+          if (!response.ok) {
+            // API key không hợp lệ thì dừng luôn, không thử thêm model khác
+            if (response.status === 401 || response.status === 403) {
+              break;
+            }
+            // Với 429 (hết quota/rate limit), 404/400 (model không hỗ trợ), 5xx -> chuyển sang model dự phòng tiếp theo
+            continue;
+          }
 
-        if (rawText) {
-          const parsed = JSON.parse(rawText);
+          const data = await response.json();
+          const rawText =
+            data?.candidates?.[0]?.content?.parts
+              ?.map((p: { text?: string }) => p.text || "")
+              .join("")
+              .trim() || "";
+
+          if (!rawText) continue;
+
+          const parsed = parseFortuneJson(rawText);
           if (parsed && Array.isArray(parsed.aspects) && parsed.aspects.length >= 6) {
             const finalResult: DeepFortuneAnalysis = {
               modelVersion: "AI",
@@ -238,10 +268,13 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau:
 
             return { analysis: finalResult, source: "gemini-3.8-flash-live" };
           }
+        } catch {
+          // Lỗi parse hoặc lỗi mạng ở model hiện tại -> thử model dự phòng tiếp theo
+          continue;
         }
       }
     } catch {
-      // Nếu lỗi mạng hoặc chưa cấu hình key ngoài, dùng ngay hệ thống Gemini 3.8 Flash High Built-in Engine
+      // Nếu lỗi mạng hoặc chưa cấu hình key ngoài, dùng ngay hệ thống Built-in Engine
     }
   }
 
