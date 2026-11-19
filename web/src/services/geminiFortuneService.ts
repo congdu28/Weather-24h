@@ -29,7 +29,6 @@ export function getCachedGeminiFortune(fortune: DetailedBirthFortune): DeepFortu
 
 const GEMINI_MODEL_FALLBACKS: Array<{ id: string; useThinkingHigh: boolean }> = [
   { id: "gemini-3.8-flash", useThinkingHigh: true },
-  { id: "gemini-4-argon", useThinkingHigh: true },
   { id: "gemini-3.5-flash-lite", useThinkingHigh: false },
   { id: "gemini-3.1-flash-lite", useThinkingHigh: false }
 ];
