@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Heart, Loader2, Search, Sparkles, UserCheck, Users } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { Heart, Loader2, RefreshCw, Search, Sparkles, UserCheck, Users } from "lucide-react";
 import { BIRTH_HOUR_OPTIONS, FIVE_ELEMENT_META, UserBirthProfile, elementLabel } from "../utils/lunarAlmanac";
 import {
   CompatibilityStatus,
@@ -12,8 +12,7 @@ import {
 } from "../utils/loveCompatibility";
 import {
   analyzeLoveCompatibilityWithGemini,
-  getCachedLoveCompatibilityAi,
-  getLoveCompatibilityCacheKey
+  getCachedLoveCompatibilityAi
 } from "../services/geminiFortuneService";
 
 interface LoveCompatibilityViewProps {
@@ -45,6 +44,8 @@ const DEFAULT_PERSON_2: LovePersonInput = {
 const YEARS = Array.from({ length: 91 }, (_, i) => 2030 - i); // 2030 -> 1940
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+
+type AnalysisPhase = "idle" | "pillars" | "dimensions" | "deep" | "done";
 
 function statusBadgeClass(status: CompatibilityStatus, isDarkTheme: boolean): string {
   switch (status) {
@@ -80,6 +81,8 @@ function scoreBarColor(status: CompatibilityStatus): string {
   }
 }
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
   isDarkTheme,
   userProfile,
@@ -90,8 +93,14 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
   const [result, setResult] = useState<LoveCompatibilityResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string>("");
 
-  const [aiByKey, setAiByKey] = useState<Record<string, { analysis: DeepLoveAiAnalysis; source: "gemini-live" | "builtin" }>>({});
-  const [isAnalyzingAi, setIsAnalyzingAi] = useState<boolean>(false);
+  // State điều khiển chạy theo từng nhịp (progressive reveal)
+  const [phase, setPhase] = useState<AnalysisPhase>("idle");
+  const [statusText, setStatusText] = useState<string>("");
+  const [showOverview, setShowOverview] = useState<boolean>(false);
+  const [visibleDimCount, setVisibleDimCount] = useState<number>(0);
+  const [deepAnalysis, setDeepAnalysis] = useState<{ analysis: DeepLoveAiAnalysis; source: "gemini-live" | "builtin" } | null>(null);
+  const [visibleChapterCount, setVisibleChapterCount] = useState<number>(0);
+  const runIdRef = useRef<number>(0);
 
   // Tự đồng bộ sẵn Người thứ 1 theo hồ sơ người dùng nếu có
   useEffect(() => {
@@ -108,14 +117,63 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
     }
   }, [userProfile]);
 
-  const handleAnalyze = () => {
+  const runProgressiveAnalysis = async (forceRefreshDeep = false) => {
     setErrorMsg("");
+    let evaluated: LoveCompatibilityResult;
     try {
-      const evaluated = evaluateLoveCompatibility(person1, person2);
-      setResult(evaluated);
+      evaluated = evaluateLoveCompatibility(person1, person2);
     } catch {
       setErrorMsg("Ngày tháng năm sinh không hợp lệ (ví dụ ngày 30/2 hoặc ngày âm lịch không tồn tại). Vui lòng kiểm tra lại.");
+      return;
     }
+
+    const currentRun = ++runIdRef.current;
+    const isCancelled = () => runIdRef.current !== currentRun;
+
+    // Reset hiển thị để chạy theo từng nhịp mượt mà
+    setResult(evaluated);
+    setShowOverview(false);
+    setVisibleDimCount(0);
+    setDeepAnalysis(null);
+    setVisibleChapterCount(0);
+
+    // Khởi chạy gọi AI / bộ phân tích chuyên sâu song song từ đầu
+    const cached = !forceRefreshDeep ? getCachedLoveCompatibilityAi(evaluated) : null;
+    const deepPromise = cached
+      ? Promise.resolve({ analysis: cached, source: "gemini-live" as const })
+      : analyzeLoveCompatibilityWithGemini(evaluated, geminiApiKey, forceRefreshDeep);
+
+    // Nhịp 1: Lập Tứ Trụ & Cung Phi
+    setPhase("pillars");
+    setStatusText("Nhịp 1/3 • Đang lập Tứ Trụ Giờ - Ngày - Tháng - Năm & Cung Phi Bát Trạch...");
+    await wait(320);
+    if (isCancelled()) return;
+    setShowOverview(true);
+
+    // Nhịp 2: Đối chiếu & chấm điểm 6 phương diện tuần tự
+    setPhase("dimensions");
+    setStatusText("Nhịp 2/3 • Đang đối chiếu Ngũ Hành Nạp Âm, Can Chi, Nhật Chủ & Hỷ Dụng Thần...");
+    for (let i = 1; i <= evaluated.dimensions.length; i++) {
+      await wait(170);
+      if (isCancelled()) return;
+      setVisibleDimCount(i);
+    }
+
+    // Nhịp 3: Chờ kết quả luận giải chuyên sâu và xuất từng chương theo nhịp
+    setPhase("deep");
+    setStatusText("Nhịp 3/3 • Đang luận giải chuyên sâu Duyên phận, Hôn nhân, Tài lộc & Phong thủy...");
+    const deepRes = await deepPromise;
+    if (isCancelled()) return;
+    setDeepAnalysis(deepRes);
+
+    for (let j = 1; j <= deepRes.analysis.aspects.length; j++) {
+      await wait(200);
+      if (isCancelled()) return;
+      setVisibleChapterCount(j);
+    }
+
+    setPhase("done");
+    setStatusText("");
   };
 
   const applyMyProfileToPerson1 = () => {
@@ -131,26 +189,7 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
     }));
   };
 
-  const activeAiAnalysis = useMemo(() => {
-    if (!result) return null;
-    const key = getLoveCompatibilityCacheKey(result);
-    if (aiByKey[key]) return aiByKey[key];
-    const cached = getCachedLoveCompatibilityAi(result);
-    if (cached) return { analysis: cached, source: "gemini-live" as const };
-    return null;
-  }, [result, aiByKey]);
-
-  const handleTriggerAiDeepAnalysis = async () => {
-    if (!result || isAnalyzingAi) return;
-    setIsAnalyzingAi(true);
-    try {
-      const key = getLoveCompatibilityCacheKey(result);
-      const res = await analyzeLoveCompatibilityWithGemini(result, geminiApiKey, true);
-      setAiByKey((prev) => ({ ...prev, [key]: res }));
-    } finally {
-      setIsAnalyzingAi(false);
-    }
-  };
+  const isRunning = phase !== "idle" && phase !== "done";
 
   const cardBg = isDarkTheme
     ? "bg-slate-900/55 border-white/10 text-white"
@@ -188,7 +227,6 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
       </div>
 
       <div className="space-y-3.5">
-        {/* Tên + Giới tính */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className={`block text-[11px] font-bold mb-1 ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
@@ -228,7 +266,6 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
           </div>
         </div>
 
-        {/* Loại lịch */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <span className={`text-[11px] font-bold ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
             Loại lịch ngày sinh
@@ -256,7 +293,6 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
           </div>
         </div>
 
-        {/* Ngày / Tháng / Năm */}
         <div className="grid grid-cols-3 gap-2.5">
           <div>
             <label className={`block text-[11px] font-bold mb-1 ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
@@ -308,7 +344,6 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
           </div>
         </div>
 
-        {/* Giờ sinh */}
         <div>
           <label className={`block text-[11px] font-bold mb-1 ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
             Giờ sinh (12 Địa Chi)
@@ -342,7 +377,7 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
             <div>
               <h2 className="text-base sm:text-lg font-black">Bói Tình Duyên & Xem Tuổi Hợp Đôi</h2>
               <p className={`text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-                Đối chiếu Tứ Trụ Bát Tự (Giờ • Ngày • Tháng • Năm), Ngũ Hành Nạp Âm, Cung Phi Bát Trạch, Hoàng Đạo & Thần Số Học
+                Đối chiếu Tứ Trụ Bát Tự (Giờ • Ngày • Tháng • Năm), Hỷ Dụng Thần, Ngũ Hành Nạp Âm, Cung Phi Bát Trạch, Hoàng Đạo & Thần Số Học
               </p>
             </div>
           </div>
@@ -394,208 +429,249 @@ export const LoveCompatibilityView: React.FC<LoveCompatibilityViewProps> = ({
       <div className="flex justify-center">
         <button
           type="button"
-          onClick={handleAnalyze}
-          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-black text-sm shadow-lg shadow-rose-500/25 flex items-center gap-2 transition-all active:scale-[0.98]"
+          disabled={isRunning}
+          onClick={() => runProgressiveAnalysis(false)}
+          className="px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 disabled:opacity-70 text-white font-black text-sm shadow-lg shadow-rose-500/25 flex items-center gap-2 transition-all active:scale-[0.98]"
         >
-          <Search className="w-4 h-4" />
-          Tìm Kiếm & Luận Giải Tình Duyên Chi Tiết
+          {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          {isRunning ? "Đang Tìm Kiếm & Luận Giải..." : "Tìm Kiếm & Luận Giải Tình Duyên Chi Tiết"}
         </button>
       </div>
 
-      {/* KẾT QUẢ LUẬN GIẢI */}
+      {/* Thanh trạng thái chạy theo từng nhịp */}
+      {isRunning && statusText && (
+        <div
+          className={`p-3.5 rounded-2xl border flex items-center justify-center gap-2.5 text-xs font-bold animate-in fade-in duration-200 ${
+            isDarkTheme
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-300"
+              : "bg-amber-50 border-amber-200 text-amber-800"
+          }`}
+        >
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+          <span>{statusText}</span>
+        </div>
+      )}
+
+      {/* KẾT QUẢ LUẬN GIẢI THEO TỪNG NHỊP */}
       {result && (
-        <div className="space-y-6 animate-in fade-in duration-300">
-          {/* Tổng quan điểm số & 2 lá số */}
-          <div className={`p-6 rounded-3xl border backdrop-blur-xl ${cardBg}`}>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex-1 space-y-2 text-center md:text-left">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-rose-500/15 text-rose-500 border border-rose-500/25">
-                  <Heart className="w-3.5 h-3.5 fill-rose-500" />
-                  {result.verdictBadge}
+        <div className="space-y-6">
+          {/* NHỊP 1: Tổng quan điểm số & 2 lá số chi tiết */}
+          {showOverview && (
+            <div className={`p-6 rounded-3xl border backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-300 ${cardBg}`}>
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1 space-y-2 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black bg-rose-500/15 text-rose-500 border border-rose-500/25">
+                    <Heart className="w-3.5 h-3.5 fill-rose-500" />
+                    {result.verdictBadge}
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black">{result.verdictTitle}</h3>
+                  <p className={`text-xs sm:text-sm leading-relaxed ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+                    {result.summary}
+                  </p>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-black">{result.verdictTitle}</h3>
-                <p className={`text-xs sm:text-sm leading-relaxed ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-                  {result.summary}
-                </p>
+
+                <div className="shrink-0 flex flex-col items-center justify-center w-32 h-32 rounded-3xl border-2 border-rose-500/30 bg-rose-500/10">
+                  <span className="text-3xl font-black text-rose-500">{result.totalScore}</span>
+                  <span className={`text-[11px] font-bold ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+                    / 100 điểm
+                  </span>
+                </div>
               </div>
 
-              <div className="shrink-0 flex flex-col items-center justify-center w-32 h-32 rounded-3xl border-2 border-rose-500/30 bg-rose-500/10">
-                <span className="text-3xl font-black text-rose-500">{result.totalScore}</span>
-                <span className={`text-[11px] font-bold ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-                  / 100 điểm
-                </span>
+              {/* Tóm tắt thông tin chi tiết 2 người */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                {[result.person1, result.person2].map((p, idx) => {
+                  const hyDung = p.fourPillars.hyDungThan.map((e) => elementLabel(e)).join(", ") || "Cân bằng";
+                  return (
+                    <div key={idx} className={`p-4 rounded-2xl border ${subCardBg}`}>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="font-black text-sm">
+                          {p.profile.gender === "male" ? "♂️" : "♀️"} {p.displayName} — {p.personalProfile.canChi} ({p.personalProfile.zodiacAnimal})
+                        </span>
+                        <span
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                            isDarkTheme ? "bg-white/10 text-amber-300" : "bg-amber-100 text-amber-800"
+                          }`}
+                        >
+                          {FIVE_ELEMENT_META[p.personalProfile.element].emoji} {elementLabel(p.personalProfile.element)}
+                        </span>
+                      </div>
+                      <div className={`text-[11px] space-y-1 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+                        <p>
+                          • Dương lịch: <strong>{p.solarDate.day}/{p.solarDate.month}/{p.solarDate.year}</strong> • Âm lịch:{" "}
+                          <strong>{p.lunarDate.day}/{p.lunarDate.month}/{p.lunarDate.year}</strong>
+                        </p>
+                        <p>
+                          • Mệnh: <strong>{p.personalProfile.napAm}</strong> • Cung Phi: <strong>{p.cungPhi}</strong> ({p.cungPhiGroup})
+                        </p>
+                        <p>
+                          • Tứ Trụ: Năm <strong>{p.fourPillars.yearPillar.canChi}</strong> • Tháng <strong>{p.fourPillars.monthPillar.canChi}</strong> • Ngày{" "}
+                          <strong>{p.fourPillars.dayPillar.canChi}</strong> • Giờ{" "}
+                          <strong>{p.fourPillars.hourPillar ? p.fourPillars.hourPillar.canChi : p.birthHourFortune.hourCanChi}</strong>
+                        </p>
+                        <p>
+                          • Nhật Chủ: <strong>{p.fourPillars.nhatChuCan}</strong> ({p.fourPillars.nhatChuStrength}) • Hỷ Dụng Thần:{" "}
+                          <strong>{hyDung}</strong>
+                        </p>
+                        <p>
+                          • Hoàng Đạo: <strong>{p.westernZodiac.symbol} {p.westernZodiac.name}</strong> • Thần Số Học:{" "}
+                          <strong>Số {p.numerology.lifePathNumber}</strong>
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Bù trừ Ngũ Hành & Hỷ Dụng Thần */}
+              <div
+                className={`mt-4 p-4 rounded-2xl border ${
+                  isDarkTheme ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-200" : "bg-emerald-50 border-emerald-200 text-emerald-900"
+                }`}
+              >
+                <div className="text-xs font-black mb-1.5">🌿 Bù trừ Ngũ Hành & Hỷ Dụng Thần trong Tứ Trụ</div>
+                <ul className="text-xs space-y-1">
+                  {result.complementaryElements.map((item, i) => (
+                    <li key={i}>• {item}</li>
+                  ))}
+                </ul>
               </div>
             </div>
+          )}
 
-            {/* Tóm tắt thông tin 2 người */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-              {[result.person1, result.person2].map((p, idx) => (
-                <div key={idx} className={`p-4 rounded-2xl border ${subCardBg}`}>
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="font-black text-sm">
-                      {p.profile.gender === "male" ? "♂️" : "♀️"} {p.displayName} — {p.personalProfile.canChi} ({p.personalProfile.zodiacAnimal})
-                    </span>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                      isDarkTheme ? "bg-white/10 text-amber-300" : "bg-amber-100 text-amber-800"
-                    }`}>
-                      {FIVE_ELEMENT_META[p.personalProfile.element].emoji} {elementLabel(p.personalProfile.element)}
-                    </span>
+          {/* NHỊP 2: 6 Phương Diện Chấm Điểm Chi Tiết (xuất hiện từng nhịp) */}
+          {visibleDimCount > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {result.dimensions.slice(0, visibleDimCount).map((dim) => (
+                <div
+                  key={dim.id}
+                  className={`p-5 rounded-3xl border backdrop-blur-xl flex flex-col justify-between animate-in fade-in slide-in-from-bottom-2 duration-300 ${cardBg}`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                      <h4 className="text-sm font-black flex items-center gap-2">
+                        <span>{dim.icon}</span>
+                        {dim.title}
+                      </h4>
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${statusBadgeClass(
+                          dim.status,
+                          isDarkTheme
+                        )}`}
+                      >
+                        {dim.badge} • {dim.score}/{dim.maxScore}
+                      </span>
+                    </div>
+
+                    <div className={`w-full h-1.5 rounded-full mb-3 overflow-hidden ${isDarkTheme ? "bg-white/10" : "bg-slate-200"}`}>
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${scoreBarColor(dim.status)}`}
+                        style={{ width: `${Math.round((dim.score / dim.maxScore) * 100)}%` }}
+                      />
+                    </div>
+
+                    <p className={`text-xs leading-relaxed mb-3 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
+                      {dim.summary}
+                    </p>
+
+                    <ul className={`text-[11px] space-y-1 mb-3 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+                      {dim.details.map((d, i) => (
+                        <li key={i}>• {d}</li>
+                      ))}
+                    </ul>
                   </div>
-                  <div className={`text-[11px] space-y-1 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-                    <p>
-                      • Dương lịch: <strong>{p.solarDate.day}/{p.solarDate.month}/{p.solarDate.year}</strong> • Âm lịch:{" "}
-                      <strong>{p.lunarDate.day}/{p.lunarDate.month}/{p.lunarDate.year}</strong>
-                    </p>
-                    <p>
-                      • Mệnh: <strong>{p.personalProfile.napAm}</strong> • Cung Phi: <strong>{p.cungPhi}</strong> ({p.cungPhiGroup})
-                    </p>
-                    <p>
-                      • Tứ Trụ: Năm <strong>{p.fourPillars.yearPillar.canChi}</strong> • Tháng <strong>{p.fourPillars.monthPillar.canChi}</strong> • Ngày{" "}
-                      <strong>{p.fourPillars.dayPillar.canChi}</strong> • Giờ <strong>{p.fourPillars.hourPillar ? p.fourPillars.hourPillar.canChi : p.birthHourFortune.hourCanChi}</strong>
-                    </p>
-                    <p>
-                      • Hoàng Đạo: <strong>{p.westernZodiac.symbol} {p.westernZodiac.name}</strong> • Thần Số Học:{" "}
-                      <strong>Số {p.numerology.lifePathNumber}</strong>
-                    </p>
+
+                  <div className={`p-3 rounded-2xl text-[11px] border ${subCardBg}`}>
+                    <strong>💡 Lời khuyên:</strong> {dim.advice}
                   </div>
                 </div>
               ))}
             </div>
+          )}
 
-            {/* Bù trừ Ngũ Hành */}
-            <div className={`mt-4 p-4 rounded-2xl border ${
-              isDarkTheme ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-200" : "bg-emerald-50 border-emerald-200 text-emerald-900"
-            }`}>
-              <div className="text-xs font-black mb-1.5">🌿 Bù trừ Ngũ Hành trong Tứ Trụ</div>
-              <ul className="text-xs space-y-1">
-                {result.complementaryElements.map((item, i) => (
-                  <li key={i}>• {item}</li>
+          {/* NHỊP 3: Luận Giải Chuyên Sâu 6 Chương (tự động chạy sau Nhịp 2) */}
+          {deepAnalysis && visibleChapterCount > 0 && (
+            <div className={`p-6 rounded-3xl border backdrop-blur-xl animate-in fade-in duration-300 ${cardBg}`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-black flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-amber-500" />
+                      Luận Giải Chuyên Sâu Hôn Nhân & Vận Duyên
+                    </h3>
+                    <span
+                      className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                        deepAnalysis.source === "gemini-live"
+                          ? "bg-emerald-500/20 text-emerald-500"
+                          : "bg-amber-500/20 text-amber-500"
+                      }`}
+                    >
+                      {deepAnalysis.source === "gemini-live" ? "Gemini AI" : "Hệ thống Bát Tự chuyên sâu"}
+                    </span>
+                  </div>
+                  <p className={`text-xs mt-1 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+                    {deepAnalysis.analysis.executiveSummary}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isRunning}
+                  onClick={() => runProgressiveAnalysis(true)}
+                  className={`px-3 py-1.5 rounded-xl text-[11px] font-bold border flex items-center gap-1.5 shrink-0 self-start sm:self-center transition-all ${
+                    isDarkTheme
+                      ? "bg-white/5 border-white/15 text-slate-200 hover:bg-white/10"
+                      : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRunning ? "animate-spin" : ""}`} />
+                  Phân tích lại
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {deepAnalysis.analysis.aspects.slice(0, visibleChapterCount).map((asp) => (
+                  <div
+                    key={asp.id}
+                    className={`p-4 rounded-2xl border animate-in fade-in slide-in-from-bottom-2 duration-300 ${subCardBg}`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <h5 className="text-xs sm:text-sm font-black flex items-center gap-1.5">
+                        <span>{asp.icon}</span>
+                        {asp.title}
+                      </h5>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-500 shrink-0">
+                        {asp.badge}
+                      </span>
+                    </div>
+                    <p className={`text-xs mb-2 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
+                      {asp.summary}
+                    </p>
+                    <ul className={`text-[11px] space-y-1 mb-2.5 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
+                      {asp.details.map((d, idx) => (
+                        <li key={idx}>• {d}</li>
+                      ))}
+                    </ul>
+                    <div className={`text-[11px] pt-2 border-t ${isDarkTheme ? "border-white/10 text-amber-300" : "border-slate-200 text-amber-800"}`}>
+                      <strong>Gợi ý:</strong> {asp.advice}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bí quyết phong thủy tổng hợp (xuất hiện khi hoàn tất tất cả nhịp) */}
+          {phase === "done" && (
+            <div className={`p-5 rounded-3xl border backdrop-blur-xl animate-in fade-in duration-300 ${cardBg}`}>
+              <h3 className="text-sm font-black mb-2.5">🧭 Bí Quyết Phong Thủy & Giữ Lửa Hôn Nhân</h3>
+              <ul className={`text-xs space-y-1.5 ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
+                {result.fengShuiAdvice.map((tip, i) => (
+                  <li key={i}>• {tip}</li>
                 ))}
               </ul>
             </div>
-          </div>
-
-          {/* 6 Phương Diện Chi Tiết */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {result.dimensions.map((dim) => (
-              <div key={dim.id} className={`p-5 rounded-3xl border backdrop-blur-xl flex flex-col justify-between ${cardBg}`}>
-                <div>
-                  <div className="flex items-center justify-between gap-2 mb-2.5">
-                    <h4 className="text-sm font-black flex items-center gap-2">
-                      <span>{dim.icon}</span>
-                      {dim.title}
-                    </h4>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${statusBadgeClass(dim.status, isDarkTheme)}`}>
-                      {dim.badge} • {dim.score}/{dim.maxScore}
-                    </span>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className={`w-full h-1.5 rounded-full mb-3 overflow-hidden ${isDarkTheme ? "bg-white/10" : "bg-slate-200"}`}>
-                    <div
-                      className={`h-full rounded-full transition-all ${scoreBarColor(dim.status)}`}
-                      style={{ width: `${Math.round((dim.score / dim.maxScore) * 100)}%` }}
-                    />
-                  </div>
-
-                  <p className={`text-xs leading-relaxed mb-3 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                    {dim.summary}
-                  </p>
-
-                  <ul className={`text-[11px] space-y-1 mb-3 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-                    {dim.details.map((d, i) => (
-                      <li key={i}>• {d}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className={`p-3 rounded-2xl text-[11px] border ${subCardBg}`}>
-                  <strong>💡 Lời khuyên:</strong> {dim.advice}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Luận giải chuyên sâu bằng AI */}
-          <div className={`p-6 rounded-3xl border backdrop-blur-xl ${cardBg}`}>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-              <div>
-                <h3 className="text-base font-black flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-500" />
-                  Luận Giải Chuyên Sâu Bằng AI
-                </h3>
-                <p className={`text-xs ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-                  Phân tích sâu về duyên phận, tính cách, cung Phu Thê, tài lộc, con cái và phong thủy hóa giải riêng cho cặp đôi này
-                </p>
-              </div>
-              <button
-                type="button"
-                disabled={isAnalyzingAi}
-                onClick={handleTriggerAiDeepAnalysis}
-                className="px-4 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-slate-950 font-black text-xs shadow-md flex items-center gap-2 shrink-0 transition-all"
-              >
-                {isAnalyzingAi ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                {isAnalyzingAi ? "Đang luận giải..." : activeAiAnalysis ? "Luận Giải Lại Bằng AI" : "Luận Giải Chuyên Sâu Bằng AI"}
-              </button>
-            </div>
-
-            {activeAiAnalysis && (
-              <div className="space-y-4 mt-4 animate-in fade-in duration-300">
-                <div className={`p-4 rounded-2xl border ${subCardBg}`}>
-                  <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
-                    <h4 className="text-sm font-black">{activeAiAnalysis.analysis.headline}</h4>
-                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                      activeAiAnalysis.source === "gemini-live"
-                        ? "bg-emerald-500/20 text-emerald-500"
-                        : "bg-amber-500/20 text-amber-500"
-                    }`}>
-                      {activeAiAnalysis.source === "gemini-live" ? "Gemini AI" : "Phân tích tích hợp"}
-                    </span>
-                  </div>
-                  <p className={`text-xs leading-relaxed ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
-                    {activeAiAnalysis.analysis.executiveSummary}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {activeAiAnalysis.analysis.aspects.map((asp) => (
-                    <div key={asp.id} className={`p-4 rounded-2xl border ${subCardBg}`}>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <h5 className="text-xs sm:text-sm font-black flex items-center gap-1.5">
-                          <span>{asp.icon}</span>
-                          {asp.title}
-                        </h5>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-500 shrink-0">
-                          {asp.badge}
-                        </span>
-                      </div>
-                      <p className={`text-xs mb-2 font-medium ${isDarkTheme ? "text-slate-200" : "text-slate-700"}`}>
-                        {asp.summary}
-                      </p>
-                      <ul className={`text-[11px] space-y-1 mb-2.5 ${isDarkTheme ? "text-slate-300" : "text-slate-600"}`}>
-                        {asp.details.map((d, idx) => (
-                          <li key={idx}>• {d}</li>
-                        ))}
-                      </ul>
-                      <div className={`text-[11px] pt-2 border-t ${isDarkTheme ? "border-white/10 text-amber-300" : "border-slate-200 text-amber-800"}`}>
-                        <strong>Gợi ý:</strong> {asp.advice}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Bí quyết phong thủy tổng hợp */}
-          <div className={`p-5 rounded-3xl border backdrop-blur-xl ${cardBg}`}>
-            <h3 className="text-sm font-black mb-2.5">🧭 Bí Quyết Phong Thủy & Giữ Lửa Hôn Nhân</h3>
-            <ul className={`text-xs space-y-1.5 ${isDarkTheme ? "text-slate-300" : "text-slate-700"}`}>
-              {result.fengShuiAdvice.map((tip, i) => (
-                <li key={i}>• {tip}</li>
-              ))}
-            </ul>
-          </div>
+          )}
         </div>
       )}
     </div>

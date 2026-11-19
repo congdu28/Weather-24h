@@ -471,10 +471,137 @@ function computeComplementaryElements(p1: LovePersonSummary, p2: LovePersonSumma
     }
   });
 
+  // Kiểm tra Hỷ Dụng Thần tương trợ giữa 2 lá số
+  const hy1 = p1.fourPillars.hyDungThan;
+  const dom2 = p2.fourPillars.dominantElements;
+  const matchedFor1 = hy1.filter((el) => dom2.includes(el));
+  if (matchedFor1.length > 0) {
+    results.push(
+      `Hỷ Dụng Thần tương trợ: ${p2.displayName} vượng hành ${matchedFor1.map((e) => elementLabel(e)).join(", ")}, đúng vào Dụng Thần giúp cân bằng bản mệnh cho ${p1.displayName}.`
+    );
+  }
+
+  const hy2 = p2.fourPillars.hyDungThan;
+  const dom1 = p1.fourPillars.dominantElements;
+  const matchedFor2 = hy2.filter((el) => dom1.includes(el));
+  if (matchedFor2.length > 0) {
+    results.push(
+      `Hỷ Dụng Thần tương trợ: ${p1.displayName} vượng hành ${matchedFor2.map((e) => elementLabel(e)).join(", ")}, tiếp thêm vận khí tốt cho ${p2.displayName}.`
+    );
+  }
+
   if (results.length === 0) {
     results.push("Cả hai lá số đều có sự phân bổ Ngũ Hành tương đối cân bằng, hỗ trợ nhau ổn định.");
   }
   return results;
+}
+
+export function buildDeepLoveChapters(result: LoveCompatibilityResult): DeepLoveAiAnalysis {
+  const { person1: p1, person2: p2 } = result;
+  const d1 = p1.fourPillars.dayPillar;
+  const d2 = p2.fourPillars.dayPillar;
+  const h1 = p1.fourPillars.hourPillar;
+  const h2 = p2.fourPillars.hourPillar;
+
+  const hy1Str = p1.fourPillars.hyDungThan.map((e) => elementLabel(e)).join(", ");
+  const hy2Str = p2.fourPillars.hyDungThan.map((e) => elementLabel(e)).join(", ");
+  const huong1 = p1.profile.gender === "male" ? p1.personalProfile.cungMenh.huongTotNam : p1.personalProfile.cungMenh.huongTotNu;
+  const huong2 = p2.profile.gender === "male" ? p2.personalProfile.cungMenh.huongTotNam : p2.personalProfile.cungMenh.huongTotNu;
+  const commonDirections = huong1.filter((h) => huong2.includes(h));
+
+  const cungPhiDim = result.dimensions.find((d) => d.id === "cung_phi");
+  const napAmDim = result.dimensions.find((d) => d.id === "nap_am");
+  const canChiDim = result.dimensions.find((d) => d.id === "can_chi");
+
+  const aspects: DeepLoveAspect[] = [
+    {
+      id: "duyen_phan",
+      title: "1. Sợi Duyên Phận & Sức Hút Ban Đầu",
+      badge: `${p1.westernZodiac.element} • ${p2.westernZodiac.element}`,
+      icon: "💕",
+      summary: `${p1.displayName} (${p1.westernZodiac.name}, Số ${p1.numerology.lifePathNumber}) và ${p2.displayName} (${p2.westernZodiac.name}, Số ${p2.numerology.lifePathNumber}) kết nối qua sự giao thoa giữa tuổi ${p1.personalProfile.canChi} và ${p2.personalProfile.canChi}.`,
+      details: [
+        `Tuổi năm sinh ở mức ${canChiDim?.badge || "Bình Hòa"}: ${p1.displayName} thuộc nhóm Tam Hợp ${p1.personalProfile.tamHop.join("-")}, Lục Hợp ${p1.personalProfile.lucHop}; ${p2.displayName} thuộc nhóm Tam Hợp ${p2.personalProfile.tamHop.join("-")}.`,
+        `Năng lượng Cung Hoàng Đạo (${p1.westernZodiac.symbol} ${p1.westernZodiac.name} & ${p2.westernZodiac.symbol} ${p2.westernZodiac.name}) tạo nên nhịp cảm xúc ${p1.westernZodiac.element === p2.westernZodiac.element ? "đồng điệu ngay từ những lần trò chuyện đầu" : "bù trừ thú vị, càng tìm hiểu càng khám phá thêm nhiều điểm mới"}.`
+      ],
+      advice: "Hãy giữ sự tò mò và lắng nghe cảm xúc thật của đối phương như những ngày đầu mới quen."
+    },
+    {
+      id: "tinh_cach_giao_tiep",
+      title: "2. Tính Cách Cốt Lõi & Cách Xử Lý Bất Đồng",
+      badge: `Nhật Chủ ${p1.fourPillars.nhatChuCan} - ${p2.fourPillars.nhatChuCan}`,
+      icon: "🗣️",
+      summary: `Xét theo Nhật Chủ (Can Ngày sinh): ${p1.displayName} mang khí chất ${p1.fourPillars.nhatChuCan} (${p1.fourPillars.nhatChuStrength}), còn ${p2.displayName} mang khí chất ${p2.fourPillars.nhatChuCan} (${p2.fourPillars.nhatChuStrength}).`,
+      details: [
+        `${p1.displayName} có bản tính ${p1.fourPillars.nhatChuStrength === "Thân Vượng" ? "chủ động, quyết đoán và giàu năng lượng" : p1.fourPillars.nhatChuStrength === "Thân Nhược" ? "tinh tế, giàu cảm xúc và đề cao sự an toàn" : "ôn hòa, linh hoạt và biết cân bằng"}.`,
+        `${p2.displayName} có bản tính ${p2.fourPillars.nhatChuStrength === "Thân Vượng" ? "mạnh mẽ, thẳng thắn và thích dẫn dắt" : p2.fourPillars.nhatChuStrength === "Thân Nhược" ? "nhạy bén, chu đáo và giàu sự thấu cảm" : "điềm tĩnh, khéo léo trong ứng xử"}.`
+      ],
+      advice: "Khi tranh luận, tránh nói lời lúc nóng giận; hãy cho nhau 15 phút lắng lại rồi trao đổi thẳng thắn trên tinh thần tôn trọng."
+    },
+    {
+      id: "hon_nhan_giadao",
+      title: "3. Đời Sống Hôn Nhân & Cung Phu Thê",
+      badge: cungPhiDim?.badge || "Bát Trạch",
+      icon: "🏡",
+      summary: `Trụ Ngày (Cung Phu Thê) là ${d1.canChi} kết hợp ${d2.canChi}, đồng thời Cung Phi ${p1.cungPhi} và ${p2.cungPhi} tạo thành cung ${cungPhiDim?.badge || "Bình Hòa"}.`,
+      details: [
+        `Bản mệnh Nạp Âm ${p1.personalProfile.napAm} (${elementLabel(p1.personalProfile.element)}) và ${p2.personalProfile.napAm} (${elementLabel(p2.personalProfile.element)}) ở trạng thái ${napAmDim?.badge || "Bình Hòa"}.`,
+        cungPhiDim?.summary || "Hai bạn cần cùng nhau xây dựng thói quen sinh hoạt chung ổn định."
+      ],
+      advice: cungPhiDim?.advice || "Cùng chia sẻ việc nhà và trách nhiệm gia đình là chìa khóa giữ hạnh phúc."
+    },
+    {
+      id: "tai_loc_su_nghiep",
+      title: "4. Tài Lộc, Sự Nghiệp & Hỷ Dụng Thần",
+      badge: "Tài Vận Đôi",
+      icon: "🪙",
+      summary: `${p1.displayName} cần bổ sung hành ${hy1Str || elementLabel(p1.personalProfile.element)} để vượng vận, trong khi ${p2.displayName} cần hành ${hy2Str || elementLabel(p2.personalProfile.element)}.`,
+      details: [
+        ...result.complementaryElements,
+        `Số Chủ Đạo ${p1.numerology.lifePathNumber} kết hợp Số ${p2.numerology.lifePathNumber} cho thấy ${p1.numerology.lifePathNumber === p2.numerology.lifePathNumber ? "cùng chung chí hướng phát triển" : "có thể phân công vai trò rõ ràng: một người hoạch định, một người triển khai"}.`
+      ],
+      advice: "Nên minh bạch tài chính chung và thống nhất mục tiêu tiết kiệm, đầu tư dài hạn."
+    },
+    {
+      id: "con_cai_hau_van",
+      title: "5. Đường Con Cái & Hậu Vận Về Sau",
+      badge: !p1.fourPillars.hourPillar || !p2.fourPillars.hourPillar ? "Tham khảo" : "Trụ Giờ",
+      icon: "🌱",
+      summary:
+        p1.birthHourFortune.hasBirthHour && p2.birthHourFortune.hasBirthHour && h1 && h2
+          ? `Trụ Giờ (cung Tử Tức & Hậu vận) của ${p1.displayName} là ${h1.canChi} (${h1.napAm}) và ${p2.displayName} là ${h2.canChi} (${h2.napAm}).`
+          : "Một hoặc cả hai chưa xác định chính xác giờ sinh nên phần hậu vận được luận dựa trên Trụ Ngày và Cung Phi tổng thể.",
+      details: [
+        `${p1.displayName} bước vào hậu vận ổn định hơn khi cân bằng được hành ${hy1Str || elementLabel(p1.personalProfile.element)}.`,
+        `${p2.displayName} có nền tảng gia đạo vững vàng nếu duy trì sự gắn kết với gia đình hai bên.`
+      ],
+      advice: "Chăm sóc sức khỏe tinh thần và thể chất đều đặn từ sớm giúp hậu vận của cả hai luôn an yên."
+    },
+    {
+      id: "hoa_giai_phong_thuy",
+      title: "6. Phong Thủy Nhà Cửa & Hóa Giải Xung Khắc",
+      badge: commonDirections.length > 0 ? `Hợp ${commonDirections[0]}` : "Dung hòa",
+      icon: "🧭",
+      summary:
+        commonDirections.length > 0
+          ? `Hai bạn có điểm chung về hướng cát lợi: ${commonDirections.join(", ")} — rất thuận để chọn hướng nhà, hướng cửa chính hoặc hướng giường ngủ.`
+          : `${p1.displayName} (${p1.cungPhiGroup}) hợp hướng ${huong1.slice(0, 2).join(", ")}; ${p2.displayName} (${p2.cungPhiGroup}) hợp hướng ${huong2.slice(0, 2).join(", ")}.`,
+      details: [
+        commonDirections.length > 0
+          ? `Ưu tiên bố trí giường ngủ hoặc bàn làm việc quay về hướng ${commonDirections[0]} để tăng sinh khí.`
+          : `Vì hai bạn khác nhóm Đông/Tây Tứ Mệnh, nên chọn hướng cửa chính theo người trụ cột (${p1.profile.gender === "male" ? p1.displayName : p2.displayName}) và hướng bếp theo người còn lại để cân bằng.`,
+        `Màu sắc dung hòa không gian sống: kết hợp nhẹ nhàng tông màu thuộc hành ${hy1Str || elementLabel(p1.personalProfile.element)} và ${hy2Str || elementLabel(p2.personalProfile.element)}.`
+      ],
+      advice: "Phong thủy tốt nhất trong gia đình luôn bắt đầu từ sự sạch sẽ, nhiều ánh sáng tự nhiên và lời nói ấm áp mỗi ngày."
+    }
+  ];
+
+  return {
+    headline: `${result.verdictTitle}: Luận Giải Chi Tiết ${p1.displayName} & ${p2.displayName}`,
+    compatibilityScore: result.totalScore,
+    executiveSummary: `Dựa trên đầy đủ 4 trụ Giờ - Ngày - Tháng - Năm sinh (${p1.fourPillars.yearPillar.canChi}/${p1.fourPillars.dayPillar.canChi} và ${p2.fourPillars.yearPillar.canChi}/${p2.fourPillars.dayPillar.canChi}), Cung Phi ${p1.cungPhi} - ${p2.cungPhi} và Hỷ Dụng Thần, hai bạn đạt ${result.totalScore}/100 điểm (${result.verdictBadge}).`,
+    aspects
+  };
 }
 
 export function evaluateLoveCompatibility(input1: LovePersonInput, input2: LovePersonInput): LoveCompatibilityResult {

@@ -3,7 +3,7 @@ import {
   DeepFortuneAnalysis,
   elementLabel
 } from "../utils/lunarAlmanac";
-import { DeepLoveAiAnalysis, LoveCompatibilityResult } from "../utils/loveCompatibility";
+import { DeepLoveAiAnalysis, LoveCompatibilityResult, buildDeepLoveChapters } from "../utils/loveCompatibility";
 
 const CACHE_KEY_PREFIX = "weather24h_gemini38_fortune_v1_";
 const LOVE_CACHE_KEY_PREFIX = "weather24h_gemini_love_v1_";
@@ -331,20 +331,7 @@ export function getCachedLoveCompatibilityAi(result: LoveCompatibilityResult): D
 }
 
 function buildBuiltinLoveFallback(result: LoveCompatibilityResult): DeepLoveAiAnalysis {
-  return {
-    headline: `${result.verdictTitle}: ${result.person1.displayName} & ${result.person2.displayName}`,
-    compatibilityScore: result.totalScore,
-    executiveSummary: result.summary,
-    aspects: result.dimensions.map((d) => ({
-      id: d.id,
-      title: d.title,
-      badge: `${d.badge} (${d.score}/${d.maxScore})`,
-      icon: d.icon,
-      summary: d.summary,
-      details: d.details,
-      advice: d.advice
-    }))
-  };
+  return buildDeepLoveChapters(result);
 }
 
 export async function analyzeLoveCompatibilityWithGemini(
@@ -362,22 +349,32 @@ export async function analyzeLoveCompatibilityWithGemini(
   const apiKey = resolveGeminiApiKey(customApiKey);
   if (apiKey) {
     const { person1: p1, person2: p2 } = result;
-    const formatPerson = (p: LoveCompatibilityResult["person1"]) =>
-      `- ${p.displayName} (${p.profile.gender === "male" ? "Nam" : "Nữ"}):
-  + Dương lịch: ${p.solarDate.day}/${p.solarDate.month}/${p.solarDate.year} | Âm lịch: ${p.lunarDate.day}/${p.lunarDate.month}/${p.lunarDate.year} (${p.personalProfile.canChi})
-  + Mệnh Nạp Âm: ${p.personalProfile.napAm} (${elementLabel(p.personalProfile.element)}) | Cung Phi: ${p.cungPhi} (${p.cungPhiGroup})
+    const formatPerson = (p: LoveCompatibilityResult["person1"]) => {
+      const hyDung = p.fourPillars.hyDungThan.map((e) => elementLabel(e)).join(", ") || "Cân bằng";
+      const lacking = p.fourPillars.lackingElements.map((e) => elementLabel(e)).join(", ") || "Không khuyết";
+      const huongTot = (p.profile.gender === "male" ? p.personalProfile.cungMenh.huongTotNam : p.personalProfile.cungMenh.huongTotNu).join(", ");
+      return `- ${p.displayName} (${p.profile.gender === "male" ? "Nam" : "Nữ"}):
+  + Dương lịch: ${p.solarDate.day}/${p.solarDate.month}/${p.solarDate.year} | Âm lịch: ${p.lunarDate.day}/${p.lunarDate.month}/${p.lunarDate.year} (${p.personalProfile.canChi} - ${p.personalProfile.zodiacAnimal})
+  + Mệnh Nạp Âm: ${p.personalProfile.napAm} (${elementLabel(p.personalProfile.element)}) | Cung Phi: ${p.cungPhi} (${p.cungPhiGroup}) | Hướng tốt: ${huongTot}
   + Tứ Trụ: Năm ${p.fourPillars.yearPillar.canChi} • Tháng ${p.fourPillars.monthPillar.canChi} • Ngày ${p.fourPillars.dayPillar.canChi} • Giờ ${p.fourPillars.hourPillar ? p.fourPillars.hourPillar.canChi : p.birthHourFortune.hourCanChi}${!p.birthHourFortune.hasBirthHour ? " (Chưa rõ giờ)" : ""}
+  + Nhật Chủ: ${p.fourPillars.nhatChuCan} (${p.fourPillars.nhatChuStrength}) | Hỷ Dụng Thần: ${hyDung} | Hành khuyết: ${lacking}
+  + Tam Hợp: ${p.personalProfile.tamHop.join("-")} | Lục Hợp: ${p.personalProfile.lucHop} | Tứ Hành Xung: ${p.personalProfile.tuHanhXung.join("-")}
   + Cung Hoàng Đạo: ${p.westernZodiac.name} (${p.westernZodiac.element}) | Thần Số Học: Số ${p.numerology.lifePathNumber}`;
+    };
+
+    const dimSummary = result.dimensions.map((d) => `- ${d.title}: ${d.badge} (${d.score}/${d.maxScore}) — ${d.summary}`).join("\n");
 
     const prompt = `Bạn là chuyên gia Tử Vi Đẩu Số, Tứ Trụ Bát Tự, Phong Thủy Bát Trạch và Tâm lý Hôn nhân gia đình Việt Nam.
-Hãy luận giải chuyên sâu tình duyên và mức độ hòa hợp của cặp đôi sau (giọng văn tinh tế, khách quan, sâu sắc, mang tính xây dựng bằng tiếng Việt):
+Hãy luận giải thật sâu sắc, chính xác và chi tiết tình duyên của cặp đôi sau dựa trên đúng các thông số Tứ Trụ, Hỷ Dụng Thần, Cung Phi và Bát Tự dưới đây (nêu rõ tên tuổi, Can Chi, Nhật Chủ, Hỷ Dụng Thần, Cung Phi cụ thể trong lời luận giải, tránh nói chung chung):
 
 ${formatPerson(p1)}
 
 ${formatPerson(p2)}
 
-Điểm tổng hợp nền tảng: ${result.totalScore}/100 (${result.verdictTitle}).
-Bù trừ Ngũ Hành: ${result.complementaryElements.join(" ")}
+Kết quả đối chiếu chi tiết:
+${dimSummary}
+Điểm tổng hợp: ${result.totalScore}/100 (${result.verdictTitle}).
+Bù trừ Ngũ Hành & Hỷ Dụng Thần: ${result.complementaryElements.join(" ")}
 
 Yêu cầu trả về đúng định dạng JSON thuần (không bọc markdown), cấu trúc:
 {
