@@ -58,12 +58,14 @@ import {
   Zap,
   Star,
   RefreshCw,
-  BrainCircuit
+  BrainCircuit,
+  Crown
 } from "lucide-react";
 import { DailyForecast } from "../types/weather";
 import { getWeatherCondition } from "../services/weatherApi";
 import WeatherIcon from "./WeatherIcon";
 import { LoveCompatibilityView } from "./LoveCompatibilityView";
+import { TuViChartView } from "./TuViChartView";
 import { usePersistentState } from "../utils/usePersistentState";
 
 interface Props {
@@ -76,7 +78,7 @@ const emptySubscribe = () => () => {};
 
 export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, geminiApiKey }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [activeSubTab, setActiveSubTab] = useState<"day" | "month" | "good_days" | "fortune" | "love" | "converter">("day");
+  const [activeSubTab, setActiveSubTab] = useState<"day" | "month" | "good_days" | "fortune" | "tuvi" | "love" | "converter">("day");
 
   // Hồ sơ ngày sinh & giới tính gia chủ lưu bền vững trong localStorage
   const [userProfile, setUserProfile] = usePersistentState<UserBirthProfile | null>("weather24h_user_profile", null);
@@ -600,6 +602,19 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
         >
           <Sparkles className="w-4 h-4 text-amber-500" />
           Bói Tử Vi & Vận Mệnh
+        </button>
+        <button
+          onClick={() => setActiveSubTab("tuvi")}
+          className={`flex-1 min-w-[115px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            activeSubTab === "tuvi"
+              ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 font-black"
+              : isDarkTheme
+              ? "text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 font-bold"
+              : "text-slate-700 hover:text-slate-950 bg-slate-100/90 hover:bg-slate-200 border border-slate-200/90 font-bold"
+          }`}
+        >
+          <Crown className={`w-4 h-4 ${activeSubTab === "tuvi" ? "text-slate-950" : "text-amber-500"}`} />
+          Lá Số Tử Vi
         </button>
         <button
           onClick={() => setActiveSubTab("love")}
@@ -1357,6 +1372,15 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
             })}
           </div>
         </div>
+      )}
+
+      {/* 5.4. LÁ SỐ TỬ VI ĐẨU SỐ 12 CUNG */}
+      {activeSubTab === "tuvi" && (
+        <TuViChartView
+          isDarkTheme={isDarkTheme}
+          userProfile={effectiveProfile}
+          geminiApiKey={geminiApiKey}
+        />
       )}
 
       {/* 5.5. BÓI TÌNH DUYÊN */}

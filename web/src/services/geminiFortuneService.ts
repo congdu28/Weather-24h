@@ -4,9 +4,11 @@ import {
   elementLabel
 } from "../utils/lunarAlmanac";
 import { DeepLoveAiAnalysis, LoveCompatibilityResult, buildDeepLoveChapters } from "../utils/loveCompatibility";
+import { TuViChartResult, TuViDeepAnalysis, buildBuiltinTuViDeepAnalysis } from "../utils/tuViChart";
 
 const CACHE_KEY_PREFIX = "weather24h_gemini38_fortune_v1_";
 const LOVE_CACHE_KEY_PREFIX = "weather24h_gemini_love_v1_";
+const TUVI_CACHE_KEY_PREFIX = "weather24h_gemini_tuvi_v1_";
 
 function resolveGeminiApiKey(customApiKey?: string): string {
   let apiKey = (customApiKey || "").trim();
@@ -503,6 +505,191 @@ Yêu cầu trả về đúng định dạng JSON thuần (không bọc markdown)
   await new Promise((resolve) => setTimeout(resolve, 450));
   return {
     analysis: buildBuiltinLoveFallback(result),
+    source: "builtin"
+  };
+}
+
+export function getTuViChartCacheKey(chart: TuViChartResult): string {
+  return `${TUVI_CACHE_KEY_PREFIX}${chart.gender}_${chart.solarDate.year}_${chart.solarDate.month}_${chart.solarDate.day}_h${chart.hourChiIndex}`;
+}
+
+export function getCachedTuViChartAi(chart: TuViChartResult): TuViDeepAnalysis | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(getTuViChartCacheKey(chart));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as TuViDeepAnalysis;
+    if (parsed && Array.isArray(parsed.aspects) && parsed.aspects.length >= 4) {
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export async function analyzeTuViChartWithGemini(
+  chart: TuViChartResult,
+  customApiKey?: string,
+  forceRefresh = false
+): Promise<{ analysis: TuViDeepAnalysis; source: "gemini-live" | "builtin" }> {
+  if (!forceRefresh) {
+    const cached = getCachedTuViChartAi(chart);
+    if (cached) {
+      return { analysis: cached, source: "gemini-live" };
+    }
+  }
+
+  const apiKey = resolveGeminiApiKey(customApiKey);
+  if (apiKey) {
+    const palacesSummary = chart.palaces
+      .map((p) => {
+        const chinh = p.chinhTinh.map((s) => `${s.name}(${s.brightness || "B"}${s.tuHoaTag ? `,${s.tuHoaTag}` : ""})`).join(", ") || "Vô Chính Diệu";
+        const cat = p.catTinh.map((s) => s.name + (s.tuHoaTag ? `(${s.tuHoaTag})` : "")).join(", ");
+        const sat = p.satTinh.map((s) => s.name).join(", ");
+        const tt = [p.tuan ? "Tuần" : "", p.triet ? "Triệt" : ""].filter(Boolean).join("/");
+        return `- Cung ${p.palaceName}${p.isThan ? " [AN THÂN]" : ""} (${p.palaceCan} ${p.chiName}, ĐV ${p.daiVanRange}${tt ? `, ${tt}` : ""}, điểm ${p.score}): Chính tinh [${chinh}]${cat ? ` | Cát: ${cat}` : ""}${sat ? ` | Sát: ${sat}` : ""}`;
+      })
+      .join("\n");
+
+    const tuHoaText = chart.tuHoaSummary.map((t) => `${t.hoa}: ${t.star} tại ${t.palace}`).join(" • ");
+
+    const prompt = `Bạn là bậc thầy Tử Vi Đẩu Số Việt Nam (phái Thiên Lương & Nam Tông). Hãy luận giải chuyên sâu, chuẩn xác theo đúng từng sao đã an trên Lá Số Tử Vi sau:
+
+Đương số: ${chart.displayName} (${chart.amDuongLabel}, đi ${chart.isThuan ? "Thuận" : "Nghịch"})
+Sinh Dương lịch: ${chart.solarDate.day}/${chart.solarDate.month}/${chart.solarDate.year} | Âm lịch: ${chart.lunarDate.day}/${chart.lunarDate.month}/${chart.lunarDate.year} (${chart.yearCanChi}) | Giờ ${chart.hourLabel}
+Mệnh Nạp Âm: ${chart.napAmMenh} (${elementLabel(chart.menhElement)}) | Cục: ${chart.cucName}
+Chủ Mệnh: ${chart.chuMenh} | Chủ Thân: ${chart.chuThan} | Thân cư: ${chart.thanPalaceName}
+Tứ Hóa: ${tuHoaText}
+
+Chi tiết 12 Cung đã an:
+${palacesSummary}
+
+Yêu cầu trả về đúng JSON thuần (không bọc markdown), nêu rõ tên sao, cung, Miếu/Vượng/Hãm địa và Tứ Hóa cụ thể trong bài luận:
+{
+  "headline": "Tiêu đề ngắn gọn thể hiện cách cục nổi bật của lá số",
+  "executiveSummary": "Đoạn tổng quan 3-4 câu về khí chất Mệnh-Thân, Cục và bức tranh tổng thể cả đời",
+  "aspects": [
+    {
+      "id": "menh_than",
+      "title": "1. Cục Diện Mệnh - Thân & Khí Chất Cốt Lõi",
+      "badge": "Nhãn ngắn 2-4 từ",
+      "icon": "👑",
+      "summary": "Tóm tắt 1-2 câu",
+      "details": ["Ý chi tiết 1 (nêu tên sao)", "Ý chi tiết 2"],
+      "advice": "Lời khuyên thực tế"
+    },
+    {
+      "id": "quan_loc",
+      "title": "2. Công Danh, Sự Nghiệp (Cung Quan Lộc)",
+      "badge": "Nhãn ngắn",
+      "icon": "💼",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    },
+    {
+      "id": "tai_bach",
+      "title": "3. Tiền Tài & Tài Lộc (Cung Tài Bạch)",
+      "badge": "Nhãn ngắn",
+      "icon": "🪙",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    },
+    {
+      "id": "phu_the",
+      "title": "4. Tình Duyên & Hôn Nhân (Cung Phu Thê)",
+      "badge": "Nhãn ngắn",
+      "icon": "💕",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    },
+    {
+      "id": "phuc_duc",
+      "title": "5. Phúc Đức, Gia Đạo & Sức Khỏe",
+      "badge": "Nhãn ngắn",
+      "icon": "🪷",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    },
+    {
+      "id": "dai_van",
+      "title": "6. Đại Vận Hiện Tại & Vận Hạn Năm 2026",
+      "badge": "Nhãn ngắn",
+      "icon": "⏳",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    }
+  ]
+}`;
+
+    for (const candidate of GEMINI_MODEL_FALLBACKS) {
+      try {
+        const generationConfig: Record<string, unknown> = {
+          temperature: 0.65,
+          responseMimeType: "application/json"
+        };
+        if (candidate.useThinkingHigh) {
+          generationConfig.thinkingConfig = {
+            thinkingLevel: "HIGH"
+          };
+        }
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${candidate.id}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig
+            })
+          }
+        );
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) break;
+          continue;
+        }
+
+        const data = await response.json();
+        const rawText =
+          data?.candidates?.[0]?.content?.parts
+            ?.map((p: { text?: string }) => p.text || "")
+            .join("")
+            .trim() || "";
+
+        if (!rawText) continue;
+
+        const parsed = parseFortuneJson(rawText) as TuViDeepAnalysis;
+        if (parsed && Array.isArray(parsed.aspects) && parsed.aspects.length >= 4) {
+          const finalResult: TuViDeepAnalysis = {
+            headline: parsed.headline || chart.overallTitle,
+            executiveSummary: parsed.executiveSummary || chart.overallSummary,
+            aspects: parsed.aspects
+          };
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(getTuViChartCacheKey(chart), JSON.stringify(finalResult));
+            } catch {
+              // ignore
+            }
+          }
+          return { analysis: finalResult, source: "gemini-live" };
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 420));
+  return {
+    analysis: buildBuiltinTuViDeepAnalysis(chart),
     source: "builtin"
   };
 }
