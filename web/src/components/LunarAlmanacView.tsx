@@ -63,6 +63,7 @@ import {
 import { DailyForecast } from "../types/weather";
 import { getWeatherCondition } from "../services/weatherApi";
 import WeatherIcon from "./WeatherIcon";
+import { LoveCompatibilityView } from "./LoveCompatibilityView";
 import { usePersistentState } from "../utils/usePersistentState";
 
 interface Props {
@@ -75,7 +76,7 @@ const emptySubscribe = () => () => {};
 
 export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, geminiApiKey }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [activeSubTab, setActiveSubTab] = useState<"day" | "month" | "good_days" | "fortune" | "converter">("day");
+  const [activeSubTab, setActiveSubTab] = useState<"day" | "month" | "good_days" | "fortune" | "love" | "converter">("day");
 
   // Hồ sơ ngày sinh & giới tính gia chủ lưu bền vững trong localStorage
   const [userProfile, setUserProfile] = usePersistentState<UserBirthProfile | null>("weather24h_user_profile", null);
@@ -599,6 +600,19 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
         >
           <Sparkles className="w-4 h-4 text-amber-500" />
           Bói Tử Vi & Vận Mệnh
+        </button>
+        <button
+          onClick={() => setActiveSubTab("love")}
+          className={`flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            activeSubTab === "love"
+              ? "bg-rose-500 text-white shadow-lg shadow-rose-500/25 font-black"
+              : isDarkTheme
+              ? "text-slate-200 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 font-bold"
+              : "text-slate-700 hover:text-slate-950 bg-slate-100/90 hover:bg-slate-200 border border-slate-200/90 font-bold"
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${activeSubTab === "love" ? "text-white fill-white/30" : "text-rose-500"}`} />
+          Bói Tình Duyên
         </button>
         <button
           onClick={() => setActiveSubTab("converter")}
@@ -1343,6 +1357,15 @@ export default function LunarAlmanacView({ isDarkTheme = true, dailyForecast, ge
             })}
           </div>
         </div>
+      )}
+
+      {/* 5.5. BÓI TÌNH DUYÊN */}
+      {activeSubTab === "love" && (
+        <LoveCompatibilityView
+          isDarkTheme={isDarkTheme}
+          userProfile={effectiveProfile}
+          geminiApiKey={geminiApiKey}
+        />
       )}
 
       {/* 3. ĐỔI NGÀY ÂM - DƯƠNG */}

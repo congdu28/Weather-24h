@@ -3,8 +3,31 @@ import {
   DeepFortuneAnalysis,
   elementLabel
 } from "../utils/lunarAlmanac";
+import { DeepLoveAiAnalysis, LoveCompatibilityResult } from "../utils/loveCompatibility";
 
 const CACHE_KEY_PREFIX = "weather24h_gemini38_fortune_v1_";
+const LOVE_CACHE_KEY_PREFIX = "weather24h_gemini_love_v1_";
+
+function resolveGeminiApiKey(customApiKey?: string): string {
+  let apiKey = (customApiKey || "").trim();
+  if (!apiKey && typeof window !== "undefined") {
+    try {
+      const savedSettings = localStorage.getItem("weather24h_settings");
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings);
+        if (parsed?.geminiApiKey && typeof parsed.geminiApiKey === "string") {
+          apiKey = parsed.geminiApiKey.trim();
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (!apiKey && typeof process !== "undefined" && process.env?.NEXT_PUBLIC_GEMINI_API_KEY) {
+    apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY.trim();
+  }
+  return apiKey;
+}
 
 export function getFortuneProfileCacheKey(fortune: DetailedBirthFortune): string {
   const { profile, solarDate, birthHourFortune } = fortune;
@@ -283,5 +306,206 @@ Hãy trả về kết quả ĐÚNG ĐỊNH DẠNG JSON theo schema sau:
   return {
     analysis: fortune.deepAnalysis,
     source: "gemini-3.8-flash-builtin"
+  };
+}
+
+export function getLoveCompatibilityCacheKey(result: LoveCompatibilityResult): string {
+  const p1 = result.person1;
+  const p2 = result.person2;
+  return `${LOVE_CACHE_KEY_PREFIX}${p1.profile.gender}_${p1.solarDate.year}_${p1.solarDate.month}_${p1.solarDate.day}_h${p1.birthHourFortune.hourChiIndex}__${p2.profile.gender}_${p2.solarDate.year}_${p2.solarDate.month}_${p2.solarDate.day}_h${p2.birthHourFortune.hourChiIndex}`;
+}
+
+export function getCachedLoveCompatibilityAi(result: LoveCompatibilityResult): DeepLoveAiAnalysis | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(getLoveCompatibilityCacheKey(result));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DeepLoveAiAnalysis;
+    if (parsed && Array.isArray(parsed.aspects) && parsed.aspects.length >= 4) {
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function buildBuiltinLoveFallback(result: LoveCompatibilityResult): DeepLoveAiAnalysis {
+  return {
+    headline: `${result.verdictTitle}: ${result.person1.displayName} & ${result.person2.displayName}`,
+    compatibilityScore: result.totalScore,
+    executiveSummary: result.summary,
+    aspects: result.dimensions.map((d) => ({
+      id: d.id,
+      title: d.title,
+      badge: `${d.badge} (${d.score}/${d.maxScore})`,
+      icon: d.icon,
+      summary: d.summary,
+      details: d.details,
+      advice: d.advice
+    }))
+  };
+}
+
+export async function analyzeLoveCompatibilityWithGemini(
+  result: LoveCompatibilityResult,
+  customApiKey?: string,
+  forceRefresh = false
+): Promise<{ analysis: DeepLoveAiAnalysis; source: "gemini-live" | "builtin" }> {
+  if (!forceRefresh) {
+    const cached = getCachedLoveCompatibilityAi(result);
+    if (cached) {
+      return { analysis: cached, source: "gemini-live" };
+    }
+  }
+
+  const apiKey = resolveGeminiApiKey(customApiKey);
+  if (apiKey) {
+    const { person1: p1, person2: p2 } = result;
+    const formatPerson = (p: LoveCompatibilityResult["person1"]) =>
+      `- ${p.displayName} (${p.profile.gender === "male" ? "Nam" : "Nữ"}):
+  + Dương lịch: ${p.solarDate.day}/${p.solarDate.month}/${p.solarDate.year} | Âm lịch: ${p.lunarDate.day}/${p.lunarDate.month}/${p.lunarDate.year} (${p.personalProfile.canChi})
+  + Mệnh Nạp Âm: ${p.personalProfile.napAm} (${elementLabel(p.personalProfile.element)}) | Cung Phi: ${p.cungPhi} (${p.cungPhiGroup})
+  + Tứ Trụ: Năm ${p.fourPillars.yearPillar.canChi} • Tháng ${p.fourPillars.monthPillar.canChi} • Ngày ${p.fourPillars.dayPillar.canChi} • Giờ ${p.fourPillars.hourPillar ? p.fourPillars.hourPillar.canChi : p.birthHourFortune.hourCanChi}${!p.birthHourFortune.hasBirthHour ? " (Chưa rõ giờ)" : ""}
+  + Cung Hoàng Đạo: ${p.westernZodiac.name} (${p.westernZodiac.element}) | Thần Số Học: Số ${p.numerology.lifePathNumber}`;
+
+    const prompt = `Bạn là chuyên gia Tử Vi Đẩu Số, Tứ Trụ Bát Tự, Phong Thủy Bát Trạch và Tâm lý Hôn nhân gia đình Việt Nam.
+Hãy luận giải chuyên sâu tình duyên và mức độ hòa hợp của cặp đôi sau (giọng văn tinh tế, khách quan, sâu sắc, mang tính xây dựng bằng tiếng Việt):
+
+${formatPerson(p1)}
+
+${formatPerson(p2)}
+
+Điểm tổng hợp nền tảng: ${result.totalScore}/100 (${result.verdictTitle}).
+Bù trừ Ngũ Hành: ${result.complementaryElements.join(" ")}
+
+Yêu cầu trả về đúng định dạng JSON thuần (không bọc markdown), cấu trúc:
+{
+  "headline": "Tiêu đề ngắn gọn, sâu sắc cho mối duyên này",
+  "compatibilityScore": ${result.totalScore},
+  "executiveSummary": "Đoạn tổng quan 3-4 câu phân tích cốt lõi mối quan hệ giữa ${p1.displayName} và ${p2.displayName}",
+  "aspects": [
+    {
+      "id": "duyen_phan",
+      "title": "1. Sợi Duyên Phận & Sức Hút Ban Đầu",
+      "badge": "Nhãn ngắn 2-4 từ",
+      "icon": "💕",
+      "summary": "Tóm tắt 1-2 câu",
+      "details": ["Ý chi tiết 1", "Ý chi tiết 2"],
+      "advice": "Lời khuyên thực tế"
+    },
+    {
+      "id": "tinh_cach_giao_tiep",
+      "title": "2. Tính Cách, Giao Tiếp & Xử Lý Bất Đồng",
+      "badge": "Nhãn ngắn",
+      "icon": "🗣️",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    },
+    {
+      "id": "hon_nhan_giadao",
+      "title": "3. Hôn Nhân, Gia Đạo & Cung Phu Thê",
+      "badge": "Nhãn ngắn",
+      "icon": "🏡",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    },
+    {
+      "id": "tai_loc_su_nghiep",
+      "title": "4. Tài Lộc, Sự Nghiệp & Bù Trừ Ngũ Hành",
+      "badge": "Nhãn ngắn",
+      "icon": "🪙",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    },
+    {
+      "id": "con_cai_hau_van",
+      "title": "5. Đường Con Cái & Hậu Vận Về Sau",
+      "badge": "Nhãn ngắn",
+      "icon": "🌱",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    },
+    {
+      "id": "hoa_giai_phong_thuy",
+      "title": "6. Phong Thủy Hóa Giải & Bí Quyết Giữ Lửa",
+      "badge": "Nhãn ngắn",
+      "icon": "🧭",
+      "summary": "...",
+      "details": ["...", "..."],
+      "advice": "..."
+    }
+  ]
+}`;
+
+    for (const candidate of GEMINI_MODEL_FALLBACKS) {
+      try {
+        const generationConfig: Record<string, unknown> = {
+          temperature: 0.65,
+          responseMimeType: "application/json"
+        };
+        if (candidate.useThinkingHigh) {
+          generationConfig.thinkingConfig = {
+            thinkingLevel: "HIGH"
+          };
+        }
+
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${candidate.id}:generateContent?key=${encodeURIComponent(apiKey)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig
+            })
+          }
+        );
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) break;
+          continue;
+        }
+
+        const data = await response.json();
+        const rawText =
+          data?.candidates?.[0]?.content?.parts
+            ?.map((p: { text?: string }) => p.text || "")
+            .join("")
+            .trim() || "";
+
+        if (!rawText) continue;
+
+        const parsed = parseFortuneJson(rawText) as DeepLoveAiAnalysis;
+        if (parsed && Array.isArray(parsed.aspects) && parsed.aspects.length >= 4) {
+          const finalResult: DeepLoveAiAnalysis = {
+            headline: parsed.headline || `${result.verdictTitle}`,
+            compatibilityScore: Number(parsed.compatibilityScore) || result.totalScore,
+            executiveSummary: parsed.executiveSummary || result.summary,
+            aspects: parsed.aspects
+          };
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(getLoveCompatibilityCacheKey(result), JSON.stringify(finalResult));
+            } catch {
+              // ignore
+            }
+          }
+          return { analysis: finalResult, source: "gemini-live" };
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 450));
+  return {
+    analysis: buildBuiltinLoveFallback(result),
+    source: "builtin"
   };
 }
